@@ -13,10 +13,6 @@ document.addEventListener('DOMContentLoaded', function () {
       .catch(error => {
         console.error('Erro ao chamar a API:', error);
       });
-    axios.get('http://localhost:4000/masteries')
-      .then(response => {
-        const { puuid } = response.data
-        console.log('Dados: ', puuid)
-      })
+
   });
 });
