@@ -36,4 +36,3 @@ app.get('/masteries', async (req, res) => {
     .catch(err => err)
   res.json(response)
 });
-//https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/rifu/god?api_key=RGAPI-2f53d5c1-3c2f-49c9-90dd-66e5b3867b68
