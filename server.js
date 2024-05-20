@@ -6,13 +6,13 @@ var app = express();
 
 app.use(cors());
 
-const api_key = "";
+const api_key = "RGAPI-04cc9072-f268-44ef-857a-1d52c5538957";
 
 app.listen(4000, function () {
   console.log("Server started on port 4000")
 })
 
-const riotUrl = "https://americas.api.riotgames.com/"
+const riotUrl = "https://americas.api.riotgames.com"
 const region = "br1"
 const riotUrlReg = `https://${region}.api.riotgames.com`
 const endpointRiotId = "riot/account/v1/accounts/by-riot-id"
@@ -21,18 +21,20 @@ const endpointPuuid = "lol/champion-mastery/v4/champion-masteries/by-puuid"
 app.get('/account', async (req, res) => {
   const { riotId } = req.query
   const formattedRiotId = riotId.replace("#", "/");
-  const fullUrl = `${riotUrl}/${endpointRiotId}/${formattedRiotId}?api_key = ${api_key}`
+  const fullUrl = `${riotUrl}/${endpointRiotId}/${formattedRiotId}?api_key=${api_key}`
   const response = await axios.get(fullUrl)
     .then(response => response.data)
     .catch(err => err)
 
-  return res.json(response)
+ res.json(response)
 });
+
 app.get('/masteries', async (req, res) => {
-  const { puuid } = response.puuid
-  const puuidUrl = `${riotUrlReg}/${endpointPuuid}/${puuid}?api_key = ${api_key}`
+  const { puuid } = req.query
+  const puuidUrl = `${riotUrlReg}/${endpointPuuid}/${puuid}?api_key=${api_key}`
   const response = await axios.get(puuidUrl)
     .then(response => response.data)
     .catch(err => err)
+  console.log("chegou aqui")
   res.json(response)
 });
