@@ -1,6 +1,7 @@
-/* style.css */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+
 body {
-  font-family: Arial, sans-serif;
+  font-family: "JetBrains Mono", monospace;
   margin: 0;
   padding: 0;
   display: flex;
@@ -36,41 +37,123 @@ body::before {
   z-index: 0; /* Ensure this stays below the content */
 }
 
-#nickName {
-  font-size: 1.5em;
+span {
+  font-size: 1em;
   margin-bottom: 20px;
-  color: #d4af37; /* Gold color to match the League of Legends theme */
+  color: #ffffff;
+  z-index: 1;
+  margin: auto;
+  padding: 2px;
+}
+
+.input-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
 }
 
 #riotId {
   padding: 10px;
   width: 80%;
   max-width: 400px;
-  margin-bottom: 20px;
+  margin-left: 10px; /* Add some space between the select and input */
   border: 2px solid #d4af37;
   border-radius: 5px;
+  font-family: "JetBrains Mono", monospace;
   background-color: #2a2a2a;
   color: #ffffff;
-  position: relative; /* Keep it above the blurred background */
-  z-index: 1; /* Ensure it stays above the blurred background */
+  position: relative; 
+  z-index: 1; 
 }
 
-#search_button {
-  padding: 10px 20px;
-  font-size: 1em;
-  color: #ffffff;
-  background-color: #d4af37;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-  position: relative; /* Keep it above the blurred background */
-  z-index: 1; /* Ensure it stays above the blurred background */
+#riotId:focus{
+  outline: none;
+  border: 2px solid #d4af37;
 }
 
 #search_button:hover {
   background-color: #b78f2d;
 }
+
 #search_button:active{
-  background-color: #cea233;
+  background-color: #d1a535;
+}
+
+#search_button:hover{
+  border: 1px solid;
+  outline-color: rgba(255, 255, 255, 0);
+  outline-offset: 15px;
+  text-shadow: rgb(66, 116, 138) 1px 1px 2px;
+  text-decoration: none;
+}
+
+#search_button {
+  border-radius: 5px;
+  padding: 10px 20px;
+  border: 0px solid;
+  box-shadow: rgba(28, 28, 33, 0.5) 0px 0px 20px inset, rgba(28, 28, 33, 0.2) 0px 0px 20px;
+  outline: rgba(255, 255, 255, 0.5) solid 1px;
+  outline-color: rgba(255, 255, 255, 0.5);
+  outline-offset: 0px;
+  color: #ffffff;
+  text-shadow: none;
+  position: relative;
+  z-index: 1;
+  transition: 750ms cubic-bezier(0.19, 1, 0.22, 1);
+  background-color: #d4af37;
+  font-size: 1em;
+  font-family: "JetBrains Mono", monospace;
+  cursor: pointer;
+  margin: 0px 0px 2em;
+  text-decoration: none;
+}
+
+@media (min-width: 600px) {
+  #search_button {
+    margin: 0px 1em 2em;
+  }
+}
+
+#icon > img{
+  display: none;
+  width: 80px;
+  height: 80px;
+  border-radius: 5px;
+  border: 2px solid #d4af37;
+  margin-bottom: 15px;
+}
+
+#icon{
+  display: flex;
+}
+
+#container{
+  background-color: #2a2a2a;
+  display: none;
+  height: 30%;
+  border-radius: 5px;
+  border: 2px solid #d4af37;
+  text-align: center;
+  margin-left: 5px;
+  padding: 10px 5px 4px 5px;
+}
+
+#region{
+  background-color: #2a2a2a;
+  border-radius: 5px;
+  border: 2px solid #d4af37;
+  color: #ffffff;
+  cursor: pointer;
+  text-align: center;
+  z-index: 1;
+  height: 40px;
+  margin-left: 15px;
+  width: 115px;
+}
+#region:focus{
+  outline: none;
+  border: 2px solid #d4af37;
+}
+optgroup>option{
+  background: #2a2a2a;
 }
