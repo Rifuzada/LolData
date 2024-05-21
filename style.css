@@ -34,7 +34,7 @@ body::before {
   height: 100%;
   background: url('https://images.contentstack.io/v3/assets/blt731acb42bb3d1659/blt041ccaa91033a267/5e210388522857549a2920aa/Patch_10.1_Notes_Article.jpg?quality=80') no-repeat center center/cover;
   filter: blur(5px);
-  z-index: 0; /* Ensure this stays below the content */
+  z-index: 0;
 }
 
 span {
@@ -42,11 +42,10 @@ span {
   margin-bottom: 20px;
   color: #ffffff;
   z-index: 1;
-  margin: auto;
   padding: 2px;
 }
 
-.input-container {
+#input-container {
   display: flex;
   align-items: center;
   margin-bottom: 20px;
@@ -125,6 +124,8 @@ span {
 
 #icon{
   display: flex;
+  top: -364px;
+  left: -430px
 }
 
 #container{
@@ -136,6 +137,8 @@ span {
   text-align: center;
   margin-left: 5px;
   padding: 10px 5px 4px 5px;
+  width: 250px;
+  top: -20px;
 }
 
 #region{
@@ -156,4 +159,41 @@ span {
 }
 optgroup>option{
   background: #2a2a2a;
+}
+#nickName{
+  top:-20px
+}
+#rankedIcon{
+  width: 80px;
+  height: 80px;
+  margin:auto;
+}
+#containerRanked{  
+  background-color: #2a2a2a;
+  display: none;
+  height: 145px;
+  width: 300px;
+  border-radius: 5px;
+  border: 2px solid #d4af37;
+  margin-left: -2px;
+  margin-top: -10px;
+  top: 75px;
+  left:-260px
+}
+#rankedFlexIcon{
+  width: 80px;
+  height: 80px;
+  margin:auto;
+}
+#containerRankedFlex{  
+  background-color: #2a2a2a;
+  display: none;
+  height: 145px;
+  width: 300px;
+  border-radius: 5px;
+  border: 2px solid #d4af37;
+  margin-left: -2px;
+  margin-top: -10px;
+  top: 75px;
+  left:-255px
 }
