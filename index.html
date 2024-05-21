@@ -15,9 +15,50 @@
                 src="https://images.contentstack.io/v3/assets/blt731acb42bb3d1659/blt041ccaa91033a267/5e210388522857549a2920aa/Patch_10.1_Notes_Article.jpg?quality=80"
                 alt=""
             />
-            <div id="nickName"></div>
         </div>
-        <input type="text" id="riotId" /><br />
+        <div id="icon">
+            <img id="iconImg" src="" alt="" />
+            <span id="container">
+                <span id="nickName"></span>
+                <br />
+                <span id="Lvl"></span>
+            </span>
+            <div id="containerRanked">
+                <img id="rankedIcon" src="" alt="" />
+                <span id="rankedSoloqData"></span>
+            </div>
+            <div id="containerRankedFlex">
+                <img id="rankedFlexIcon" src="" alt="" />
+                <span id="rankedFlexData"></span>
+            </div>
+        </div>
+        <div id="input-container">
+            <input type="text" id="riotId" placeholder="Riot#ID" />
+            <select id="region">
+                <optgroup label="Americas" class="Americas">
+                    <option value="BR1">Brazil</option>
+                    <option value="NA1">North America</option>
+                    <option value="LA1">Latin America North</option>
+                    <option value="La2">Latin America South</option>
+                </optgroup>
+                <optgroup label="Europe" class="Europe">
+                    <option value="EUW">Europe West</option>
+                    <option value="EUN1">Europe Nordic and East</option>
+                    <option value="RU1">Russia</option>
+                </optgroup>
+                <optgroup label="Asia" class="Asia">
+                    <option value="KR">Republic of Korea</option>
+                    <option value="JP1">Japan</option>
+                    <option value="TW2">Taiwan, Hong Kong, and Macao</option>
+                    <option value="TH2">Thailand</option>
+                    <option value="VN2">Vietnam</option>
+                    <option value="TR1">Turkey</option>
+                </optgroup>
+                <optgroup label="Oceania" class="Oceania">
+                    <option value="OC1">Oceania</option>
+                </optgroup>
+            </select>
+        </div>
         <input type="button" value="Search User" id="search_button" />
         <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
         <script src="script.js"></script>
