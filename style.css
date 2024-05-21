@@ -124,8 +124,8 @@ span {
 
 #icon{
   display: flex;
-  top: -364px;
-  left: -430px
+  top: -354px;
+  left: -270px
 }
 
 #container{
@@ -196,4 +196,19 @@ optgroup>option{
   margin-top: -10px;
   top: 75px;
   left:-255px
+}
+#containerMasteries {
+  background-color: #2a2a2a;
+  display: none;
+  height: 145px;
+  width: 300px;
+  border-radius: 5px;
+  border: 2px solid #d4af37;
+  margin-left: 5px;
+  left: -257px;
+  top: 64px;
+}
+#containerMasteries > img {
+  width: 150px;
+  height: 116px;
 }
