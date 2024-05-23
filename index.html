@@ -42,12 +42,12 @@
                     <option value="BR1">Brazil</option>
                     <option value="NA1">North America</option>
                     <option value="LA1">Latin America North</option>
-                    <option value="La2">Latin America South</option>
+                    <option value="LA2">Latin America South</option>
                 </optgroup>
                 <optgroup label="Europe" class="Europe">
-                    <option value="EUW">Europe West</option>
+                    <option value="EUW1">Europe West</option>
                     <option value="EUN1">Europe Nordic and East</option>
-                    <option value="RU1">Russia</option>
+                    <option value="RU">Russia</option>
                 </optgroup>
                 <optgroup label="Asia" class="Asia">
                     <option value="KR">Republic of Korea</option>
@@ -56,7 +56,9 @@
                     <option value="TH2">Thailand</option>
                     <option value="VN2">Vietnam</option>
                     <option value="TR1">Turkey</option>
+                    <option value="SG2">Singapure</option>
                 </optgroup>
+
                 <optgroup label="Oceania" class="Oceania">
                     <option value="OC1">Oceania</option>
                 </optgroup>
@@ -64,7 +66,8 @@
         </div>
         <input type="button" value="Search User" id="search_button" />
         <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-        <script src="script.js"></script>
+        <script src="allRequest.js" type="module"></script>
+        <script src="script.js" type="module"></script>
     </body>
     <script>
         var loader = document.getElementById("preloader");
