@@ -16,6 +16,7 @@
                 alt=""
             />
         </div>
+        <div id="preloader"></div>
         <div id="icon">
             <img id="iconImg" src="" alt="" />
             <span id="container">
@@ -27,11 +28,12 @@
                 <img id="rankedIcon" src="" alt="" />
                 <span id="rankedSoloqData"></span>
             </div>
+            <br />
             <div id="containerRankedFlex">
                 <img id="rankedFlexIcon" src="" alt="" />
                 <span id="rankedFlexData"></span>
             </div>
-            <div id="containerMasteries"></div>
+            <div id="containerContainer"></div>
         </div>
         <div id="input-container">
             <input type="text" id="riotId" placeholder="Riot#ID" />
@@ -64,4 +66,10 @@
         <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
         <script src="script.js"></script>
     </body>
+    <script>
+        var loader = document.getElementById("preloader");
+        window.addEventListener("load", function () {
+            loader.style.display = "none";
+        });
+    </script>
 </html>
