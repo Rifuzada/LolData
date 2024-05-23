@@ -1,4 +1,4 @@
-import { requestRanked } from "./ranked.js";
+import { allRequest } from "./allRequest.js";
 let puuid = "";
 let versao = "";
 let region = document.querySelector("#region");
@@ -29,7 +29,7 @@ document.addEventListener("DOMContentLoaded", function () {
       while (div.firstChild) {
         div.removeChild(div.firstChild);
       }
-      requestRanked(puuid, versao, region, img, title, container, btn, inputContainer, riotId, regionSelect, rankedSoloIcon, containerRanked, rankedStats, containerRankedFlex, rankedFlexData, rankedFlexIcon, containerContainer, containerMasteryI)
+      allRequest(puuid, versao, region, img, title, container, btn, inputContainer, riotId, regionSelect, rankedSoloIcon, containerRanked, rankedStats, containerRankedFlex, rankedFlexData, rankedFlexIcon, containerContainer, containerMasteryI)
     });
 
 })
