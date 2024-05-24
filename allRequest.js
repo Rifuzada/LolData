@@ -1,4 +1,21 @@
-function allRequest(puuid, versao, region, img, title, container, btn, inputContainer, riotId, regionSelect, rankedSoloIcon, containerRanked, rankedStats, containerRankedFlex, rankedFlexData, rankedFlexIcon, containerContainer, containerMasteryI) {
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+function remove() {
+  var div = document.getElementById('containerContainer');
+  var div1 = document.getElementById("icon");
+  div1.style.display = "none"
+  while (div.firstChild) {
+    div.removeChild(div.firstChild);
+  }
+}
+function show() {
+  var div1 = document.getElementById("icon");
+  div1.style.display = "flex"
+}
+function allRequest(puuid, versao, region, img, container, btn, inputContainer, riotId, regionSelect, rankedSoloIcon, containerRanked, rankedStats, containerRankedFlex, rankedFlexData, rankedFlexIcon, containerContainer, containerMasteryI) {
+  region = region.value;
+  region = region.toLowerCase();
   axios
     .get("http://localhost:4000/account", { params: { riotId } })
     .then((response) => {
@@ -23,17 +40,39 @@ function allRequest(puuid, versao, region, img, title, container, btn, inputCont
               .then((response) => {
                 versao = response.data[0];
                 img.src = `https://ddragon.leagueoflegends.com/cdn/${versao}/img/profileicon/${iconID}.png`;
-                img.style.display = "block";
-                title.style.display = "none";
-                container.style.display = "block";
-                nickName.innerHTML = riotId;
-                Lvl.innerHTML = "Level: " + Level;
+                sleep(300).then(() => {
+                  img.style.display = "block";
+                  container.style.display = "block";
+                  nickName.innerHTML = riotId;
+                  Lvl.innerHTML = "Level: " + Level;
+                })
               });
             axios
               .get("http://localhost:4000/ranked", {
                 params: { sumID, region },
               })
               .then((ranked) => {
+                if (ranked.data[0]?.queueType == "CHERRY") {
+                  ranked.data.splice(0, 1);
+                  noArena()
+                } else if (ranked.data[1]?.queueType == "CHERRY") {
+                  ranked.data.splice(1, 1);
+                  noArena()
+                }
+                else if (ranked.data[0] == undefined && ranked.data[1] == undefined) {
+                  rankedSoloIcon.src = `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/unranked.png`;
+                  rankedSoloIcon.style.display = "flex";
+                  rankedSoloIcon.style.width = "80px";
+                  rankedSoloIcon.style.height = "80px";
+                  containerRanked.style.display = "block";
+                  rankedStats.innerHTML = "Unranked";
+                  rankedFlexIcon.src = `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/unranked.png`;
+                  rankedFlexIcon.style.display = "flex";
+                  rankedFlexIcon.style.width = "80px";
+                  rankedFlexIcon.style.height = "80px";
+                  containerRankedFlex.style.display = "block";
+                  rankedFlexData.innerHTML = "Unranked";
+                }
                 function noArena() {
                   if (
                     ranked.data[0]?.queueType == "RANKED_SOLO_5x5" ||
@@ -41,247 +80,109 @@ function allRequest(puuid, versao, region, img, title, container, btn, inputCont
                     ranked.data[0]?.queueType == "RANKED_FLEX_SR" ||
                     ranked.data[1]?.queueType == "RANKED_FLEX_SR" ||
                     ranked.data[0] == undefined ||
-                    ranked.data1[1] == undefined ||
+                    ranked.data[1] == undefined ||
+                    ranked.data1[2] == undefined ||
                     ranked.data == ""
                   ) {
-                    if (
-                      ranked.data[0] == undefined &&
-                      ranked.data[1]?.queueType == "RANKED_FLEX_SR"
-                    ) {
-                      rankedStats.innerHTML = "Unranked";
-                      rankedSoloIcon.src = `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/unranked.png`;
-                      rankedSoloIcon.style.display = "flex";
-                      rankedSoloIcon.style.width = "40px";
-                      rankedSoloIcon.style.height = "40px";
-                      containerRanked.style.display = "block";
-                      containerRanked.style.width = "260px";
-                      containerRanked.style.height = "65px";
-                      var queueFlex = ranked.data[1].queueType;
-                      queueFlex = ranked.data[1].queueType
-                        .replace("RANKED_FLEX_SR", "Ranqueada Flexiviel: ")
-                        .replace("RANKED_SOLO_5x5", "Ranqueada Solo/Duo: ");
-                      ranked.data[1].tier =
-                        ranked.data[1].tier.toLowerCase();
-                      rankedFlexIcon.src = `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${ranked.data[1].tier}.svg`;
-                      rankedFlexIcon.style.display = "flex";
-                      containerRankedFlex.style.display = "block";
-                      rankedFlexData.innerHTML = `${queueFlex} ${ranked.data[1].tier} ${ranked.data[1].rank}\nVitorias: ${ranked.data[1].wins} <br>Derrotas: ${ranked.data[1].losses}`;
-                    } else if (
-                      ranked.data[1] == undefined &&
-                      ranked.data[0]?.queueType == "RANKED_FLEX_SR"
-                    ) {
-                      rankedStats.innerHTML = "Unranked";
-                      rankedSoloIcon.src = `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/unranked.png`;
-                      rankedSoloIcon.style.display = "flex";
-                      rankedSoloIcon.style.width = "40px";
-                      rankedSoloIcon.style.height = "40px";
-                      containerRanked.style.display = "block";
-                      var queueFlex = ranked.data[0].queueType;
-                      queueFlex = ranked.data[0].queueType
-                        .replace("RANKED_FLEX_SR", "Ranqueada Flexiviel: ")
-                        .replace("RANKED_SOLO_5x5", "Ranqueada Solo/Duo: ");
-                      ranked.data[0].tier =
-                        ranked.data[0].tier.toLowerCase();
-                      rankedFlexIcon.src = `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${ranked.data[0].tier}.svg`;
-                      rankedFlexIcon.style.display = "flex";
-                      containerRankedFlex.style.display = "block";
-                      rankedFlexData.innerHTML = `${queueFlex} ${ranked.data[0].tier} ${ranked.data[0].rank}\nVitorias: ${ranked.data[0].wins} <br>Derrotas: ${ranked.data[0].losses}`;
-                    } else if (
-                      ranked.data[1] == undefined &&
-                      ranked.data[0]?.queueType == "RANKED_SOLO_5x5"
-                    ) {
+                    for (let i = 0; i <= 2; i++) {
+                      if (ranked.data[i] != undefined) {
+                        switch (ranked.data[i].queueType) {
+                          case "RANKED_SOLO_5x5":
+                            var queueSolo = ranked.data[i].queueType;
+                            queueSolo = ranked.data[i].queueType
+                              .replace("RANKED_SOLO_5x5", "Ranqueada Solo/Duo: ");
+                            ranked.data[i].tier =
+                              ranked.data[i].tier.toLowerCase();
+                            rankedSoloIcon.src = `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${ranked.data[i].tier}.svg`;
+                            rankedSoloIcon.style.display = "flex";
+                            rankedSoloIcon.style.width = "80px";
+                            rankedSoloIcon.style.height = "80px";
+                            containerRanked.style.display = "block";
+                            rankedStats.innerHTML = `${queueSolo} ${ranked.data[i].tier} ${ranked.data[i].rank}\nVitorias: ${ranked.data[i].wins} <br>Derrotas: ${ranked.data[i].losses}`;
+                            if (i == 0) {
+                              if (ranked.data[i + 1] == undefined) {
+                                switch (ranked.data[i + 1]) {
+                                  case undefined:
+                                    rankedFlexIcon.src = `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/unranked.png`;
+                                    rankedFlexIcon.style.display = "flex";
+                                    rankedFlexIcon.style.width = "80px";
+                                    rankedFlexIcon.style.height = "80px";
+                                    containerRankedFlex.style.display = "block";
+                                    rankedFlexData.innerHTML = "Unranked";
+                                    break
+                                }
+                              }
+                            }
+                            else {
+                              if (ranked.data[i] == undefined) {
+                                switch (ranked.data[i]) {
+                                  case undefined:
+                                    rankedFlexIcon.src = `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/unranked.png`;
+                                    rankedFlexIcon.style.display = "flex";
+                                    rankedFlexIcon.style.width = "80px";
+                                    rankedFlexIcon.style.height = "80px";
+                                    containerRankedFlex.style.display = "block";
+                                    rankedFlexData.innerHTML = "Unranked";
+                                    break
+                                }
+                              }
+                            }
 
-                      rankedFlexIcon.src = `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/unranked.png`;
-                      rankedFlexIcon.style.display = "flex";
-                      rankedFlexIcon.style.width = "40px";
-                      rankedFlexIcon.style.height = "40px";
-                      containerRankedFlex.style.display = "block";
-                      rankedFlexData.innerHTML = "Unranked"
-                      var queueSolo = ranked.data[0].queueType;
-                      queueSolo = ranked.data[0].queueType
-                        .replace("RANKED_FLEX_SR", "Ranqueada Flexiviel: ")
-                        .replace("RANKED_SOLO_5x5", "Ranqueada Solo/Duo: ");
-                      ranked.data[0].tier =
-                        ranked.data[0].tier.toLowerCase();
-                      rankedSoloIcon.src = `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${ranked.data[0].tier}.svg`;
-                      rankedSoloIcon.style.display = "flex";
-                      containerRanked.style.display = "block";
-                      rankedStats.innerHTML = `${queueSolo} ${ranked.data[0].tier} ${ranked.data[0].rank}\nVitorias: ${ranked.data[0].wins} <br>Derrotas: ${ranked.data[0].losses}`;
-                    } else if (
-                      ranked.data[0] == undefined &&
-                      ranked.data[1]?.queueType == "RANKED_SOLO_5x5"
-                    ) {
-
-                      rankedFlexData.innerHTML = "Unranked";
-                      rankedFlexIcon.src = `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/unranked.png`;
-                      rankedFlexIcon.style.display = "flex";
-                      rankedFlexIcon.style.width = "40px";
-                      rankedFlexIcon.style.height = "40px";
-                      containerRankedFlex.style.display = "block";
-                      var queueSolo = ranked.data[1].queueType;
-                      queueSolo = ranked.data[1].queueType
-                        .replace("RANKED_FLEX_SR", "Ranqueada Flexiviel: ")
-                        .replace("RANKED_SOLO_5x5", "Ranqueada Solo/Duo: ");
-                      ranked.data[1].tier =
-                        ranked.data[1].tier.toLowerCase();
-                      rankedSoloIcon.src = `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${ranked.data[1].tier}.svg`;
-                      rankedSoloIcon.style.display = "flex";
-                      containerRanked.style.display = "block";
-                      rankedStats.innerHTML = `${queueSolo} ${ranked.data[1].tier} ${ranked.data[1].rank}\nVitorias: ${ranked.data[1].wins} <br>Derrotas: ${ranked.data[1].losses}`;
-                    } else if (
-                      ranked.data[1] == undefined &&
-                      ranked.data[0] == undefined
-                    ) {
-
-                      rankedStats.innerHTML = "Unranked";
-                      rankedSoloIcon.src = `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/unranked.png`;
-                      rankedSoloIcon.style.display = "flex";
-                      rankedSoloIcon.style.width = "40px";
-                      rankedSoloIcon.style.height = "40px";
-                      containerRanked.style.display = "block";
-                      rankedStats.innerHTML = "Unranked";
-                      rankedFlexIcon.src = `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/unranked.png`;
-                      rankedFlexIcon.style.display = "flex";
-                      rankedFlexIcon.style.width = "40px";
-                      rankedFlexIcon.style.height = "40px";
-                      containerRankedFlex.style.display = "block";
-                      rankedFlexData.innerHTML = "Unranked";
-                    } else if (
-                      ranked.data[0]?.queueType == "RANKED_FLEX_SR" &&
-                      ranked.data[1]?.queueType == "RANKED_SOLO_5x5"
-                    ) {
-
-                      var queueFlex = ranked.data[0].queueType;
-                      queueFlex = ranked.data[0].queueType
-                        .replace("RANKED_FLEX_SR", "Ranqueada Flexiviel: ")
-                        .replace("RANKED_SOLO_5x5", "Ranqueada Solo/Duo: ");
-                      ranked.data[0].tier =
-                        ranked.data[0].tier.toLowerCase();
-                      rankedFlexIcon.src = `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${ranked.data[0].tier}.svg`;
-                      rankedFlexIcon.style.display = "flex";
-                      containerRankedFlex.style.display = "block";
-                      rankedFlexData.innerHTML = `${queueFlex} ${ranked.data[0].tier} ${ranked.data[0].rank}\nVitorias: ${ranked.data[0].wins} <br>Derrotas: ${ranked.data[0].losses}`;
-                      var queueSolo = ranked.data[1].queueType;
-                      queueSolo = ranked.data[1].queueType
-                        .replace("RANKED_FLEX_SR", "Ranqueada Flexiviel: ")
-                        .replace("RANKED_SOLO_5x5", "Ranqueada Solo/Duo: ");
-                      ranked.data[1].tier =
-                        ranked.data[1].tier.toLowerCase();
-                      rankedSoloIcon.src = `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${ranked.data[1].tier}.svg`;
-                      rankedSoloIcon.style.display = "flex";
-                      containerRanked.style.display = "block";
-                      rankedStats.innerHTML = `${queueSolo} ${ranked.data[1].tier} ${ranked.data[1].rank}\nVitorias: ${ranked.data[1].wins} <br>Derrotas: ${ranked.data[1].losses}`;
-                    } else if (ranked.data[0] == undefined) {
-
-                      rankedStats.innerHTML = "Unranked";
-                      rankedSoloIcon.src = `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/unranked.png`;
-                      rankedSoloIcon.style.display = "flex";
-                      rankedSoloIcon.style.width = "40px";
-                      rankedSoloIcon.style.height = "40px";
-                      containerRanked.style.display = "block";
-                      containerRanked.style.width = "260px";
-                      containerRanked.style.height = "65px";
-                      var queueFlex = ranked.data[1].queueType;
-                      queueFlex = ranked.data[1].queueType
-                        .replace("RANKED_FLEX_SR", "Ranqueada Flexiviel: ")
-                        .replace("RANKED_SOLO_5x5", "Ranqueada Solo/Duo: ");
-                      ranked.data[1].tier =
-                        ranked.data[1].tier.toLowerCase();
-                      rankedFlexIcon.src = `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${ranked.data[1].tier}.svg`;
-                      rankedFlexIcon.style.display = "flex";
-                      containerRankedFlex.style.display = "block";
-                      rankedFlexData.innerHTML = `${queueFlex} ${ranked.data[1].tier} ${ranked.data[1].rank}\nVitorias: ${ranked.data[1].wins} <br>Derrotas: ${ranked.data[1].losses}`;
-                    } else if (
-                      ranked.data[0] == undefined &&
-                      ranked.data[1]?.queueType == "RANKED_SOLO_5x5"
-                    ) {
-
-                      var queueSolo = ranked.data[1].queueType;
-                      rankedStats.innerHTML = "Unranked";
-                      rankedFlexIcon.src = `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/unranked.png`;
-                      rankedFlexIcon.style.display = "flex";
-                      rankedFlexIcon.style.width = "40px";
-                      rankedFlexIcon.style.height = "40px";
-                      queueSolo = ranked.data[1].queueType
-                        .replace("RANKED_FLEX_SR", "Ranqueada Flexiviel: ")
-                        .replace("RANKED_SOLO_5x5", "Ranqueada Solo/Duo: ");
-                      ranked.data[1].tier =
-                        ranked.data[1].tier.toLowerCase();
-                      rankedSoloIcon.src = `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${ranked.data[1].tier}.svg`;
-                      rankedSoloIcon.style.display = "flex";
-                      containerRanked.style.display = "block";
-                      rankedStats.innerHTML = `${queueSolo} ${ranked.data[1].tier} ${ranked.data[1].rank}\nVitorias: ${ranked.data[1].wins} <br>Derrotas: ${ranked.data[1].losses}`;
-                    } else if (
-                      ranked.data[0]?.queueType == "RANKED_SOLO_5x5" &&
-                      ranked.data[1]?.queueType == "RANKED_FLEX_SR"
-                    ) {
-
-                      var queueSolo = ranked.data[0].queueType;
-                      queueSolo = ranked.data[0].queueType
-                        .replace("RANKED_FLEX_SR", "Ranqueada Flexiviel: ")
-                        .replace("RANKED_SOLO_5x5", "Ranqueada Solo/Duo: ");
-                      ranked.data[0].tier =
-                        ranked.data[0].tier.toLowerCase();
-                      rankedSoloIcon.src = `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${ranked.data[0].tier}.svg`;
-                      rankedSoloIcon.style.display = "flex";
-                      containerRanked.style.display = "block";
-                      rankedStats.innerHTML = `${queueSolo} ${ranked.data[0].tier} ${ranked.data[0].rank}\nVitorias: ${ranked.data[0].wins} <br>Derrotas: ${ranked.data[0].losses}`;
-                      //daqui pra baixo flex
-                      var queueFlex = ranked.data[1].queueType;
-                      queueFlex = ranked.data[1].queueType.replace(
-                        "RANKED_FLEX_SR",
-                        "Ranqueada Flexiviel: ",
-                      );
-                      ranked.data[1].tier =
-                        ranked.data[1].tier.toLowerCase();
-                      rankedFlexIcon.src = `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${ranked.data[1].tier}.svg`;
-                      rankedFlexIcon.style.display = "flex";
-                      containerRankedFlex.style.display = "block";
-                      rankedFlexData.innerHTML = `${queueFlex} ${ranked.data[1].tier} ${ranked.data[1].rank}\nVitorias: ${ranked.data[1].wins} <br>Derrotas: ${ranked.data[1].losses}`;
-                    } else if (
-                      ranked.data[0]?.queueType == "RANKED_FLEX_SR"
-                    ) {
-                      var queueFlex = ranked.data[0].queueType;
-                      rankedSoloIcon.style.display = "none";
-                      containerRanked.style.display = "none";
-                      queueFlex = ranked.data[0].queueType
-                        .replace("RANKED_FLEX_SR", "Ranqueada Flexiviel: ")
-                        .replace("RANKED_SOLO_5x5", "Ranqueada Solo/Duo: ");
-                      ranked.data[0].tier =
-                        ranked.data[0].tier.toLowerCase();
-                      rankedFlexIcon.src = `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${ranked.data[0].tier}.svg`;
-                      rankedFlexIcon.style.display = "flex";
-                      containerRankedFlex.style.display = "block";
-                      rankedFlexData.innerHTML = `${queueFlex} ${ranked.data[0].tier} ${ranked.data[0].rank}\nVitorias: ${ranked.data[0].wins} <br>Derrotas: ${ranked.data[0].losses}`;
-                    } else if (
-                      ranked.data[1]?.queueType == "RANKED_FLEX_SR"
-                    ) {
-                      rankedSoloIcon.style.display = "none";
-                      containerRanked.style.display = "none";
-                      queueFlex = ranked.data[1].queueType.replace(
-                        "RANKED_FLEX_SR",
-                        "Ranqueada Flexiviel: ",
-                      );
-                      ranked.data[1].tier =
-                        ranked.data[1].tier.toLowerCase();
-                      rankedFlexIcon.src = `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${ranked.data[1].tier}.svg`;
-                      rankedFlexIcon.style.display = "flex";
-                      containerRankedFlex.style.display = "block";
-                      rankedFlexData.innerHTML = `${queueFlex} ${ranked.data[1].tier} ${ranked.data[1].rank}\nVitorias: ${ranked.data[1].wins} <br>Derrotas: ${ranked.data[1].losses}`;
+                        }
+                      }
+                    }
+                    for (let i = 0; i <= 2; i++) {
+                      if (ranked.data[i] != undefined) {
+                        switch (ranked.data[i].queueType) {
+                          case "RANKED_FLEX_SR":
+                            var queueFlex = ranked.data[i].queueType;
+                            queueFlex = ranked.data[i].queueType
+                              .replace("RANKED_FLEX_SR", "Ranqueada Flexiviel: ")
+                            ranked.data[i].tier =
+                              ranked.data[i].tier.toLowerCase();
+                            rankedFlexIcon.src = `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${ranked.data[i].tier}.svg`;
+                            rankedFlexIcon.style.display = "flex";
+                            rankedFlexIcon.style.width = "80px";
+                            rankedFlexIcon.style.height = "80px";
+                            containerRankedFlex.style.display = "block";
+                            rankedFlexData.innerHTML = `${queueFlex} ${ranked.data[i].tier} ${ranked.data[i].rank}\nVitorias: ${ranked.data[i].wins} <br>Derrotas: ${ranked.data[i].losses}`;
+                            if (i == 0) {
+                              if (ranked.data[i + 1] == undefined) {
+                                switch (ranked.data[i + 1]) {
+                                  case undefined:
+                                    rankedSoloIcon.src = `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/unranked.png`;
+                                    rankedSoloIcon.style.display = "flex";
+                                    rankedSoloIcon.style.width = "80px";
+                                    rankedSoloIcon.style.height = "80px";
+                                    containerRanked.style.display = "block";
+                                    rankedStats.innerHTML = "Unranked";
+                                    break
+                                }
+                              }
+                            }
+                            else {
+                              if (ranked.data[i] == undefined) {
+                                switch (ranked.data[i]) {
+                                  case undefined:
+                                    rankedSoloIcon.src = `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/unranked.png`;
+                                    rankedSoloIcon.style.display = "flex";
+                                    rankedSoloIcon.style.width = "80px";
+                                    rankedSoloIcon.style.height = "80px";
+                                    containerRanked.style.display = "block";
+                                    rankedStats.innerHTML = "Unranked";
+                                    break
+                                }
+                              }
+                            }
+                        }
+                      }
                     }
                   }
                 }
-                if (ranked.data[0]?.queueType == "CHERRY") {
-                  delete ranked.data[0];
-                  ranked.data[0] = undefined;
+                sleep(200).then(() => {
                   noArena()
-                } else if (ranked.data[1]?.queueType == "CHERRY") {
+                })
 
-                  delete ranked.data[1];
-                  ranked.data[1] = undefined;
-                  noArena()
-                }
-                noArena()
               });
           });
         axios
@@ -367,7 +268,9 @@ function allRequest(puuid, versao, region, img, title, container, btn, inputCont
                       }
                     }
                     if (containerMasteryI.length == 0) {
-                      maestriaTela()
+                      sleep(250).then(() => {
+                        maestriaTela()
+                      })
                     }
                   });
               });
@@ -377,11 +280,7 @@ function allRequest(puuid, versao, region, img, title, container, btn, inputCont
               console.error("Erro ao chamar a API de Masteries:", error);
             }
           });
-      } else {
-        title.style.display = "block";
-        title.innerHTML = "Antes de clicar no botao escreva um Riot ID!";
-        title.style.color = ("")
       }
     });
 }
-export { requestRanked };
+export { allRequest, remove, sleep, show };
