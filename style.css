@@ -267,12 +267,57 @@ optgroup>option{
   top: 230px;
   left: -780px;
 }
-#preloader{
-  background: #000 url("https://upload.wikimedia.org/wikipedia/commons/b/b9/Youtube_loading_symbol_1_(wobbly).gif") no-repeat center center;
-  background-size: 3%;
-  height: 100vh;
+#preloaderBg{
+  background: #000 no-repeat center center;
   width: 100%;
+  height: 100vh;
   position: fixed;
   z-index: 100;
-  
+}
+#dot-flashing {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  border-radius: 5px;
+  background-color: #d4af37;
+  color: #d4af37;
+  animation: dot-flashing 1s infinite linear alternate;
+  animation-delay: 0.5s;
+  margin-bottom: 10px;
+  z-index: 100;
+}
+#dot-flashing::before, #dot-flashing::after {
+  content: "";
+  display: inline-block;
+  position: absolute;
+  top: 0;
+}
+#dot-flashing::before {
+  left: -15px;
+  width: 10px;
+  height: 10px;
+  border-radius: 5px;
+  background-color: #d4af37;
+  color: #d4af37;
+  animation: dot-flashing 1s infinite alternate;
+  animation-delay: 0s;
+}
+#dot-flashing::after {
+  left: 15px;
+  width: 10px;
+  height: 10px;
+  border-radius: 5px;
+  background-color: rgb(212, 175, 55);
+  color: #d4af37;
+  animation: dot-flashing 1s infinite alternate;
+  animation-delay: 1s;
+}
+
+@keyframes dot-flashing {
+  0% {
+    background-color: #d4af37;
+  }
+  50%, 100% {
+    background-color: rgba(212, 175, 55,0.2);
+  }
 }
