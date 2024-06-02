@@ -95,7 +95,23 @@ function allRequest(puuid, versao, region, img, container, btn, inputContainer, 
                               .replace("RANKED_SOLO_5x5", "Ranqueada Solo/Duo: ");
                             ranked.data[i].tier =
                               ranked.data[i].tier.toLowerCase();
+                            ranked.data[i].tier = ranked.data[i].tier.replace("ferro", "iron");
+                            ranked.data[i].tier = ranked.data[i].tier.replace("prata", "silver");
+                            ranked.data[i].tier = ranked.data[i].tier.replace("ouro", "gold");
+                            ranked.data[i].tier = ranked.data[i].tier.replace("platina", "platinum");
+                            ranked.data[i].tier = ranked.data[i].tier.replace("esmeralda", "emerald");
+                            ranked.data[i].tier = ranked.data[i].tier.replace("diamante", "diamond");
+                            ranked.data[i].tier = ranked.data[i].tier.replace("mestre", "master");
+                            ranked.data[i].tier = ranked.data[i].tier.replace("grão-mestre", "grandmaster");
+                            ranked.data[i].tier = ranked.data[i].tier.replace("desafiante", "challenger");
                             let rankedIng = ranked.data[i].tier
+                            console.log(rankedIng)
+                            rankedSoloIcon.src = `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${rankedIng}.svg`;
+                            rankedSoloIcon.style.display = "flex";
+                            rankedSoloIcon.style.width = "68px";
+                            rankedSoloIcon.style.height = "68px";
+                            containerRanked.style.display = "block";
+                            let winrateSoloq = ranked.data[i].wins / (ranked.data[i].wins + ranked.data[i].losses) * 100
                             ranked.data[i].tier = ranked.data[i].tier.replace("iron", "Ferro");
                             ranked.data[i].tier = ranked.data[i].tier.replace("silver", "Prata");
                             ranked.data[i].tier = ranked.data[i].tier.replace("gold", "Ouro");
@@ -105,13 +121,6 @@ function allRequest(puuid, versao, region, img, container, btn, inputContainer, 
                             ranked.data[i].tier = ranked.data[i].tier.replace("master", "Mestre");
                             ranked.data[i].tier = ranked.data[i].tier.replace("grandmaster", "Grão-Mestre");
                             ranked.data[i].tier = ranked.data[i].tier.replace("challenger", "Desafiante");
-                            rankedSoloIcon.src = `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${rankedIng}.svg`;
-                            rankedSoloIcon.style.display = "flex";
-                            rankedSoloIcon.style.width = "68px";
-                            rankedSoloIcon.style.height = "68px";
-                            containerRanked.style.display = "block";
-                            let winrateSoloq = ranked.data[i].wins / (ranked.data[i].wins + ranked.data[i].losses) * 100
-
                             rankedStats.innerHTML = `${queueSolo} ${ranked.data[i].tier} ${ranked.data[i].rank}<br>Vitorias: ${ranked.data[i].wins} <br>Derrotas: ${ranked.data[i].losses}<br>Winrate: ${winrateSoloq.toFixed()}%`;
                             if (i == 0) {
                               if (ranked.data[i + 1] == undefined) {
@@ -154,6 +163,16 @@ function allRequest(puuid, versao, region, img, container, btn, inputContainer, 
                             ranked.data[i].tier =
                               ranked.data[i].tier.toLowerCase();
                             let rankedIng = ranked.data[i].tier
+                            ranked.data[i].tier = ranked.data[i].tier.replace("ferro", "iron");
+                            ranked.data[i].tier = ranked.data[i].tier.replace("prata", "silver");
+                            ranked.data[i].tier = ranked.data[i].tier.replace("ouro", "gold");
+                            ranked.data[i].tier = ranked.data[i].tier.replace("platina", "platinum");
+                            ranked.data[i].tier = ranked.data[i].tier.replace("esmeralda", "emerald");
+                            ranked.data[i].tier = ranked.data[i].tier.replace("diamante", "diamond");
+                            ranked.data[i].tier = ranked.data[i].tier.replace("mestre", "master");
+                            ranked.data[i].tier = ranked.data[i].tier.replace("grão-mestre", "grandmaster");
+                            ranked.data[i].tier = ranked.data[i].tier.replace("desafiante", "challenger");
+                            rankedFlexIcon.src = `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${rankedIng}.svg`;
                             ranked.data[i].tier = ranked.data[i].tier.replace("iron", "Ferro");
                             ranked.data[i].tier = ranked.data[i].tier.replace("silver", "Prata");
                             ranked.data[i].tier = ranked.data[i].tier.replace("gold", "Ouro");
@@ -163,7 +182,6 @@ function allRequest(puuid, versao, region, img, container, btn, inputContainer, 
                             ranked.data[i].tier = ranked.data[i].tier.replace("master", "Mestre");
                             ranked.data[i].tier = ranked.data[i].tier.replace("grandmaster", "Grão-Mestre");
                             ranked.data[i].tier = ranked.data[i].tier.replace("challenger", "Desafiante");
-                            rankedFlexIcon.src = `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${rankedIng}.svg`;
                             rankedFlexIcon.style.display = "flex";
                             rankedFlexIcon.style.width = "68px";
                             rankedFlexIcon.style.height = "68px";
