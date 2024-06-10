@@ -16,16 +16,17 @@ function show() {
 function allRequest(puuid, versao, region, img, container, btn, inputContainer, riotId, regionSelect, rankedSoloIcon, containerRanked, rankedStats, containerRankedFlex, rankedFlexData, rankedFlexIcon, containerContainer, containerMasteryI) {
   region = region.value;
   region = region.toLowerCase();
+  riotId = riotId.replace(/\s/g, "")
   axios
     .get("http://localhost:4000/account", { params: { riotId } })
     .then((response) => {
       if (response.config.params.riotId != "") {
         puuid = response.data.puuid;
         regionSelect.style.marginLeft = "5px";
-        btn.style.top = "-52vh";
-        btn.style.left = "550px";
+        btn.style.top = "-104.7vh";
+        btn.style.left = "577px";
         btn.style.marginLeft = "2px";
-        inputContainer.style.top = "-46vh";
+        inputContainer.style.top = "2vh";
         inputContainer.style.left = "300px";
         axios
           .get("http://localhost:4000/profile", {
@@ -52,7 +53,6 @@ function allRequest(puuid, versao, region, img, container, btn, inputContainer, 
                 params: { sumID, region },
               })
               .then((ranked) => {
-                console.log(ranked.data)
                 if (ranked.data[0]?.queueType == "CHERRY") {
                   ranked.data.splice(0, 1);
                   noArena()
@@ -105,7 +105,6 @@ function allRequest(puuid, versao, region, img, container, btn, inputContainer, 
                             ranked.data[i].tier = ranked.data[i].tier.replace("grão-mestre", "grandmaster");
                             ranked.data[i].tier = ranked.data[i].tier.replace("desafiante", "challenger");
                             let rankedIng = ranked.data[i].tier
-                            console.log(rankedIng)
                             rankedSoloIcon.src = `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${rankedIng}.svg`;
                             rankedSoloIcon.style.display = "flex";
                             rankedSoloIcon.style.width = "68px";
@@ -228,8 +227,73 @@ function allRequest(puuid, versao, region, img, container, btn, inputContainer, 
               });
           });
         axios
+          .get("http://localhost:4000/matchIds", { params: { puuid } })
+          .then((response) => {
+            let matchI = [];
+            for (let i = 0; i < 10; i++) {
+              matchI.push(response.data[i]);
+            }
+            axios
+              .get("http://localhost:4000/matchHistory", { params: { matches: matchI } })
+              .then((response) => {
+                console.log(response.data)
+                const matchHistoryContainer = document.getElementById("matchHistoryContainer")
+                matchHistoryContainer.style.display = "grid";
+                for (let matchIndex = 0; matchIndex < response.data.length; matchIndex++) {
+                  const matchDiv = document.getElementById(`match${matchIndex + 1}`);
+                  const participants = response.data[matchIndex].info.participants;
+                  for (let participantIndex = 0; participantIndex < participants.length; participantIndex++) {
+                    if (participants[participantIndex].puuid === puuid) {
+                      const gameStat = response.data[matchIndex].info.participants[participantIndex].win;
+                      console.log(gameStat);
+
+                      // Create gameStats span element
+                      const gameStats = document.createElement("span");
+                      gameStats.style.float = "left";
+                      gameStats.style.marginTop = " 27px";
+                      gameStats.style.marginLeft = "6px";
+                      // Map to replace "true" with "Vitória" and "false" with "Derrota"
+                      const gameStatText = {
+                        true: "Vitória",
+                        false: "Derrota"
+                      };
+                      if (gameStatText[gameStat] == "Vitória") {
+                        gameStats.style.color = "#2DEB90"
+                      }
+                      else if (gameStatText[gameStat] == "Derrota") {
+                        gameStats.style.color = "#ff5859"
+                      }
+                      // Set the innerText of gameStats based on gameStat value
+                      gameStats.innerText = gameStatText[gameStat];
+
+                      // Create img element for champion icon
+                      const championId = participants[participantIndex].championId;
+                      const championIconUrl = `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${championId}.png`;
+                      const imgElement = document.createElement("img");
+                      imgElement.src = championIconUrl;
+                      imgElement.style.width = "60px";
+                      imgElement.style.height = "60px";
+                      imgElement.style.float = 'left';
+                      imgElement.style.marginLeft = '8px';
+                      imgElement.style.marginTop = "8px";
+
+                      // Append img and gameStats elements to matchDiv
+                      matchDiv.appendChild(imgElement);
+                      matchDiv.appendChild(gameStats);
+                    }
+                  }
+                }
+                let allPuuIds = response.data[0].metadata.participants
+                axios
+                  .get("http://localhost:4000/PuuidToName", { params: { Ids: allPuuIds } })
+                  .then((response) => {
+                    console.log(response.data)
+                  })
+              })
+          })
+        axios
           .get("http://localhost:4000/masteries", {
-            params: { puuid, region },
+            params: { puuid, region }
           })
           .then((maestrias) => {
             var formatter = new Intl.NumberFormat("pt-BR");
@@ -291,7 +355,6 @@ function allRequest(puuid, versao, region, img, container, btn, inputContainer, 
                             textoI[i].innerHTML = `<br>Campeão: ${arrayNOMES[i]}<br>${formatter.format(maestrias.data[i].championPoints)} pontos de maestria<br>` +
                               `nível: ${maestrias.data[i].championLevel}`
                             maestriasI[i].src = `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${arrayIDS[i]}.png`
-                            //`https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-shared-components/global/default/mastery-10.png`;
                             containerMasteryI[i].appendChild(maestriasI[i]);
                             containerMasteryI[i].appendChild(textoI[i]);
                             containerMasteryI[i].style.display = ("block")
@@ -301,7 +364,6 @@ function allRequest(puuid, versao, region, img, container, btn, inputContainer, 
                             textoI[i].innerHTML = `<br>Campeão: ${arrayNOMES[i]}<br>${formatter.format(maestrias.data[i].championPoints)} pontos de maestria<br>` +
                               `nível: ${maestrias.data[i].championLevel}`
                             maestriasI[i].src = `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${arrayIDS[i]}.png`
-                            //`https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-shared-components/global/default/mastery-${maestrias.data[i].championLevel}.png`;
                             containerMasteryI[i].appendChild(maestriasI[i]);
                             containerMasteryI[i].appendChild(textoI[i]);
                             containerMasteryI[i].style.display = ("block")
