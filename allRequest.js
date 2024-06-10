@@ -158,7 +158,7 @@ function allRequest(puuid, versao, region, img, container, btn, inputContainer, 
                           case "RANKED_FLEX_SR":
                             var queueFlex = ranked.data[i].queueType;
                             queueFlex = ranked.data[i].queueType
-                              .replace("RANKED_FLEX_SR", "Ranqueada Flexiviel: ")
+                              .replace("RANKED_FLEX_SR", "Ranqueada Flexível: ")
                             ranked.data[i].tier =
                               ranked.data[i].tier.toLowerCase();
                             let rankedIng = ranked.data[i].tier
@@ -187,7 +187,7 @@ function allRequest(puuid, versao, region, img, container, btn, inputContainer, 
                             containerRankedFlex.style.display = "block";
                             let winrateFlex = ranked.data[i].wins / (ranked.data[i].wins + ranked.data[i].losses) * 100
 
-                            rankedFlexData.innerHTML = `${queueSolo} ${ranked.data[i].tier} ${ranked.data[i].rank}<br>Vitorias: ${ranked.data[i].wins} <br>Derrotas: ${ranked.data[i].losses}<br>Winrate: ${winrateFlex.toFixed()}%`;
+                            rankedFlexData.innerHTML = `${queueFlex} ${ranked.data[i].tier} ${ranked.data[i].rank}<br>Vitorias: ${ranked.data[i].wins} <br>Derrotas: ${ranked.data[i].losses}<br>Winrate: ${winrateFlex.toFixed()}%`;
                             if (i == 0) {
                               if (ranked.data[i + 1] == undefined) {
                                 switch (ranked.data[i + 1]) {
@@ -245,7 +245,6 @@ function allRequest(puuid, versao, region, img, container, btn, inputContainer, 
                   for (let participantIndex = 0; participantIndex < participants.length; participantIndex++) {
                     if (participants[participantIndex].puuid === puuid) {
                       const gameStat = response.data[matchIndex].info.participants[participantIndex].win;
-                      console.log(gameStat);
 
                       // Create gameStats span element
                       const gameStats = document.createElement("span");
