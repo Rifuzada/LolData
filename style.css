@@ -12,17 +12,18 @@ body {
   background-color: #1b1b1b;
   color: #ffffff;
   position: relative;
-  overflow: hidden;
+  overflow-y: scroll;
+  overflow-x: hidden;
 }
 
 div {
   text-align: center;
   position: relative;
-  z-index: 1; /* Ensure content stays above the blurred background */
+  z-index: 1; 
 }
 
 #bg {
-  display: none; /* Hide the original image */
+  display: none;
 }
 
 body::before {
@@ -124,7 +125,7 @@ span {
 
 #icon{
   display: flex;
-  top: -235px;
+  top: 200px;
   left: 255px
 }
 
@@ -322,4 +323,19 @@ optgroup>option{
   50%, 100% {
     background-color: rgba(212, 175, 55,0.2);
   }
+}
+
+#matchHistoryContainer{
+  width: 1320px;
+  height: 1013px;
+  background-color: #2a2a2a;
+  border-radius: 10px;
+  top: 300px;
+  border: 2px solid #d4af37;
+  display: none;
+}
+.matches{
+  height: 90px;
+  border-bottom: 2px solid #d4af37;
+  margin: 5px 5px 5px 5px;
 }
