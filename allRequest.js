@@ -120,7 +120,7 @@ function allRequest(puuid, versao, region, img, container, btn, inputContainer, 
                             ranked.data[i].tier = ranked.data[i].tier.replace("master", "Mestre");
                             ranked.data[i].tier = ranked.data[i].tier.replace("grandmaster", "Grão-Mestre");
                             ranked.data[i].tier = ranked.data[i].tier.replace("challenger", "Desafiante");
-                            rankedStats.innerHTML = `${queueSolo} ${ranked.data[i].tier} ${ranked.data[i].rank}<br>Vitorias: ${ranked.data[i].wins} <br>Derrotas: ${ranked.data[i].losses}<br>Winrate: ${winrateSoloq.toFixed()}%`;
+                            rankedStats.innerHTML = `${queueSolo} ${ranked.data[i].tier} ${ranked.data[i].rank}<br>Vitorias: ${ranked.data[i].wins} <br>Derrotas: ${ranked.data[i].losses} - Winrate: ${winrateSoloq.toFixed()}%`;
                             if (i == 0) {
                               if (ranked.data[i + 1] == undefined) {
                                 switch (ranked.data[i + 1]) {
@@ -187,7 +187,7 @@ function allRequest(puuid, versao, region, img, container, btn, inputContainer, 
                             containerRankedFlex.style.display = "block";
                             let winrateFlex = ranked.data[i].wins / (ranked.data[i].wins + ranked.data[i].losses) * 100
 
-                            rankedFlexData.innerHTML = `${queueFlex} ${ranked.data[i].tier} ${ranked.data[i].rank}<br>Vitorias: ${ranked.data[i].wins} <br>Derrotas: ${ranked.data[i].losses}<br>Winrate: ${winrateFlex.toFixed()}%`;
+                            rankedFlexData.innerHTML = `${queueFlex} ${ranked.data[i].tier} ${ranked.data[i].rank}<br>Vitorias: ${ranked.data[i].wins} <br>Derrotas: ${ranked.data[i].losses} - Winrate: ${winrateFlex.toFixed()}%`;
                             if (i == 0) {
                               if (ranked.data[i + 1] == undefined) {
                                 switch (ranked.data[i + 1]) {
