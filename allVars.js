@@ -24,5 +24,7 @@ var containerContainer = document.getElementById("containerContainer")
 var dotflashing = document.getElementById("dot-flashing");
 var preloaderBg = document.getElementById("preloaderBg");
 
+var gameMainRuneIcon = document.createElement("img");
+var gameSecondaryRuneIcon = document.createElement("img");
 
-export { puuid, versao, region, img, title, container, btn, inputContainer, regionSelect, rankedSoloIcon, containerRanked, rankedStats, containerRankedFlex, rankedFlexData, rankedFlexIcon, containerContainer, dotflashing, preloaderBg }
+export { puuid, versao, region, img, title, container, btn, inputContainer, regionSelect, rankedSoloIcon, containerRanked, rankedStats, containerRankedFlex, rankedFlexData, rankedFlexIcon, containerContainer, dotflashing, preloaderBg, gameMainRuneIcon, gameSecondaryRuneIcon }

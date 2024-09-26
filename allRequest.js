@@ -13,7 +13,7 @@ function show() {
   var div1 = document.getElementById("icon");
   div1.style.display = "flex"
 }
-function allRequest(puuid, versao, region, img, container, btn, inputContainer, riotId, regionSelect, rankedSoloIcon, containerRanked, rankedStats, containerRankedFlex, rankedFlexData, rankedFlexIcon, containerContainer, containerMasteryI) {
+function allRequest(puuid, versao, region, img, container, btn, inputContainer, riotId, regionSelect, rankedSoloIcon, containerRanked, rankedStats, containerRankedFlex, rankedFlexData, rankedFlexIcon, containerContainer, containerMasteryI, gameMainRuneIcon, gameSecondaryRuneIcon) {
   region = region.value;
   region = region.toLowerCase();
   riotId = riotId.replace(/\s/g, "")
@@ -236,7 +236,6 @@ function allRequest(puuid, versao, region, img, container, btn, inputContainer, 
             axios
               .get("http://localhost:4000/matchHistory", { params: { matches: matchI } })
               .then((response) => {
-                console.log(response.data)
                 const matchHistoryContainer = document.getElementById("matchHistoryContainer")
                 matchHistoryContainer.style.display = "grid";
                 for (let matchIndex = 0; matchIndex < response.data.length; matchIndex++) {
@@ -244,8 +243,86 @@ function allRequest(puuid, versao, region, img, container, btn, inputContainer, 
                   const participants = response.data[matchIndex].info.participants;
                   for (let participantIndex = 0; participantIndex < participants.length; participantIndex++) {
                     if (participants[participantIndex].puuid === puuid) {
-                      const gameStat = response.data[matchIndex].info.participants[participantIndex].win;
+                      axios
+                        .get("http://ddragon.leagueoflegends.com/api/versions.json")
+                        .then((response) => {
+                          versao = response.data[0];
+                          axios
+                            .get(`https://ddragon.leagueoflegends.com/cdn/${versao}/data/en_US/runesReforged.json`)
+                            .then((response) => {
+                              let runeData = response.data[0]
+                              gameMainRuneIcon = document.createElement("img");
+                              gameSecondaryRuneIcon = document.createElement("img");
+                              const gameMainRune = participants[participantIndex].perks.styles[0].selections[0].perk;
+                              const gameSecondaryRune = participants[participantIndex].perks.styles[1].style;
+                              for (let x = 0; x < 5; x++) {
+                                //conqueror so existe aqui(?)
+                                let runeData2 = response.data[x].id
+                                for (let c = 0; c < 4; c++) {
+                                  let runeData4 = response.data[2].slots[0].runes[c].id
+                                  if (gameMainRune == 8010) {
+                                    runeData4 = response.data[2].slots[0].runes[3].icon
 
+                                    gameMainRuneIcon.style.width = " 20px";
+                                    gameMainRuneIcon.style.height = " 20px";
+                                    gameMainRuneIcon.style.float = "left";
+                                    gameMainRuneIcon.style.marginTop = " 27px";
+                                    gameMainRuneIcon.style.marginLeft = "6px";
+                                    gameMainRuneIcon.style.border = "2px solid #d4af37";
+
+                                    gameMainRuneIcon.style.borderRadius = "15px";
+                                    gameMainRuneIcon.src = `https://ddragon.canisback.com/img/${runeData4}`
+
+                                  }
+                                  if (gameSecondaryRune == runeData2) {
+                                    runeData2 = response.data[x].icon
+                                    gameSecondaryRuneIcon.style.width = " 10px";
+                                    gameSecondaryRuneIcon.style.height = " 10px";
+                                    gameSecondaryRuneIcon.style.float = "left";
+                                    gameSecondaryRuneIcon.style.marginTop = " 32px";
+                                    gameSecondaryRuneIcon.style.marginLeft = "2px";
+                                    gameSecondaryRuneIcon.style.padding = "2px 2px 2px 2px";
+                                    gameSecondaryRuneIcon.style.border = "2px solid #d4af37";
+                                    gameSecondaryRuneIcon.style.borderRadius = "15px";
+                                    gameSecondaryRuneIcon.src = `https://ddragon.canisback.com/img/${runeData2}`
+                                    matchDiv.appendChild(gameMainRuneIcon);
+                                    matchDiv.appendChild(gameSecondaryRuneIcon);
+                                  }
+                                }
+                                for (let y = 0; y < 3; y++) {
+                                  runeData = response.data[x].slots[0].runes[y].id
+                                  if (gameMainRune == runeData) {
+                                    runeData = response.data[x].slots[0].runes[y].icon
+                                    gameMainRuneIcon.style.width = " 20px";
+                                    gameMainRuneIcon.style.height = " 20px";
+                                    gameMainRuneIcon.style.float = "left";
+                                    gameMainRuneIcon.style.marginTop = " 27px";
+                                    gameMainRuneIcon.style.marginLeft = "6px";
+
+                                    gameMainRuneIcon.style.border = "2px solid #d4af37";
+                                    gameMainRuneIcon.style.borderRadius = "15px";
+                                    gameMainRuneIcon.src = `https://ddragon.canisback.com/img/${runeData}`
+
+                                  }
+                                  if (gameSecondaryRune == runeData2) {
+                                    runeData2 = response.data[x].icon
+                                    gameSecondaryRuneIcon.style.width = " 10px";
+                                    gameSecondaryRuneIcon.style.height = " 10px";
+                                    gameSecondaryRuneIcon.style.float = "left";
+                                    gameSecondaryRuneIcon.style.marginTop = " 32px";
+                                    gameSecondaryRuneIcon.style.marginLeft = "2px";
+                                    gameSecondaryRuneIcon.style.padding = "2px 2px 2px 2px";
+                                    gameSecondaryRuneIcon.style.border = "2px solid #d4af37";
+                                    gameSecondaryRuneIcon.style.borderRadius = "15px";
+                                    gameSecondaryRuneIcon.src = `https://ddragon.canisback.com/img/${runeData2}`
+                                    matchDiv.appendChild(gameMainRuneIcon);
+                                    matchDiv.appendChild(gameSecondaryRuneIcon);
+                                  }
+                                }
+                              }
+                            })
+                        })
+                      const gameStat = response.data[matchIndex].info.participants[participantIndex].win;
                       // Create gameStats span element
                       const gameStats = document.createElement("span");
                       gameStats.style.float = "left";
@@ -279,6 +356,17 @@ function allRequest(puuid, versao, region, img, container, btn, inputContainer, 
                       // Append img and gameStats elements to matchDiv
                       matchDiv.appendChild(imgElement);
                       matchDiv.appendChild(gameStats);
+                      var kills = participants[participantIndex].kills
+                      var deaths = participants[participantIndex].deaths
+                      var assists = participants[participantIndex].assists
+                      var kda = `${kills} / ${deaths} / ${assists}`
+                      var kdaTxt = document.createElement("span");
+                      kdaTxt.innerHTML = kda;
+                      kdaTxt.style.justifycontent = "left";
+                      kdaTxt.style.marginTop = " 27px";
+                      kdaTxt.style.marginLeft = "-550px";
+                      kdaTxt.style.position = "absolute";
+                      matchDiv.appendChild(kdaTxt);
                     }
                   }
                 }
@@ -286,7 +374,7 @@ function allRequest(puuid, versao, region, img, container, btn, inputContainer, 
                 axios
                   .get("http://localhost:4000/PuuidToName", { params: { Ids: allPuuIds } })
                   .then((response) => {
-                    console.log(response.data)
+                    //console.log(response.data)
                   })
               })
           })
