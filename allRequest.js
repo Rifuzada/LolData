@@ -263,10 +263,10 @@ function allRequest(puuid, versao, region, img, container, btn, inputContainer, 
                                   if (gameMainRune == 8010) {
                                     runeData4 = response.data[2].slots[0].runes[3].icon
 
-                                    gameMainRuneIcon.style.width = " 20px";
-                                    gameMainRuneIcon.style.height = " 20px";
+                                    gameMainRuneIcon.style.width = " 25px";
+                                    gameMainRuneIcon.style.height = " 25px";
                                     gameMainRuneIcon.style.float = "left";
-                                    gameMainRuneIcon.style.marginTop = " 27px";
+                                    gameMainRuneIcon.style.marginTop = " 25px";
                                     gameMainRuneIcon.style.marginLeft = "6px";
                                     gameMainRuneIcon.style.border = "2px solid #d4af37";
 
@@ -276,10 +276,10 @@ function allRequest(puuid, versao, region, img, container, btn, inputContainer, 
                                   }
                                   if (gameSecondaryRune == runeData2) {
                                     runeData2 = response.data[x].icon
-                                    gameSecondaryRuneIcon.style.width = " 10px";
-                                    gameSecondaryRuneIcon.style.height = " 10px";
+                                    gameSecondaryRuneIcon.style.width = " 15px";
+                                    gameSecondaryRuneIcon.style.height = " 15px";
                                     gameSecondaryRuneIcon.style.float = "left";
-                                    gameSecondaryRuneIcon.style.marginTop = " 32px";
+                                    gameSecondaryRuneIcon.style.marginTop = " 30px";
                                     gameSecondaryRuneIcon.style.marginLeft = "2px";
                                     gameSecondaryRuneIcon.style.padding = "2px 2px 2px 2px";
                                     gameSecondaryRuneIcon.style.border = "2px solid #d4af37";
@@ -293,10 +293,10 @@ function allRequest(puuid, versao, region, img, container, btn, inputContainer, 
                                   runeData = response.data[x].slots[0].runes[y].id
                                   if (gameMainRune == runeData) {
                                     runeData = response.data[x].slots[0].runes[y].icon
-                                    gameMainRuneIcon.style.width = " 20px";
-                                    gameMainRuneIcon.style.height = " 20px";
+                                    gameMainRuneIcon.style.width = " 25px";
+                                    gameMainRuneIcon.style.height = " 25px";
                                     gameMainRuneIcon.style.float = "left";
-                                    gameMainRuneIcon.style.marginTop = " 27px";
+                                    gameMainRuneIcon.style.marginTop = " 25px";
                                     gameMainRuneIcon.style.marginLeft = "6px";
 
                                     gameMainRuneIcon.style.border = "2px solid #d4af37";
@@ -306,10 +306,10 @@ function allRequest(puuid, versao, region, img, container, btn, inputContainer, 
                                   }
                                   if (gameSecondaryRune == runeData2) {
                                     runeData2 = response.data[x].icon
-                                    gameSecondaryRuneIcon.style.width = " 10px";
-                                    gameSecondaryRuneIcon.style.height = " 10px";
+                                    gameSecondaryRuneIcon.style.width = " 15px";
+                                    gameSecondaryRuneIcon.style.height = " 15px";
                                     gameSecondaryRuneIcon.style.float = "left";
-                                    gameSecondaryRuneIcon.style.marginTop = " 32px";
+                                    gameSecondaryRuneIcon.style.marginTop = " 30px";
                                     gameSecondaryRuneIcon.style.marginLeft = "2px";
                                     gameSecondaryRuneIcon.style.padding = "2px 2px 2px 2px";
                                     gameSecondaryRuneIcon.style.border = "2px solid #d4af37";
