@@ -1,12 +1,14 @@
 var express = require('express');
 var cors = require('cors');
 const axios = require('axios');
+require('dotenv').config();
+
 
 var app = express();
 
 app.use(cors());
 
-const api_key = "";
+const api_key = process.env.API_KEY;
 
 app.listen(4000, function () {
   console.log("Server started on port 4000")
