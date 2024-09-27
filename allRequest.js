@@ -4,6 +4,7 @@ function sleep(ms) {
 function remove() {
   var div = document.getElementById('containerContainer');
   var div1 = document.getElementById("icon");
+
   div1.style.display = "none"
   while (div.firstChild) {
     div.removeChild(div.firstChild);
@@ -14,6 +15,7 @@ function show() {
   div1.style.display = "flex"
 }
 function allRequest(puuid, versao, region, img, container, btn, inputContainer, riotId, regionSelect, rankedSoloIcon, containerRanked, rankedStats, containerRankedFlex, rankedFlexData, rankedFlexIcon, containerContainer, containerMasteryI, gameMainRuneIcon, gameSecondaryRuneIcon) {
+
   region = region.value;
   region = region.toLowerCase();
   riotId = riotId.replace(/\s/g, "")
@@ -229,7 +231,7 @@ function allRequest(puuid, versao, region, img, container, btn, inputContainer, 
         axios
           .get("http://localhost:4000/matchIds", { params: { puuid } })
           .then((response) => {
-            let matchI = [];
+            let matchI = []
             for (let i = 0; i < 10; i++) {
               matchI.push(response.data[i]);
             }
@@ -239,8 +241,10 @@ function allRequest(puuid, versao, region, img, container, btn, inputContainer, 
                 const matchHistoryContainer = document.getElementById("matchHistoryContainer")
                 matchHistoryContainer.style.display = "grid";
                 for (let matchIndex = 0; matchIndex < response.data.length; matchIndex++) {
+
                   const matchDiv = document.getElementById(`match${matchIndex + 1}`);
                   const participants = response.data[matchIndex].info.participants;
+                  //console.log(participants)
                   for (let participantIndex = 0; participantIndex < participants.length; participantIndex++) {
                     if (participants[participantIndex].puuid === puuid) {
                       axios
@@ -322,6 +326,76 @@ function allRequest(puuid, versao, region, img, container, btn, inputContainer, 
                               }
                             })
                         })
+                      axios.get(`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/items.json`)
+
+                        .then((response) => {
+                          var itemData = response.data;
+                          //console.log(itemData)
+                          const matchItemIcons = Array.from({ length: 6 }, () => document.createElement('img'));
+                          const pick = (object, keys) => keys.reduce((obj, key) => {
+                            if (object && object.hasOwnProperty(key)) {
+                              obj[key] = object[key];
+                            }
+                            return obj;
+                          }, {});
+
+                          const matchItems = Object.values(pick(participants[participantIndex], [
+                            'item0',
+                            'item1',
+                            'item2',
+                            'item3',
+                            'item4',
+                            'item5',
+                            'item6',
+                          ]));
+                          for (let x = 0; x < 6; x++) {
+                            var itemFound = itemData.find(item => item.id == matchItems[x])
+                            if (itemFound) {
+                              var itemIconPath = itemFound.iconPath
+                              for (let x = 0; x < 6; x++) {
+                                var itemFound = itemData.find(item => item.id == matchItems[x])
+                                if (itemFound) {
+                                  var itemIconPath = itemFound.iconPath
+                                  itemIconPath = itemIconPath.toLowerCase().replace("/lol-game-data/assets/", "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/")
+                                  switch (x) {
+                                    case 0:
+                                      matchItemIcons[0].src = itemIconPath
+                                      break;
+                                    case 1:
+                                      matchItemIcons[1].src = itemIconPath
+                                      break;
+                                    case 2:
+                                      matchItemIcons[2].src = itemIconPath
+                                      break;
+                                    case 3:
+                                      matchItemIcons[3].src = itemIconPath
+                                      break;
+                                    case 4:
+                                      matchItemIcons[4].src = itemIconPath
+                                      break;
+                                    case 5:
+                                      matchItemIcons[5].src = itemIconPath
+                                      break;
+                                    case 6:
+                                      matchItemIcons[6].src = itemIconPath
+                                      break;
+                                  }
+
+                                  matchItemIcons.forEach(icon => {
+                                    if (icon.src) {
+                                      icon.style.border = "2px solid #d4af37";
+                                      icon.style.borderRadius = "15px";
+                                      icon.style.width = "35px";
+                                      icon.style.height = "35px";
+                                      icon.style.marginTop = "20px";
+                                    }
+                                  });
+                                  matchItemIcons.forEach(icon => matchDiv.appendChild(icon));
+                                }
+                              }
+                            }
+                          }
+                        })
                       const gameStat = response.data[matchIndex].info.participants[participantIndex].win;
                       // Create gameStats span element
                       const gameStats = document.createElement("span");
@@ -362,10 +436,11 @@ function allRequest(puuid, versao, region, img, container, btn, inputContainer, 
                       var kda = `${kills} / ${deaths} / ${assists}`
                       var kdaTxt = document.createElement("span");
                       kdaTxt.innerHTML = kda;
-                      kdaTxt.style.justifycontent = "left";
                       kdaTxt.style.marginTop = " 27px";
-                      kdaTxt.style.marginLeft = "-550px";
-                      kdaTxt.style.position = "absolute";
+                      kdaTxt.style.float = "left";
+                      kdaTxt.style.marginLeft = "20px";
+                      kdaTxt.style.marginRight = "20px";
+
                       matchDiv.appendChild(kdaTxt);
                     }
                   }
