@@ -4,9 +4,6 @@
 ### dotenv ###
 .env
 
-#server
-server.js
-
 ### Node ###
 # Logs
 logs
