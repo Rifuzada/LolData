@@ -6,7 +6,7 @@ var app = express();
 
 app.use(cors());
 
-const api_key = "RGAPI-b939198a-1d45-4d7a-b2b3-06a89f54b1c8";
+const api_key = "";
 
 app.listen(4000, function () {
   console.log("Server started on port 4000")
