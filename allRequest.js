@@ -25,11 +25,8 @@ function allRequest(puuid, versao, region, img, container, btn, inputContainer, 
       if (response.config.params.riotId != "") {
         puuid = response.data.puuid;
         regionSelect.style.marginLeft = "5px";
-        btn.style.top = "-104.7vh";
-        btn.style.left = "577px";
-        btn.style.marginLeft = "2px";
-        inputContainer.style.top = "2vh";
-        inputContainer.style.left = "300px";
+        inputContainer.style.top = "-50px";
+        inputContainer.style.left = "376px";
         axios
           .get("http://localhost:4000/profile", {
             params: { puuid, region },
