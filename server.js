@@ -107,3 +107,7 @@ app.get('/PuuidToName', async (req, res) => {
     //res.status(500).json({ error: "Internal Server Error" });
   }
 });
+console.error("Error fetching data from Riot API:", error);
+    //res.status(500).json({ error: "Internal Server Error" });
+  }
+});
