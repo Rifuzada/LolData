@@ -235,12 +235,12 @@ function allRequest(puuid, versao, region, img, container, btn, inputContainer, 
             axios
               .get("http://localhost:4000/matchHistory", { params: { matches: matchI } })
               .then((response) => {
-                const matchHistoryContainer = document.getElementById("matchHistoryContainer")
+                var matchHistoryContainer = document.getElementById("matchHistoryContainer")
                 matchHistoryContainer.style.display = "grid";
                 for (let matchIndex = 0; matchIndex < response.data.length; matchIndex++) {
 
-                  const matchDiv = document.getElementById(`match${matchIndex + 1}`);
-                  const participants = response.data[matchIndex].info.participants;
+                  var matchDiv = document.getElementById(`match${matchIndex + 1}`);
+                  var participants = response.data[matchIndex].info.participants;
                   //console.log(participants)
                   for (let participantIndex = 0; participantIndex < participants.length; participantIndex++) {
                     if (participants[participantIndex].puuid === puuid) {
