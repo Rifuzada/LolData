@@ -7,6 +7,7 @@ import {
   versao,
   region,
   img,
+  body,
   title,
   container,
   btn,
@@ -32,6 +33,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function performSearch() {
     const riotId = document.getElementById("riotId").value;
+    body.style.overflowY = "scroll";
     if (riotId === "") {
       title.style.display = "block";
       title.innerHTML = "Antes de clicar no botão, escreva um Riot ID!";

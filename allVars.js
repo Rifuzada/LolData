@@ -3,6 +3,7 @@ let versao = "";
 
 var region = document.querySelector("#region");
 var regionSelect = document.getElementById("region");
+var body = document.body;
 
 var img = document.getElementById("iconImg");
 
@@ -27,4 +28,4 @@ var preloaderBg = document.getElementById("preloaderBg");
 var gameMainRuneIcon = document.createElement("img");
 var gameSecondaryRuneIcon = document.createElement("img");
 
-export { puuid, versao, region, img, title, container, btn, inputContainer, regionSelect, rankedSoloIcon, containerRanked, rankedStats, containerRankedFlex, rankedFlexData, rankedFlexIcon, containerContainer, dotflashing, preloaderBg, gameMainRuneIcon, gameSecondaryRuneIcon }
+export { puuid, versao, body, region, img, title, container, btn, inputContainer, regionSelect, rankedSoloIcon, containerRanked, rankedStats, containerRankedFlex, rankedFlexData, rankedFlexIcon, containerContainer, dotflashing, preloaderBg, gameMainRuneIcon, gameSecondaryRuneIcon }
