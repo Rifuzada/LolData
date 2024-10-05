@@ -123,13 +123,13 @@ export function rankedRequest(
                                                             "diamond"
                                                         );
                                                         ranked.data[i].tier = ranked.data[i].tier.replace(
-                                                            "mestre",
-                                                            "master"
-                                                        );
-                                                        ranked.data[i].tier = ranked.data[i].tier.replace(
                                                             "grão-mestre",
                                                             "grandmaster"
                                                         );
+                                                        // ranked.data[i].tier = ranked.data[i].tier.replace(
+                                                        //     "mestre",
+                                                        //     "master"
+                                                        // );
                                                         ranked.data[i].tier = ranked.data[i].tier.replace(
                                                             "desafiante",
                                                             "challenger"
@@ -169,12 +169,12 @@ export function rankedRequest(
                                                             "Diamante"
                                                         );
                                                         ranked.data[i].tier = ranked.data[i].tier.replace(
-                                                            "master",
-                                                            "Mestre"
-                                                        );
-                                                        ranked.data[i].tier = ranked.data[i].tier.replace(
                                                             "grandmaster",
                                                             "Grão-Mestre"
+                                                        );
+                                                        ranked.data[i].tier = ranked.data[i].tier.replace(
+                                                            "master",
+                                                            "Mestre"
                                                         );
                                                         ranked.data[i].tier = ranked.data[i].tier.replace(
                                                             "challenger",
@@ -183,7 +183,7 @@ export function rankedRequest(
                                                         rankedStats.innerHTML = `${queueSolo} ${ranked.data[i].tier
                                                             } ${ranked.data[i].rank}<br>Vitorias: ${ranked.data[i].wins
                                                             } <br>Derrotas: ${ranked.data[i].losses
-                                                            } - Winrate: ${winrateSoloq.toFixed()}%`;
+                                                            } <br>Winrate: ${winrateSoloq.toFixed()}%`;
                                                         if (i == 0) {
                                                             if (ranked.data[i + 1] == undefined) {
                                                                 switch (ranked.data[i + 1]) {
@@ -250,10 +250,10 @@ export function rankedRequest(
                                                             "diamante",
                                                             "diamond"
                                                         );
-                                                        ranked.data[i].tier = ranked.data[i].tier.replace(
-                                                            "mestre",
-                                                            "master"
-                                                        );
+                                                        // ranked.data[i].tier = ranked.data[i].tier.replace(
+                                                        //     "mestre",
+                                                        //     "master"
+                                                        // );
                                                         ranked.data[i].tier = ranked.data[i].tier.replace(
                                                             "grão-mestre",
                                                             "grandmaster"
@@ -288,12 +288,12 @@ export function rankedRequest(
                                                             "Diamante"
                                                         );
                                                         ranked.data[i].tier = ranked.data[i].tier.replace(
-                                                            "master",
-                                                            "Mestre"
-                                                        );
-                                                        ranked.data[i].tier = ranked.data[i].tier.replace(
                                                             "grandmaster",
                                                             "Grão-Mestre"
+                                                        );
+                                                        ranked.data[i].tier = ranked.data[i].tier.replace(
+                                                            "master",
+                                                            "Mestre"
                                                         );
                                                         ranked.data[i].tier = ranked.data[i].tier.replace(
                                                             "challenger",

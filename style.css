@@ -41,7 +41,7 @@ body::before {
 }
 
 span {
-  font-size: 0.85em;
+  font-size: 0.78em;
   margin-bottom: 20px;
   color: #ffffff;
   z-index: 1;
@@ -333,7 +333,7 @@ optgroup>option{
   height: 1013px;
   background-color: #2a2a2a;
   border-radius: 10px;
-  top: 290px;
+  top: 257px;
   border: 2px solid #d4af37;
   display: none;
   margin-left: -37px;
