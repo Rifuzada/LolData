@@ -88,6 +88,7 @@ app.get('/matchHistory', async (req, res) => {
     res.json(matchData);
   } catch (error) {
     res.status(500).json({ error: "Internal Server Error" });
+    console.error("Error fetching data from Riot API:", error);
   }
 });
 app.get('/PuuidToName', async (req, res) => {
@@ -104,10 +105,6 @@ app.get('/PuuidToName', async (req, res) => {
     res.json(puuidData);
   } catch (error) {
     console.error("Error fetching data from Riot API:", error);
-    //res.status(500).json({ error: "Internal Server Error" });
-  }
-});
-console.error("Error fetching data from Riot API:", error);
     //res.status(500).json({ error: "Internal Server Error" });
   }
 });
