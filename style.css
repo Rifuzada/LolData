@@ -8,11 +8,12 @@ body {
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  padding-bottom: 170px;
   height: 100vh;
   background-color: #1b1b1b;
   color: #ffffff;
   position: relative;
-  overflow-y: scroll;
+  overflow-y: hidden;
   overflow-x: hidden;
 }
 .input{
@@ -32,16 +33,17 @@ body::before {
   position: absolute;
   top: 0;
   left: 0;
+  margin: 0;
+  padding-bottom: 260px;
   width: 100%;
   height: 100%;
-  background: url('https://lolstatic-a.akamaihd.net/frontpage/apps/prod/preseason-2017/en_US/ff1afb37a0138886dad4826b7d1b75cd0d30c96a/assets/downloads/2017_assassins_wallpaper_1920x1080.jpg') no-repeat center center/cover;
-  background-attachment: fixed;
+  background: url('https://lolstatic-a.akamaihd.net/frontpage/apps/prod/preseason-2017/en_US/ff1afb37a0138886dad4826b7d1b75cd0d30c96a/assets/downloads/2017_assassins_wallpaper_1920x1080.jpg') repeat fixed 100% ;
   filter: blur(5px);
   z-index: 0;
 }
 
 span {
-  font-size: 0.85em;
+  font-size: 0.78em;
   margin-bottom: 20px;
   color: #ffffff;
   z-index: 1;
@@ -333,7 +335,7 @@ optgroup>option{
   height: 1013px;
   background-color: #2a2a2a;
   border-radius: 10px;
-  top: 290px;
+  top: 257px;
   border: 2px solid #d4af37;
   display: none;
   margin-left: -37px;
