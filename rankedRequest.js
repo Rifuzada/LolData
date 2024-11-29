@@ -183,7 +183,11 @@ export function rankedRequest(
                                                         rankedStats.innerHTML = `${queueSolo} ${ranked.data[i].tier
                                                             } ${ranked.data[i].rank}<br>Vitorias: ${ranked.data[i].wins
                                                             } <br>Derrotas: ${ranked.data[i].losses
+<<<<<<< HEAD
                                                             } - Winrate: ${winrateSoloq.toFixed()}%`;
+=======
+                                                            } <br>Winrate: ${winrateSoloq.toFixed()}%`;
+>>>>>>> d9fffbc75d4e19b6dd9bfa19ff7eac37c2e9945e
                                                         if (i == 0) {
                                                             if (ranked.data[i + 1] == undefined) {
                                                                 switch (ranked.data[i + 1]) {

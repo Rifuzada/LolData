@@ -35,9 +35,12 @@ export function matchHistoryRequest(
                                     const currentParticipants = response.data[matchIndex].info.participants;
 
                                     (function (matchDiv, participants) {
+<<<<<<< HEAD
                                         let runeData = [];
                                         let runeData2 = [];
                                         let runeData4 = [];
+=======
+>>>>>>> d9fffbc75d4e19b6dd9bfa19ff7eac37c2e9945e
                                         for (let participantIndex = 0; participantIndex < participants.length; participantIndex++) {
                                             if (participants[participantIndex].puuid === puuid) {
                                                 axios.get("http://ddragon.leagueoflegends.com/api/versions.json")
@@ -45,16 +48,26 @@ export function matchHistoryRequest(
                                                         versao = response.data[0];
                                                         axios.get(`https://ddragon.leagueoflegends.com/cdn/${versao}/data/en_US/runesReforged.json`)
                                                             .then((response) => {
+<<<<<<< HEAD
                                                                 runeData = response.data[0];
+=======
+                                                                let runeData = response.data[0];
+>>>>>>> d9fffbc75d4e19b6dd9bfa19ff7eac37c2e9945e
                                                                 gameMainRuneIcon = document.createElement("img");
                                                                 gameSecondaryRuneIcon = document.createElement("img");
                                                                 const gameMainRune = participants[participantIndex].perks.styles[0].selections[0].perk;
                                                                 const gameSecondaryRune = participants[participantIndex].perks.styles[1].style;
                                                                 for (let x = 0; x < 5; x++) {
                                                                     //conqueror so existe aqui(?)
+<<<<<<< HEAD
                                                                     runeData2 = response.data[x].id
                                                                     for (let c = 0; c < 4; c++) {
                                                                         runeData4 = response.data[2].slots[0].runes[c].id
+=======
+                                                                    let runeData2 = response.data[x].id
+                                                                    for (let c = 0; c < 4; c++) {
+                                                                        let runeData4 = response.data[2].slots[0].runes[c].id
+>>>>>>> d9fffbc75d4e19b6dd9bfa19ff7eac37c2e9945e
                                                                         if (gameMainRune == 8010) {
                                                                             runeData4 = response.data[2].slots[0].runes[3].icon
 
@@ -139,6 +152,7 @@ export function matchHistoryRequest(
                                                             'item5',
                                                             'item6',
                                                         ]));
+<<<<<<< HEAD
                                                         var itemFound = [];
                                                         var itemIconPath = [];
                                                         for (let x = 0; x < 6; x++) {
@@ -149,6 +163,16 @@ export function matchHistoryRequest(
                                                                     itemFound = itemData.find(item => item.id == matchItems[x])
                                                                     if (itemFound) {
                                                                         itemIconPath = itemFound.iconPath
+=======
+                                                        for (let x = 0; x < 6; x++) {
+                                                            var itemFound = itemData.find(item => item.id == matchItems[x])
+                                                            if (itemFound) {
+                                                                var itemIconPath = itemFound.iconPath
+                                                                for (let x = 0; x < 6; x++) {
+                                                                    var itemFound = itemData.find(item => item.id == matchItems[x])
+                                                                    if (itemFound) {
+                                                                        var itemIconPath = itemFound.iconPath
+>>>>>>> d9fffbc75d4e19b6dd9bfa19ff7eac37c2e9945e
                                                                         itemIconPath = itemIconPath.toLowerCase().replace("/lol-game-data/assets/", "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/")
                                                                         switch (x) {
                                                                             case 0:
