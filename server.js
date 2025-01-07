@@ -59,7 +59,7 @@ app.get('/ranked', async (req, res) => {
   const { sumID } = req.query
   const riotUrlReg = `https://${region}.api.riotgames.com`
   const rankedUrl = `${riotUrlReg}/${endpointRankedID}/${sumID}?api_key=${api_key}`
-  console.log(rankedUrl)
+  //console.log(rankedUrl)
   const response = await axios.get(rankedUrl)
     .then(response => response.data)
     .catch(err => err)

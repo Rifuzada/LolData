@@ -1,4 +1,4 @@
-export function matchHistoryRequest(
+export async function matchHistoryRequest(
     riotId,
     puuid,
     region,
@@ -6,273 +6,142 @@ export function matchHistoryRequest(
     inputContainer,
     versao,
     gameMainRuneIcon,
-    gameSecondaryRuneIcon) {
-    region = region.value;
-    region = region.toLowerCase();
+    gameSecondaryRuneIcon
+) {
+    region = region.value.toLowerCase();
     riotId = riotId.replace(/\s/g, "");
-    axios
-        .get("http://localhost:4000/account", { params: { riotId } })
-        .then((response) => {
-            if (response.config.params.riotId != "") {
-                puuid = response.data.puuid;
-                regionSelect.style.marginLeft = "5px";
-                inputContainer.style.top = "-50px";
-                inputContainer.style.left = "376px";
-                axios
-                    .get("http://localhost:4000/matchIds", { params: { puuid } })
-                    .then((response) => {
-                        let matchI = []
-                        for (let i = 0; i < 10; i++) {
-                            matchI.push(response.data[i]);
-                        }
-                        axios
-                            .get("http://localhost:4000/matchHistory", { params: { matches: matchI } })
-                            .then((response) => {
-                                var matchHistoryContainer = document.getElementById("matchHistoryContainer")
-                                matchHistoryContainer.style.display = "grid";
-                                for (let matchIndex = 0; matchIndex < response.data.length; matchIndex++) {
-                                    const currentMatchDiv = document.getElementById(`match${matchIndex + 1}`);
-                                    const currentParticipants = response.data[matchIndex].info.participants;
 
-                                    (function (matchDiv, participants) {
-<<<<<<< HEAD
-                                        let runeData = [];
-                                        let runeData2 = [];
-                                        let runeData4 = [];
-=======
->>>>>>> d9fffbc75d4e19b6dd9bfa19ff7eac37c2e9945e
-                                        for (let participantIndex = 0; participantIndex < participants.length; participantIndex++) {
-                                            if (participants[participantIndex].puuid === puuid) {
-                                                axios.get("http://ddragon.leagueoflegends.com/api/versions.json")
-                                                    .then((response) => {
-                                                        versao = response.data[0];
-                                                        axios.get(`https://ddragon.leagueoflegends.com/cdn/${versao}/data/en_US/runesReforged.json`)
-                                                            .then((response) => {
-<<<<<<< HEAD
-                                                                runeData = response.data[0];
-=======
-                                                                let runeData = response.data[0];
->>>>>>> d9fffbc75d4e19b6dd9bfa19ff7eac37c2e9945e
-                                                                gameMainRuneIcon = document.createElement("img");
-                                                                gameSecondaryRuneIcon = document.createElement("img");
-                                                                const gameMainRune = participants[participantIndex].perks.styles[0].selections[0].perk;
-                                                                const gameSecondaryRune = participants[participantIndex].perks.styles[1].style;
-                                                                for (let x = 0; x < 5; x++) {
-                                                                    //conqueror so existe aqui(?)
-<<<<<<< HEAD
-                                                                    runeData2 = response.data[x].id
-                                                                    for (let c = 0; c < 4; c++) {
-                                                                        runeData4 = response.data[2].slots[0].runes[c].id
-=======
-                                                                    let runeData2 = response.data[x].id
-                                                                    for (let c = 0; c < 4; c++) {
-                                                                        let runeData4 = response.data[2].slots[0].runes[c].id
->>>>>>> d9fffbc75d4e19b6dd9bfa19ff7eac37c2e9945e
-                                                                        if (gameMainRune == 8010) {
-                                                                            runeData4 = response.data[2].slots[0].runes[3].icon
+    let response = await axios.get("http://localhost:4000/account", { params: { riotId } });
+    if (response.config.params.riotId === "") return;
 
-                                                                            gameMainRuneIcon.style.width = " 25px";
-                                                                            gameMainRuneIcon.style.height = " 25px";
-                                                                            gameMainRuneIcon.style.float = "left";
-                                                                            gameMainRuneIcon.style.marginTop = " 25px";
-                                                                            gameMainRuneIcon.style.marginLeft = "6px";
-                                                                            gameMainRuneIcon.style.border = "2px solid #d4af37";
+    puuid = response.data.puuid;
+    regionSelect.style.marginLeft = "5px";
+    inputContainer.style.top = "-50px";
+    inputContainer.style.left = "376px";
 
-                                                                            gameMainRuneIcon.style.borderRadius = "15px";
-                                                                            gameMainRuneIcon.src = `https://ddragon.canisback.com/img/${runeData4}`
+    let matchIdsResponse = await axios.get("http://localhost:4000/matchIds", { params: { puuid } });
+    let matchIds = matchIdsResponse.data.slice(0, 10); // Limit to 10 matches
 
-                                                                        }
-                                                                        if (gameSecondaryRune == runeData2) {
-                                                                            runeData2 = response.data[x].icon
-                                                                            gameSecondaryRuneIcon.style.width = " 15px";
-                                                                            gameSecondaryRuneIcon.style.height = " 15px";
-                                                                            gameSecondaryRuneIcon.style.float = "left";
-                                                                            gameSecondaryRuneIcon.style.marginTop = " 30px";
-                                                                            gameSecondaryRuneIcon.style.marginLeft = "2px";
-                                                                            gameSecondaryRuneIcon.style.padding = "2px 2px 2px 2px";
-                                                                            gameSecondaryRuneIcon.style.border = "2px solid #d4af37";
-                                                                            gameSecondaryRuneIcon.style.borderRadius = "15px";
-                                                                            gameSecondaryRuneIcon.src = `https://ddragon.canisback.com/img/${runeData2}`
-                                                                            matchDiv.appendChild(gameMainRuneIcon);
-                                                                            matchDiv.appendChild(gameSecondaryRuneIcon);
-                                                                        }
-                                                                    }
-                                                                    for (let y = 0; y < 3; y++) {
-                                                                        runeData = response.data[x].slots[0].runes[y].id
-                                                                        if (gameMainRune == runeData) {
-                                                                            runeData = response.data[x].slots[0].runes[y].icon
-                                                                            gameMainRuneIcon.style.width = " 25px";
-                                                                            gameMainRuneIcon.style.height = " 25px";
-                                                                            gameMainRuneIcon.style.float = "left";
-                                                                            gameMainRuneIcon.style.marginTop = " 25px";
-                                                                            gameMainRuneIcon.style.marginLeft = "6px";
+    let matchHistoryResponse = await axios.get("http://localhost:4000/matchHistory", { params: { matches: matchIds } });
+    let matchHistory = matchHistoryResponse.data;
 
-                                                                            gameMainRuneIcon.style.border = "2px solid #d4af37";
-                                                                            gameMainRuneIcon.style.borderRadius = "15px";
-                                                                            gameMainRuneIcon.src = `https://ddragon.canisback.com/img/${runeData}`
+    const responseVersionPromise = axios.get("http://ddragon.leagueoflegends.com/api/versions.json");
+    const responseRunePromise = responseVersionPromise.then((res) => {
+        versao = res.data[0];
+        return axios.get(`https://ddragon.leagueoflegends.com/cdn/${versao}/data/en_US/runesReforged.json`);
+    });
+    const responseItemsPromise = axios.get(
+        `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/items.json`
+    );
 
-                                                                        }
-                                                                        if (gameSecondaryRune == runeData2) {
-                                                                            runeData2 = response.data[x].icon
-                                                                            gameSecondaryRuneIcon.style.width = " 15px";
-                                                                            gameSecondaryRuneIcon.style.height = " 15px";
-                                                                            gameSecondaryRuneIcon.style.float = "left";
-                                                                            gameSecondaryRuneIcon.style.marginTop = " 30px";
-                                                                            gameSecondaryRuneIcon.style.marginLeft = "2px";
-                                                                            gameSecondaryRuneIcon.style.padding = "2px 2px 2px 2px";
-                                                                            gameSecondaryRuneIcon.style.border = "2px solid #d4af37";
-                                                                            gameSecondaryRuneIcon.style.borderRadius = "15px";
-                                                                            gameSecondaryRuneIcon.src = `https://ddragon.canisback.com/img/${runeData2}`
-                                                                            matchDiv.appendChild(gameMainRuneIcon);
-                                                                            matchDiv.appendChild(gameSecondaryRuneIcon);
-                                                                        }
-                                                                    }
-                                                                }
-                                                            })
-                                                    })
-                                                axios.get(`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/items.json`)
+    const [responseVersion, responseRune, responseItems] = await Promise.all([
+        responseVersionPromise,
+        responseRunePromise,
+        responseItemsPromise,
+    ]);
 
-                                                    .then((response) => {
-                                                        var itemData = response.data;
-                                                        //console.log(itemData)
-                                                        const matchItemIcons = Array.from({ length: 6 }, () => document.createElement('img'));
-                                                        const pick = (object, keys) => keys.reduce((obj, key) => {
-                                                            if (object && object.hasOwnProperty(key)) {
-                                                                obj[key] = object[key];
-                                                            }
-                                                            return obj;
-                                                        }, {});
+    const runeData = responseRune.data;
+    const itemData = responseItems.data;
 
-                                                        const matchItems = Object.values(pick(participants[participantIndex], [
-                                                            'item0',
-                                                            'item1',
-                                                            'item2',
-                                                            'item3',
-                                                            'item4',
-                                                            'item5',
-                                                            'item6',
-                                                        ]));
-<<<<<<< HEAD
-                                                        var itemFound = [];
-                                                        var itemIconPath = [];
-                                                        for (let x = 0; x < 6; x++) {
-                                                            itemFound = itemData.find(item => item.id == matchItems[x])
-                                                            if (itemFound) {
-                                                                itemIconPath = itemFound.iconPath
-                                                                for (let x = 0; x < 6; x++) {
-                                                                    itemFound = itemData.find(item => item.id == matchItems[x])
-                                                                    if (itemFound) {
-                                                                        itemIconPath = itemFound.iconPath
-=======
-                                                        for (let x = 0; x < 6; x++) {
-                                                            var itemFound = itemData.find(item => item.id == matchItems[x])
-                                                            if (itemFound) {
-                                                                var itemIconPath = itemFound.iconPath
-                                                                for (let x = 0; x < 6; x++) {
-                                                                    var itemFound = itemData.find(item => item.id == matchItems[x])
-                                                                    if (itemFound) {
-                                                                        var itemIconPath = itemFound.iconPath
->>>>>>> d9fffbc75d4e19b6dd9bfa19ff7eac37c2e9945e
-                                                                        itemIconPath = itemIconPath.toLowerCase().replace("/lol-game-data/assets/", "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/")
-                                                                        switch (x) {
-                                                                            case 0:
-                                                                                matchItemIcons[0].src = itemIconPath
-                                                                                break;
-                                                                            case 1:
-                                                                                matchItemIcons[1].src = itemIconPath
-                                                                                break;
-                                                                            case 2:
-                                                                                matchItemIcons[2].src = itemIconPath
-                                                                                break;
-                                                                            case 3:
-                                                                                matchItemIcons[3].src = itemIconPath
-                                                                                break;
-                                                                            case 4:
-                                                                                matchItemIcons[4].src = itemIconPath
-                                                                                break;
-                                                                            case 5:
-                                                                                matchItemIcons[5].src = itemIconPath
-                                                                                break;
-                                                                            case 6:
-                                                                                matchItemIcons[6].src = itemIconPath
-                                                                                break;
-                                                                        }
+    const matchHistoryContainer = document.getElementById("matchHistoryContainer");
+    matchHistoryContainer.style.display = "grid";
 
-                                                                        matchItemIcons.forEach(icon => {
-                                                                            if (icon.src) {
-                                                                                icon.style.border = "2px solid #d4af37";
-                                                                                icon.style.borderRadius = "15px";
-                                                                                icon.style.width = "35px";
-                                                                                icon.style.height = "35px";
-                                                                                icon.style.marginTop = "20px";
-                                                                            }
-                                                                        });
-                                                                        matchItemIcons.forEach(icon => matchDiv.appendChild(icon));
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    })
-                                                const gameStat = response.data[matchIndex].info.participants[participantIndex].win;
-                                                // Create gameStats span element
-                                                const gameStats = document.createElement("span");
-                                                gameStats.style.float = "left";
-                                                gameStats.style.marginTop = " 27px";
-                                                gameStats.style.marginLeft = "6px";
-                                                // Map to replace "true" with "Vitória" and "false" with "Derrota"
-                                                const gameStatText = {
-                                                    true: "Vitória",
-                                                    false: "Derrota"
-                                                };
-                                                if (gameStatText[gameStat] == "Vitória") {
-                                                    gameStats.style.color = "#2DEB90"
-                                                }
-                                                else if (gameStatText[gameStat] == "Derrota") {
-                                                    gameStats.style.color = "#ff5859"
-                                                }
-                                                // Set the innerText of gameStats based on gameStat value
-                                                gameStats.innerText = gameStatText[gameStat];
+    // Process matches concurrently
+    await Promise.all(
+        matchHistory.map(async (match, matchIndex) => {
+            const currentMatchDiv = document.getElementById(`match${matchIndex + 1}`);
+            const participants = match.info.participants;
 
-                                                // Create img element for champion icon
-                                                const championId = participants[participantIndex].championId;
-                                                const championIconUrl = `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${championId}.png`;
-                                                const imgElement = document.createElement("img");
-                                                imgElement.src = championIconUrl;
-                                                imgElement.style.width = "60px";
-                                                imgElement.style.height = "60px";
-                                                imgElement.style.float = 'left';
-                                                imgElement.style.marginLeft = '8px';
-                                                imgElement.style.marginTop = "8px";
+            // Process participants concurrently
+            await Promise.all(
+                participants.map(async (participant) => {
+                    if (participant.puuid === puuid) {
+                        const gameMainRune = participant.perks.styles[0].selections[0].perk;
+                        const gameSecondaryRune = participant.perks.styles[1].style;
 
-                                                // Append img and gameStats elements to matchDiv
-                                                matchDiv.appendChild(imgElement);
-                                                matchDiv.appendChild(gameStats);
-                                                var kills = participants[participantIndex].kills
-                                                var deaths = participants[participantIndex].deaths
-                                                var assists = participants[participantIndex].assists
-                                                var kda = `${kills} / ${deaths} / ${assists}`
-                                                var kdaTxt = document.createElement("span");
-                                                kdaTxt.innerHTML = kda;
-                                                kdaTxt.style.marginTop = " 27px";
-                                                kdaTxt.style.float = "left";
-                                                kdaTxt.style.marginLeft = "20px";
-                                                kdaTxt.style.marginRight = "20px";
+                        // Find main and secondary rune icons
+                        let gameMainRuneIconPath = "";
+                        let gameSecondaryRuneIconPath = "";
 
-                                                matchDiv.appendChild(kdaTxt);
-                                            }
-                                        }
-                                    })(currentMatchDiv, currentParticipants);
-                                    let allPuuIds = response.data[0].metadata.participants;
-                                    axios
-                                        .get("http://localhost:4000/PuuidToName", {
-                                            params: { Ids: allPuuIds },
-                                        })
-                                        .then((response) => {
-                                            //console.log(response.data)
-                                        });
+                        for (let style of runeData) {
+                            for (let slot of style.slots) {
+                                for (let rune of slot.runes) {
+                                    if (rune.id === gameMainRune) gameMainRuneIconPath = rune.icon;
+                                    if (style.id === gameSecondaryRune) gameSecondaryRuneIconPath = style.icon;
                                 }
-                            });
-                    });
-            }
+                            }
+                        }
+
+                        // Create rune icons
+                        gameMainRuneIcon = document.createElement("img");
+                        gameMainRuneIcon.src = `https://ddragon.canisback.com/img/${gameMainRuneIconPath}`;
+                        gameMainRuneIcon.style.cssText = `
+                            width: 25px; height: 25px; float: left; margin-top: 25px; margin-left: 6px; 
+                            border: 2px solid #d4af37; border-radius: 15px;
+                        `;
+
+                        gameSecondaryRuneIcon = document.createElement("img");
+                        gameSecondaryRuneIcon.src = `https://ddragon.canisback.com/img/${gameSecondaryRuneIconPath}`;
+                        gameSecondaryRuneIcon.style.cssText = `
+                            width: 15px; height: 15px; float: left; margin-top: 30px; margin-left: 2px; 
+                            padding: 2px; border: 2px solid #d4af37; border-radius: 15px;
+                        `;
+
+                        currentMatchDiv.appendChild(gameMainRuneIcon);
+                        currentMatchDiv.appendChild(gameSecondaryRuneIcon);
+
+                        // Fetch and display items
+                        const matchItems = [
+                            participant.item0,
+                            participant.item1,
+                            participant.item2,
+                            participant.item3,
+                            participant.item4,
+                            participant.item5,
+                            participant.item6,
+                        ];
+
+                        matchItems.forEach((itemId) => {
+                            const item = itemData.find((i) => i.id === itemId);
+                            if (item) {
+                                const itemIcon = document.createElement("img");
+                                itemIcon.src = item.iconPath
+                                    .toLowerCase()
+                                    .replace("/lol-game-data/assets/", "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/");
+                                itemIcon.style.cssText = `
+                                    border: 2px solid #d4af37; border-radius: 15px; width: 35px; height: 35px; margin-top: 20px;
+                                `;
+                                currentMatchDiv.appendChild(itemIcon);
+                            }
+                        });
+
+                        // Display champion icon
+                        const championIcon = document.createElement("img");
+                        championIcon.src = `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${participant.championId}.png`;
+                        championIcon.style.cssText = `
+                            width: 60px; height: 60px; float: left; margin-left: 8px; margin-top: 8px;
+                        `;
+                        currentMatchDiv.appendChild(championIcon);
+
+                        // Display win/loss
+                        const gameStats = document.createElement("span");
+                        gameStats.innerText = participant.win ? "Vitória" : "Derrota";
+                        gameStats.style.cssText = `
+                            float: left; margin-top: 27px; margin-left: 6px; color: ${participant.win ? "#2DEB90" : "#ff5859"};
+                        `;
+                        currentMatchDiv.appendChild(gameStats);
+
+                        // Display KDA
+                        const kda = `${participant.kills} / ${participant.deaths} / ${participant.assists}`;
+                        const kdaTxt = document.createElement("span");
+                        kdaTxt.innerText = kda;
+                        kdaTxt.style.cssText = `
+                            float: left; margin-top: 27px; margin-left: 20px; margin-right: 20px;
+                        `;
+                        currentMatchDiv.appendChild(kdaTxt);
+                    }
+                })
+            );
         })
+    );
 }
