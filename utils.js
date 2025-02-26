@@ -16,9 +16,11 @@ function remove() {
     div2.removeChild(div2.firstChild);
   }
 
+
   // Limpa os dados do histórico de partidas, mas mantém a estrutura para receber os novos dados
   var matchHistoryContainer = document.getElementById("matchHistoryContainer");
   var matches = document.getElementsByClassName("matches");
+  var matchesdetails = document.getElementsByClassName("matchesdetails")
   for (let i = 0; i < matches.length; i++) {
     matches[i].innerHTML = ""; // Limpa o conteúdo de cada partida sem remover a estrutura
   }
