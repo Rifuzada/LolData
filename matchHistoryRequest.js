@@ -146,7 +146,7 @@ function toggleMatchDetails(matchIndex, puuid, participants, itemData, runeData,
         if (existingDetails.style.display === "none" || existingDetails.style.display === "") {
             existingDetails.style.display = "flex";
             arrowIcon.innerHTML = "▲";
-            body.style.top = "140px";
+            body.style.top = "200px";
         } else {
             existingDetails.style.display = "none";
             arrowIcon.innerHTML = "▼";
@@ -161,7 +161,7 @@ function toggleMatchDetails(matchIndex, puuid, participants, itemData, runeData,
         const currentMatchDiv = document.getElementById(`match${matchIndex + 1}`);
         currentMatchDiv.insertAdjacentElement("afterend", newDetails);
         arrowIcon.innerHTML = "▲";
-        body.style.top = "140px";
+        body.style.top = "200px";
     }
 }
 
