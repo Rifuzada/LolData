@@ -49,41 +49,13 @@ export function performSearch() {
   dotflashing.style.display = "flex";
 
   // Chama a função para buscar e exibir os novos dados
-  rankedRequest(
-    puuid,
-    versao,
-    region,
-    img,
-    container,
-    btn,
-    inputContainer,
-    riotId,
-    regionSelect,
-    rankedSoloIcon,
-    containerRanked,
-    rankedStats,
-    containerRankedFlex,
-    rankedFlexData,
-    rankedFlexIcon,
-  );
-  matchHistoryRequest(
-    riotId,
-    puuid,
-    region,
-    regionSelect,
-    inputContainer,
-    versao,
-    gameMainRuneIcon,
-    gameSecondaryRuneIcon);
-  masteryRequest(
-    riotId,
-    puuid,
-    region,
-    regionSelect,
-    inputContainer,
-    versao,
-    containerContainer,
-    containerMasteryI,)
+  const requests = [
+    { func: rankedRequest, params: [puuid, versao, region, img, container, btn, inputContainer, riotId, regionSelect, rankedSoloIcon, containerRanked, rankedStats, containerRankedFlex, rankedFlexData, rankedFlexIcon] },
+    { func: matchHistoryRequest, params: [riotId, puuid, region, regionSelect, inputContainer, versao, gameMainRuneIcon, gameSecondaryRuneIcon] },
+    { func: masteryRequest, params: [riotId, puuid, region, regionSelect, inputContainer, versao, containerContainer, containerMasteryI] }
+  ];
+
+  requests.forEach(({ func, params }) => func(...params));
 
   // Esconde o preloader depois de carregar os dados
   sleep(2000).then(() => {
@@ -109,41 +81,13 @@ export function performNewSearch(riotId) {
   dotflashing.style.display = "flex";
 
   // Chama a função para buscar e exibir os novos dados
-  rankedRequest(
-    puuid,
-    versao,
-    region,
-    img,
-    container,
-    btn,
-    inputContainer,
-    riotId,
-    regionSelect,
-    rankedSoloIcon,
-    containerRanked,
-    rankedStats,
-    containerRankedFlex,
-    rankedFlexData,
-    rankedFlexIcon,
-  );
-  matchHistoryRequest(
-    riotId,
-    puuid,
-    region,
-    regionSelect,
-    inputContainer,
-    versao,
-    gameMainRuneIcon,
-    gameSecondaryRuneIcon);
-  masteryRequest(
-    riotId,
-    puuid,
-    region,
-    regionSelect,
-    inputContainer,
-    versao,
-    containerContainer,
-    containerMasteryI,)
+  const requests = [
+    { func: rankedRequest, params: [puuid, versao, region, img, container, btn, inputContainer, riotId, regionSelect, rankedSoloIcon, containerRanked, rankedStats, containerRankedFlex, rankedFlexData, rankedFlexIcon] },
+    { func: matchHistoryRequest, params: [riotId, puuid, region, regionSelect, inputContainer, versao, gameMainRuneIcon, gameSecondaryRuneIcon] },
+    { func: masteryRequest, params: [riotId, puuid, region, regionSelect, inputContainer, versao, containerContainer, containerMasteryI] }
+  ];
+
+  requests.forEach(({ func, params }) => func(...params));
 
   // Esconde o preloader depois de carregar os dados
   sleep(2000).then(() => {
