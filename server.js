@@ -10,7 +10,7 @@ app.use(cors());
 
 const api_key = process.env.API_KEY;
 
-app.listen(4000, function () {
+app.listen(process.env.PORT, function () {
   console.log("Server started on port 4000")
 })
 

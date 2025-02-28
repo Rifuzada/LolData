@@ -1,4 +1,5 @@
 import { remove, sleep, show } from "./utils.js";
+
 export async function rankedRequest(
     puuid,
     versao,
@@ -20,14 +21,14 @@ export async function rankedRequest(
     region = region.toLowerCase();
     riotId = riotId.replace(/\s/g, "");
     let response = await axios
-        .get("http://localhost:4000/account", { params: { riotId } })
+        .get(`${process.env.BASE_URL}/account`, { params: { riotId } })
     if (response.config.params.riotId != "") {
         puuid = response.data.puuid;
         regionSelect.style.marginLeft = "5px";
         inputContainer.style.top = "-50px";
         inputContainer.style.left = "376px";
         let profileresponse = await axios
-            .get("http://localhost:4000/profile", {
+            .get(`${process.env.BASE_URL}/profile`, {
                 params: { puuid, region },
             })
         var iconID = profileresponse.data.profileIconId;
@@ -44,7 +45,7 @@ export async function rankedRequest(
             Lvl.innerHTML = "Level: " + Level;
         });
         let ranked = await axios
-            .get("http://localhost:4000/ranked", {
+            .get(`${process.env.BASE_URL}/ranked`, {
                 params: { sumID, region },
             })
         if (ranked.data[0]?.queueType == "CHERRY") {
