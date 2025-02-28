@@ -8,11 +8,13 @@ on:
 jobs:
     build-and-deploy:
         runs-on: ubuntu-latest
-        env:
-            base_url: ${{ secrets.BASE_URL }}
-            api_key: ${{ secrets.API_KEY }}
-            port: ${{ secrets.PORT }}
         steps:
-            - name: Print environment variables
-              run: |
-                  echo "base_url: ${{ env.base_url }} api_key: ${{ env.api_key }} port: ${{ env.port }}"
+            - name: Checkout code
+              uses: actions/checkout@v3
+
+            - name: Set environment variables
+              env:
+                  BASE_URL: ${{ secrets.BASE_URL }}
+                  API_KEY: ${{ secrets.API_KEY }}
+                  PORT: ${{ secrets.PORT }}
+              run: node server.js
