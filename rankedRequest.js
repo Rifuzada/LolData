@@ -20,14 +20,14 @@ export async function rankedRequest(
     region = region.toLowerCase();
     riotId = riotId.replace(/\s/g, "");
     let response = await axios
-        .get("https://rifuzada.github.io/LolData/account", { params: { riotId } })
+        .get("https://lol-data-sooty.vercel.app/account", { params: { riotId } })
     if (response.config.params.riotId != "") {
         puuid = response.data.puuid;
         regionSelect.style.marginLeft = "5px";
         inputContainer.style.top = "-50px";
         inputContainer.style.left = "376px";
         let profileresponse = await axios
-            .get("https://rifuzada.github.io/LolData/profile", {
+            .get("https://lol-data-sooty.vercel.app/profile", {
                 params: { puuid, region },
             })
         var iconID = profileresponse.data.profileIconId;
@@ -44,7 +44,7 @@ export async function rankedRequest(
             Lvl.innerHTML = "Level: " + Level;
         });
         let ranked = await axios
-            .get("https://rifuzada.github.io/LolData/ranked", {
+            .get("https://lol-data-sooty.vercel.app/ranked", {
                 params: { sumID, region },
             })
         if (ranked.data[0]?.queueType == "CHERRY") {
