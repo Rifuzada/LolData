@@ -50,7 +50,7 @@ export function performSearch() {
 
 
   // Mostra o preloader enquanto faz a nova requisição
-  dotflashing.style.display = "flex";
+  //dotflashing.style.display = "flex";
 
   // Chama a função para buscar e exibir os novos dados
   const requests = [
@@ -82,7 +82,7 @@ export function performNewSearch(riotId) {
 
 
   // Mostra o preloader enquanto faz a nova requisição
-  dotflashing.style.display = "flex";
+  //dotflashing.style.display = "flex";
 
   // Chama a função para buscar e exibir os novos dados
   const requests = [
