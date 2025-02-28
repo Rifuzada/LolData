@@ -13,14 +13,14 @@ export async function masteryRequest(
     region = region.toLowerCase();
     riotId = riotId.replace(/\s/g, "");
     let response = await axios
-        .get("https://lol-data-sooty.vercel.app/account", { params: { riotId } })
+        .get("http://localhost:4000/account", { params: { riotId } })
     if (response.config.params.riotId != "") {
         puuid = response.data.puuid;
         regionSelect.style.marginLeft = "5px";
         inputContainer.style.top = "-50px";
         inputContainer.style.left = "376px";
         let maestrias = await axios
-            .get("https://lol-data-sooty.vercel.app/masteries", {
+            .get("http://localhost:4000/masteries", {
                 params: { puuid, region },
             })
         var formatter = new Intl.NumberFormat("pt-BR");
