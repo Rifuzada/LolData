@@ -1,5 +1,5 @@
 import { remove, sleep, show } from "./utils.js"
-require('dotenv').config();
+var env = require('dotenv').config();
 export async function masteryRequest(
     riotId,
     puuid,
