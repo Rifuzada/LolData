@@ -25,4 +25,4 @@ jobs:
                   BASE_URL: ${{ secrets.BASE_URL }}
                   API_KEY: ${{ secrets.API_KEY }}
                   PORT: ${{ secrets.PORT }}
-              run: nodemon server.js
+              run: node server.js
