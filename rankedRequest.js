@@ -1,6 +1,5 @@
 import { remove, sleep, show } from "./utils.js";
 require('dotenv').config();
-console.log(process.env.BASE_URL)
 export async function rankedRequest(
     puuid,
     versao,
