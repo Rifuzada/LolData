@@ -23,7 +23,7 @@ export async function matchHistoryRequest(
         if (!riotId) return;
 
         // Fetch account data
-        const response = await axios.get("https://lol-data-sooty.vercel.app/account", { params: { riotId } });
+        const response = await axios.get("https://rifuzada.github.io/LolData/account", { params: { riotId } });
         puuid = response.data.puuid;
 
         // Update UI
@@ -32,9 +32,9 @@ export async function matchHistoryRequest(
         inputContainer.style.left = "376px";
 
         // Fetch match data
-        const matchIdsResponse = await axios.get("https://lol-data-sooty.vercel.app/matchIds", { params: { puuid } });
+        const matchIdsResponse = await axios.get("https://rifuzada.github.io/LolData/matchIds", { params: { puuid } });
         const matchIds = matchIdsResponse.data.slice(0, 10); // Limit to 10 matches
-        const matchHistoryResponse = await axios.get("https://lol-data-sooty.vercel.app/matchHistory", { params: { matches: matchIds } });
+        const matchHistoryResponse = await axios.get("https://rifuzada.github.io/LolData/matchHistory", { params: { matches: matchIds } });
         const matchHistory = matchHistoryResponse.data;
 
         // Fetch necessary data in parallel
