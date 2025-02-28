@@ -10,119 +10,155 @@ export async function matchHistoryRequest(
     gameMainRuneIcon,
     gameSecondaryRuneIcon
 ) {
-    let versionresponse = await axios
-        .get("http://ddragon.leagueoflegends.com/api/versions.json")
-    versao = versionresponse.data[0];
-    region = region.value.toLowerCase();
-    riotId = riotId.replace(/\s/g, "");
+    try {
+        // Get latest version once
+        const versionResponse = await axios.get("http://ddragon.leagueoflegends.com/api/versions.json");
+        versao = versionResponse.data[0];
 
-    let response = await axios.get("http://localhost:4000/account", { params: { riotId } });
-    if (response.config.params.riotId === "") return;
+        // Format parameters
+        region = region.value.toLowerCase();
+        riotId = riotId.replace(/\s/g, "");
 
-    puuid = response.data.puuid;
-    regionSelect.style.marginLeft = "5px";
-    inputContainer.style.top = "-50px";
-    inputContainer.style.left = "376px";
+        // Early return if no riotId
+        if (!riotId) return;
 
-    let matchIdsResponse = await axios.get("http://localhost:4000/matchIds", { params: { puuid } });
-    let matchIds = matchIdsResponse.data.slice(0, 10); // Limit to 10 matches
-    let matchHistoryResponse = await axios.get("http://localhost:4000/matchHistory", { params: { matches: matchIds } });
-    let matchHistory = matchHistoryResponse.data;
+        // Fetch account data
+        const response = await axios.get("http://localhost:4000/account", { params: { riotId } });
+        puuid = response.data.puuid;
 
+        // Update UI
+        regionSelect.style.marginLeft = "5px";
+        inputContainer.style.top = "-50px";
+        inputContainer.style.left = "376px";
 
-    const [responseVersion, responseRune, responseItems] = await Promise.all([
-        axios.get("http://ddragon.leagueoflegends.com/api/versions.json"),
-        axios.get(`https://ddragon.leagueoflegends.com/cdn/${versao}/data/en_US/runesReforged.json`),
-        axios.get(`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/items.json`)
-    ]);
+        // Fetch match data
+        const matchIdsResponse = await axios.get("http://localhost:4000/matchIds", { params: { puuid } });
+        const matchIds = matchIdsResponse.data.slice(0, 10); // Limit to 10 matches
+        const matchHistoryResponse = await axios.get("http://localhost:4000/matchHistory", { params: { matches: matchIds } });
+        const matchHistory = matchHistoryResponse.data;
 
-    const runeData = responseRune.data;
-    const itemData = responseItems.data;
+        // Fetch necessary data in parallel
+        const [responseRune, responseItems, matchTypeResponse] = await Promise.all([
+            axios.get(`https://ddragon.leagueoflegends.com/cdn/${versao}/data/en_US/runesReforged.json`),
+            axios.get(`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/items.json`),
+            axios.get("https://static.developer.riotgames.com/docs/lol/queues.json")
+        ]);
 
-    const matchHistoryContainer = document.getElementById("matchHistoryContainer");
-    matchHistoryContainer.style.display = "grid";
+        const runeData = responseRune.data;
+        const itemData = responseItems.data;
+        const queueType = matchTypeResponse.data;
 
-    let matchType = await axios.get("https://static.developer.riotgames.com/docs/lol/queues.json");
-    let queueType = matchType.data;
-    const translationMap = {
-        "games": "",
-        "Draft Pick": "Alternado",
-        "Blind Pick": "Escolha às Cegas",
-        "Ranked Solo": "Ranqueada Solo",
-        "Ranked Flex": "Ranqueada Flex",
-        "ARAM": "ARAM (Aleatório)",
-        "Clash": "Torneio Clash",
-        "Co-op vs. AI": "Cooperativo vs IA",
-        "One for All": "Um por Todos",
-        "ARURF": "Ultra Rápido e Furioso(Aleatório)",
-        "URF": "Ultra Rápido e Furioso",
-        "5v5": "5x5"
-    };
-    function convertTimestamp(timestamp) {
-        const date = new Date(timestamp);
-        return date.toLocaleString(); // Formata a data de acordo com a localidade padrão
+        // Display match history container
+        const matchHistoryContainer = document.getElementById("matchHistoryContainer");
+        matchHistoryContainer.style.display = "grid";
+
+        // Process and display each match
+        await renderMatchHistory(matchHistory, puuid, itemData, runeData, queueType);
+
+    } catch (error) {
+        console.error("Error in matchHistoryRequest:", error);
     }
+}
+
+// Helper functions
+function convertTimestamp(timestamp) {
+    return new Date(timestamp).toLocaleString();
+}
+
+// Translation map - define outside of functions to avoid recreation
+const TRANSLATION_MAP = {
+    "games": "",
+    "Draft Pick": "Alternado",
+    "Blind Pick": "Escolha às Cegas",
+    "Ranked Solo": "Ranqueada Solo",
+    "Ranked Flex": "Ranqueada Flex",
+    "ARAM": "ARAM (Aleatório)",
+    "Clash": "Torneio Clash",
+    "Co-op vs. AI": "Cooperativo vs IA",
+    "One for All": "Um por Todos",
+    "ARURF": "Ultra Rápido e Furioso(Aleatório)",
+    "URF": "Ultra Rápido e Furioso",
+    "5v5": "5x5"
+};
+
+// Queue name translation function
+function getTranslatedQueueName(queueId, queueTypes) {
+    const queue = queueTypes.find(q => q.queueId === queueId);
+    let queueName = queue ? queue.description : "Desconhecido";
+
+    for (const [key, value] of Object.entries(TRANSLATION_MAP)) {
+        if (queueName.includes(key)) {
+            queueName = queueName.replace(key, value);
+        }
+    }
+
+    return queueName;
+}
+
+// Main render function - async to handle parallel processing
+async function renderMatchHistory(matchHistory, puuid, itemData, runeData, queueType) {
+    // Process matches in parallel for better performance
     await Promise.all(
         matchHistory.map(async (match, matchIndex) => {
-            let dataDoJogo = convertTimestamp(match.info.gameStartTimestamp);
-            const currentMatchDiv = document.getElementById(`match${matchIndex + 1}`);
-            const gameDateSpan = document.createElement("span");
-            gameDateSpan.innerText = `Data do Jogo: ${dataDoJogo}`;
-            gameDateSpan.style.cssText = `
-                font-size: 12px;
-                color: rgb(204, 204, 204);
-                margin-left: 260px;
-                justify-content: right;
-                display: flex;
-                margin-right: 30px;
-            `;
-            currentMatchDiv.appendChild(gameDateSpan);
+            const matchDiv = document.getElementById(`match${matchIndex + 1}`);
+            if (!matchDiv) return;
 
-            console.log(dataDoJogo)
+            // Set up match container
+            matchDiv.style.cursor = "default";
+            matchDiv.style.position = "relative";
 
+            // Add game date
+            await appendGameDateElement(matchDiv, match.info.gameStartTimestamp);
+
+            // Get participants and queue name
             const participants = match.info.participants;
+            const queueName = getTranslatedQueueName(match.info.queueId, queueType);
 
-            let queueId = match.info.queueId;
-            let queue = queueType.find(q => q.queueId === queueId);
-            let queueName = queue ? queue.description : "Desconhecido";
-            for (let key in translationMap) {
-                if (queueName.includes(key)) {
-                    queueName = queueName.replace(key, translationMap[key]);
-                }
+            // Add toggle arrow
+            const arrowIcon = await createArrowIcon();
+            matchDiv.appendChild(arrowIcon);
+            arrowIcon.addEventListener("click", () =>
+                toggleMatchDetails(matchIndex, puuid, participants, itemData, runeData, queueName)
+            );
+
+            // Find current player and add their data
+            const currentPlayer = participants.find(p => p.puuid === puuid);
+            if (currentPlayer) {
+                // Add rune icons - can be processed in parallel
+                const runeIcons = await createRuneIcons(currentPlayer, runeData);
+                await Promise.all(runeIcons.map(icon => matchDiv.appendChild(icon)));
+
+                // Add champion icon
+                matchDiv.appendChild(await createChampionIcon(currentPlayer));
+
+                // Add stats container
+                matchDiv.appendChild(await createGameStatsContainer(currentPlayer, queueName));
+
+                // Add item icons
+                matchDiv.appendChild(await createItemIcons(currentPlayer, itemData));
             }
-
-            let existingDetails = document.getElementById(`matchDetails${matchIndex + 1}`);
-            currentMatchDiv.style.cursor = "default";
-            currentMatchDiv.style.position = "relative";
-
-            let arrowIcon = currentMatchDiv.querySelector(".arrow-icon") || createArrowIcon();
-            currentMatchDiv.appendChild(arrowIcon);
-
-            arrowIcon.addEventListener("click", () => toggleMatchDetails(matchIndex, puuid, participants, itemData, runeData, queueName));
-
-
-            // Seu código aqui
-            participants.forEach((participant) => {
-                if (participant.puuid === puuid) {
-                    const runeIcons = createRuneIcons(participant, runeData);
-                    runeIcons.forEach(icon => currentMatchDiv.appendChild(icon));
-
-
-                    const championIcon = createChampionIcon(participant);
-                    currentMatchDiv.appendChild(championIcon);
-
-                    const gameStatsContainer = createGameStatsContainer(participant, queueName);
-                    currentMatchDiv.appendChild(gameStatsContainer);
-                    const itemDivMatch = createItemIcons(participant, itemData);
-                    currentMatchDiv.appendChild(itemDivMatch)
-                }
-            });
-
-            return dataDoJogo;
         })
     );
 }
-function createArrowIcon() {
+
+// UI Elements creation functions - made async for potential future improvements with lazy loading
+async function appendGameDateElement(matchDiv, timestamp) {
+    const gameDate = convertTimestamp(timestamp);
+    const gameDateSpan = document.createElement("span");
+    gameDateSpan.innerText = `Data do Jogo: ${gameDate}`;
+    gameDateSpan.style.cssText = `
+        font-size: 12px;
+        color: rgb(204, 204, 204);
+        margin-left: 260px;
+        justify-content: right;
+        display: flex;
+        margin-right: 30px;
+    `;
+    matchDiv.appendChild(gameDateSpan);
+    return gameDateSpan;
+}
+
+async function createArrowIcon() {
     const arrowIcon = document.createElement("span");
     arrowIcon.classList.add("arrow-icon");
     arrowIcon.innerHTML = "▼";
@@ -137,273 +173,394 @@ function createArrowIcon() {
     return arrowIcon;
 }
 
-function toggleMatchDetails(matchIndex, puuid, participants, itemData, runeData, queueName) {
+// Toggle function made async to improve UI responsiveness
+async function toggleMatchDetails(matchIndex, puuid, participants, itemData, runeData, queueName) {
     const body = document.body;
-    const existingDetails = document.getElementById(`matchDetails${matchIndex + 1}`);
-    const arrowIcon = document.querySelector(`#match${matchIndex + 1} .arrow-icon`);
+    const matchId = `match${matchIndex + 1}`;
+    const detailsId = `matchDetails${matchIndex + 1}`;
+    const existingDetails = document.getElementById(detailsId);
+    const arrowIcon = document.querySelector(`#${matchId} .arrow-icon`);
 
+    // If details exist for this player
     if (existingDetails && existingDetails.getAttribute("data-puuid") === puuid) {
-        if (existingDetails.style.display === "none" || existingDetails.style.display === "") {
-            existingDetails.style.display = "flex";
-            arrowIcon.innerHTML = "▲";
-            body.style.top = "200px";
-        } else {
-            existingDetails.style.display = "none";
-            arrowIcon.innerHTML = "▼";
-            body.style.top = "0px";
-        }
+        const isVisible = existingDetails.style.display === "flex";
+        existingDetails.style.display = isVisible ? "none" : "flex";
+        arrowIcon.innerHTML = isVisible ? "▼" : "▲";
+        body.style.top = isVisible ? "0px" : "200px";
     } else {
+        // Remove existing details if they're for a different player
         if (existingDetails) {
             existingDetails.remove();
         }
 
-        const newDetails = createMatchDetails(matchIndex, puuid, participants, itemData, runeData, queueName);
-        const currentMatchDiv = document.getElementById(`match${matchIndex + 1}`);
-        currentMatchDiv.insertAdjacentElement("afterend", newDetails);
+        // Create new details asynchronously
+        const newDetails = await createMatchDetails(matchIndex, puuid, participants, itemData, runeData, queueName);
+        document.getElementById(matchId).insertAdjacentElement("afterend", newDetails);
         arrowIcon.innerHTML = "▲";
         body.style.top = "200px";
     }
 }
 
-function createMatchDetails(matchIndex, puuid, participants, itemData, runeData, queueName) {
-    const existingDetails = document.createElement("div");
-    existingDetails.id = `matchDetails${matchIndex + 1}`;
-    existingDetails.className = "matchesDetails";
-    existingDetails.setAttribute("data-puuid", puuid);
-    existingDetails.style.cssText = `
-        margin-top: 10px; padding: 10px; background-color: #2a2a2a; border-radius: 8px;
-        display: flex; justify-content: space-between; gap: 20px;
+async function createMatchDetails(matchIndex, puuid, participants, itemData, runeData, queueName) {
+    const detailsContainer = document.createElement("div");
+    detailsContainer.id = `matchDetails${matchIndex + 1}`;
+    detailsContainer.className = "matchesDetails";
+    detailsContainer.setAttribute("data-puuid", puuid);
+    detailsContainer.style.cssText = `
+        margin-top: 10px; 
+        padding: 10px; 
+        background-color: #2a2a2a; 
+        border-radius: 8px;
+        display: flex; 
+        justify-content: space-between; 
+        gap: 20px;
     `;
 
     const winningTeam = participants.filter(p => p.win);
     const losingTeam = participants.filter(p => !p.win);
 
-    const winningTeamColumn = createTeamColumn(winningTeam, true, itemData);
-    const losingTeamColumn = createTeamColumn(losingTeam, false, itemData);
+    // Create team columns in parallel
+    const [winningColumn, losingColumn] = await Promise.all([
+        createTeamColumn(winningTeam, true, itemData),
+        createTeamColumn(losingTeam, false, itemData)
+    ]);
 
-    existingDetails.appendChild(winningTeamColumn);
-    existingDetails.appendChild(losingTeamColumn);
+    detailsContainer.appendChild(winningColumn);
+    detailsContainer.appendChild(losingColumn);
 
-    return existingDetails;
+    return detailsContainer;
 }
 
-function createTeamColumn(team, isWinningTeam, itemData) {
+async function createTeamColumn(team, isWinningTeam, itemData) {
     const teamColumn = document.createElement("div");
+    teamColumn.id = isWinningTeam ? "winningTeam" : "losingTeam";
     teamColumn.style.cssText = `
-        flex: 1; display: flex; flex-direction: column; gap: 10px;
+        flex: 1; 
+        display: flex; 
+        flex-direction: column; 
+        gap: 10px;
     `;
 
-    team.forEach((participant) => {
-        const participantDiv = document.createElement("div");
-        participantDiv.style.cssText = `
-            display: flex; align-items: center; padding: 5px;
-            background-color: ${isWinningTeam ? "#2a5a2a" : "#5a2a2a"}; border-radius: 5px;
-        `;
+    // Process all team members in parallel for better performance
+    const teamElements = await Promise.all(
+        team.map(async participant => {
+            const participantDiv = document.createElement("div");
+            participantDiv.className = "participant";
+            participantDiv.style.cssText = `
+                display: flex; 
+                align-items: center; 
+                padding: 5px;
+                background-color: ${isWinningTeam ? "#2a5a2a" : "#5a2a2a"}; 
+                border-radius: 5px;
+            `;
 
-        const championIcon = createChampionIcon(participant);
-        participantDiv.appendChild(championIcon);
+            // Create elements in parallel
+            const [championIcon, participantInfo, itemsDiv] = await Promise.all([
+                createChampionIcon(participant),
+                createParticipantInfo(participant),
+                createItemsDiv(participant, itemData)
+            ]);
 
-        const participantInfo = createParticipantInfo(participant);
-        participantDiv.appendChild(participantInfo);
+            participantDiv.appendChild(championIcon);
+            participantDiv.appendChild(participantInfo);
+            participantDiv.appendChild(itemsDiv);
 
-        const itemsDiv = createItemsDiv(participant, itemData);
-        participantDiv.appendChild(itemsDiv);
+            return participantDiv;
+        })
+    );
 
-        teamColumn.appendChild(participantDiv);
-    });
+    // Add all team members to the column
+    teamElements.forEach(element => teamColumn.appendChild(element));
 
     return teamColumn;
 }
 
-function createParticipantInfo(participant) {
+async function createParticipantInfo(participant) {
     const participantInfo = document.createElement("div");
     participantInfo.style.cssText = `
-        display: flex; flex-direction: column; gap: 2px;
+        display: flex; 
+        flex-direction: column; 
+        gap: 2px;
+        margin-left: 1.5em;
     `;
 
+    // Create Riot ID element
     const riotIdElement = document.createElement("span");
-    riotIdElement.innerText = `${participant.riotIdGameName}#${participant.riotIdTagline}`;
+    const riotId = `${participant.riotIdGameName}#${participant.riotIdTagline}`;
+    riotIdElement.innerText = riotId;
     riotIdElement.style.cssText = `
-        color: #fff; font-weight: bold; font-size: 14px; cursor: pointer;
+        color: #fff; 
+        font-weight: bold; 
+        font-size: 14px; 
+        cursor: pointer;
     `;
-    riotIdElement.addEventListener("click", (e) => {
+
+    // Add click event for player search
+    riotIdElement.addEventListener("click", async (e) => {
         e.stopPropagation();
-        performNewSearch(`${participant.riotIdGameName}#${participant.riotIdTagline}`);
+        await performNewSearch(riotId);
         document.body.style.top = "0px";
 
-        // Correctly iterate over the collection of elements with class 'matchesDetails'
-        const existingDetails = document.getElementsByClassName("matchesDetails");
-        for (let detail of existingDetails) {
+        // Hide all match details
+        document.querySelectorAll('.matchesDetails').forEach(detail => {
             detail.style.display = "none";
-        }
+        });
     });
+
     participantInfo.appendChild(riotIdElement);
 
+    // Create KDA element
     const kda = document.createElement("span");
     kda.innerText = `${participant.kills} / ${participant.deaths} / ${participant.assists}`;
     kda.style.cssText = `
-        color: #ccc; font-size: 12px;
+        color: #ccc; 
+        font-size: 12px;
     `;
     participantInfo.appendChild(kda);
 
     return participantInfo;
 }
 
-
-function createItemsDiv(participant, itemData) {
+async function createItemsDiv(participant, itemData) {
     const itemsDiv = document.createElement("div");
     itemsDiv.style.cssText = `
-        display: flex; gap: 5px; margin-left: auto;
+        display: flex; 
+        gap: 5px; 
+        margin-left: auto;
     `;
-    itemsDiv.id = "itemsDiv";
 
-    const matchItems = [
+    const itemIds = [
         participant.item0,
         participant.item1,
         participant.item2,
         participant.item3,
         participant.item4,
         participant.item5,
-        participant.item6,
+        participant.item6
     ];
 
-    matchItems.forEach((itemId) => {
-        if (itemId !== 0) {
-            const item = itemData.find((i) => i.id === itemId);
-            if (item) {
-                const itemIcon = document.createElement("img");
-                itemIcon.style = "width: 30px; height: 30px; border-radius: 5px;";
-                itemIcon.src = item.iconPath
-                    .toLowerCase()
-                    .replace("/lol-game-data/assets/", "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/");
-                itemIcon.style.cssText = `
-                    border: 2px solid #d4af37; border-radius: 15px; width: 35px; height: 35px; margin-top: 20px;
-                `;
-                itemsDiv.appendChild(itemIcon);
+    // Common style for all item icons
+    const itemIconStyle = `
+        border: 2px solid #d4af37; 
+        border-radius: 15px; 
+        width: 35px; 
+        height: 35px; 
+        margin-top: 20px;
+    `;
+
+    // Create all item icons in parallel
+    const itemElements = await Promise.all(
+        itemIds.map(async itemId => {
+            if (itemId && itemId !== 0) {
+                const item = itemData.find(i => i.id === itemId);
+                if (item) {
+                    const itemIcon = document.createElement("img");
+                    itemIcon.src = formatItemIconPath(item.iconPath);
+                    itemIcon.style.cssText = itemIconStyle;
+                    return itemIcon;
+                }
             }
-        }
+            return null;
+        })
+    );
+
+    // Add only valid items to the div
+    itemElements.filter(item => item !== null).forEach(item => {
+        itemsDiv.appendChild(item);
     });
 
     return itemsDiv;
 }
 
-function createRuneIcons(participant, runeData) {
-    const gameMainRune = participant.perks.styles[0].selections[0].perk;
-    const gameSecondaryRune = participant.perks.styles[1].style;
+function formatItemIconPath(iconPath) {
+    return iconPath
+        .toLowerCase()
+        .replace(
+            "/lol-game-data/assets/",
+            "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/"
+        );
+}
+
+async function createRuneIcons(participant, runeData) {
+    const styles = participant.perks.styles;
+    const gameMainRune = styles[0].selections[0].perk;
+    const gameSecondaryRune = styles[1].style;
 
     let gameMainRuneIconPath = "";
     let gameSecondaryRuneIconPath = "";
 
-    for (let style of runeData) {
-        for (let slot of style.slots) {
-            for (let rune of slot.runes) {
-                if (rune.id === gameMainRune) gameMainRuneIconPath = rune.icon;
-                if (style.id === gameSecondaryRune) gameSecondaryRuneIconPath = style.icon;
+    // Find rune icons
+    for (const style of runeData) {
+        // Check for secondary rune style
+        if (style.id === gameSecondaryRune) {
+            gameSecondaryRuneIconPath = style.icon;
+        }
+
+        // Search for main rune
+        for (const slot of style.slots) {
+            for (const rune of slot.runes) {
+                if (rune.id === gameMainRune) {
+                    gameMainRuneIconPath = rune.icon;
+                }
             }
         }
     }
 
-    const gameMainRuneIcon = document.createElement("img");
-    gameMainRuneIcon.src = `https://ddragon.canisback.com/img/${gameMainRuneIconPath}`;
-    gameMainRuneIcon.style.cssText = `
-        width: 25px; height: 25px; float: left; margin-top: 15px; margin-left: 6px;
-        border: 2px solid #d4af37; border-radius: 15px;
-    `;
+    // Create icons in parallel
+    const [mainRuneIcon, secondaryRuneIcon] = await Promise.all([
+        createMainRuneIcon(gameMainRuneIconPath),
+        createSecondaryRuneIcon(gameSecondaryRuneIconPath)
+    ]);
 
-    const gameSecondaryRuneIcon = document.createElement("img");
-    gameSecondaryRuneIcon.src = `https://ddragon.canisback.com/img/${gameSecondaryRuneIconPath}`;
-    gameSecondaryRuneIcon.style.cssText = `
-        width: 15px; height: 15px; float: left; margin-top: 20px; margin-left: 2px;
-        padding: 2px; border: 2px solid #d4af37; border-radius: 15px;
-    `;
-
-    return [gameMainRuneIcon, gameSecondaryRuneIcon];
+    return [mainRuneIcon, secondaryRuneIcon];
 }
 
-function createItemIcons(participant, itemData) {
-    // Cria uma nova div com a classe "items"
+async function createMainRuneIcon(iconPath) {
+    const mainRuneIcon = document.createElement("img");
+    mainRuneIcon.src = `https://ddragon.canisback.com/img/${iconPath}`;
+    mainRuneIcon.style.cssText = `
+        width: 25px; 
+        height: 25px; 
+        float: left; 
+        margin-top: 15px; 
+        margin-left: 6px;
+        border: 2px solid #d4af37; 
+        border-radius: 15px;
+    `;
+    return mainRuneIcon;
+}
+
+async function createSecondaryRuneIcon(iconPath) {
+    const secondaryRuneIcon = document.createElement("img");
+    secondaryRuneIcon.src = `https://ddragon.canisback.com/img/${iconPath}`;
+    secondaryRuneIcon.style.cssText = `
+        width: 15px; 
+        height: 15px; 
+        float: left; 
+        margin-top: 20px; 
+        margin-left: 2px;
+        padding: 2px; 
+        border: 2px solid #d4af37; 
+        border-radius: 15px;
+    `;
+    return secondaryRuneIcon;
+}
+
+async function createItemIcons(participant, itemData) {
     const itemDivMatch = document.createElement("div");
     itemDivMatch.className = "items";
     itemDivMatch.style.cssText = ` 
-            width: 500px;
-            left: 10%;
-            top: -10%;
-            display: flex;
-  `
+        width: 500px;
+        left: 10%;
+        top: -10%;
+        display: flex;
+    `;
 
-    // Lista de itens do participante
-    const matchItems = [
+    const itemIds = [
         participant.item0,
         participant.item1,
         participant.item2,
         participant.item3,
         participant.item4,
         participant.item5,
-        participant.item6,
+        participant.item6
     ];
 
-    // Itera sobre os itens e cria os ícones
-    matchItems.forEach((itemId) => {
-        if (itemId) { // Verifica se o itemId é válido
-            const item = itemData.find((i) => i.id === itemId);
-            if (item) {
-                const itemIcon = document.createElement("img");
-                itemIcon.src = item.iconPath
-                    .toLowerCase()
-                    .replace(
-                        "/lol-game-data/assets/",
-                        "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/"
-                    );
-                itemIcon.style.cssText = `
-                    border: 2px solid #d4af37; 
-                    border-radius: 15px; 
-                    width: 35px; 
-                    height: 35px; 
-                    margin-top: 20px;
-                `;
-                itemDivMatch.appendChild(itemIcon); // Adiciona o ícone à div
+    // Process all items in parallel
+    const itemElements = await Promise.all(
+        itemIds.map(async itemId => {
+            if (itemId) {
+                const item = itemData.find(i => i.id === itemId);
+                if (item) {
+                    const itemIcon = document.createElement("img");
+                    itemIcon.src = formatItemIconPath(item.iconPath);
+                    itemIcon.style.cssText = `
+                        border: 2px solid #d4af37; 
+                        border-radius: 15px; 
+                        width: 35px; 
+                        height: 35px; 
+                        margin-top: 20px;
+                    `;
+                    return itemIcon;
+                }
             }
-        }
+            return null;
+        })
+    );
+
+    // Add only valid items to the div
+    itemElements.filter(item => item !== null).forEach(item => {
+        itemDivMatch.appendChild(item);
     });
 
-    return itemDivMatch; // Retorna a div com os ícones
+    return itemDivMatch;
 }
-function createChampionIcon(participant) {
+
+async function createChampionIcon(participant) {
     const championIcon = document.createElement("img");
     championIcon.src = `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${participant.championId}.png`;
     championIcon.style.cssText = `
-        width: 60px; height: 60px; float: left; margin-left: 8px; 
+        width: 60px; 
+        height: 60px; 
+        float: left; 
+        margin-left: 8px; 
     `;
     return championIcon;
 }
 
-function createGameStatsContainer(participant, queueName, dataDoJogo) {
-
+async function createGameStatsContainer(participant, queueName) {
     const gameStatsContainer = document.createElement("div");
     gameStatsContainer.style.cssText = `
-        float: left; margin-left: 10px; display: flex; align-items: center; height: 60px;
+        float: left; 
+        margin-left: 10px; 
+        display: flex; 
+        align-items: center; 
+        height: 60px;
     `;
 
-    const gameStats = document.createElement("span");
-    gameStats.innerText = participant.win ? "Vitória" : "Derrota";
-    gameStats.style.cssText = `
-        color: ${participant.win ? "#2DEB90" : "#ff5859"}; font-weight: bold; font-size: 16px; margin-right: 10px;
-    `;
+    // Create elements in parallel
+    const [gameStats, gameQueueType, kdaTxt] = await Promise.all([
+        createGameResult(participant.win),
+        createQueueTypeElement(queueName),
+        createKDAElement(participant)
+    ]);
+
     gameStatsContainer.appendChild(gameStats);
-    const gameQueueType = document.createElement("span");
-    gameQueueType.innerText = queueName;
-    gameQueueType.style.cssText = `
-        color: #ccc; font-size: 12px; margin-right: 10px;
-    `;
     gameStatsContainer.appendChild(gameQueueType);
-
-    const kda = `${participant.kills} / ${participant.deaths} / ${participant.assists}`;
-    const kdaTxt = document.createElement("span");
-    kdaTxt.innerText = kda;
-    kdaTxt.style.cssText = `
-        color: #ccc; font-size: 14px;
-    `;
     gameStatsContainer.appendChild(kdaTxt);
 
     return gameStatsContainer;
+}
+
+async function createGameResult(isWin) {
+    const gameStats = document.createElement("span");
+    gameStats.innerText = isWin ? "Vitória" : "Derrota";
+    gameStats.style.cssText = `
+        color: ${isWin ? "#2DEB90" : "#ff5859"}; 
+        font-weight: bold; 
+        font-size: 18px; 
+        margin-right: 10px;
+    `;
+    return gameStats;
+}
+
+async function createQueueTypeElement(queueName) {
+    const gameQueueType = document.createElement("span");
+    gameQueueType.innerText = queueName;
+    gameQueueType.style.cssText = `
+        color: #ccc; 
+        font-size: 14px; 
+        margin-right: 10px;
+    `;
+    return gameQueueType;
+}
+
+async function createKDAElement(participant) {
+    const kdaTxt = document.createElement("span");
+    kdaTxt.innerText = `${participant.kills} / ${participant.deaths} / ${participant.assists}`;
+    kdaTxt.style.cssText = `
+        color: #ccc; 
+        font-size: 14px;
+    `;
+    return kdaTxt;
 }

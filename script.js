@@ -29,6 +29,10 @@ import {
 var containerMasteryI = [];
 let riotId = document.getElementById("riotId").value;
 export function performSearch() {
+  document.querySelectorAll('.matchesDetails').forEach(detail => {
+    detail.style.display = "none";
+    document.body.style.top = "0px";
+  });
   riotId = document.getElementById("riotId").value;
   body.style.overflowY = "scroll";
   if (riotId === "") {
