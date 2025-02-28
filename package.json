@@ -1,6 +1,6 @@
 {
   "main": "server.js",
-  "type": "commonjs",
+  "type": "module",
   "scripts": {
     "predeploy": "npm run build",
     "start": "nodemon server.js",

@@ -9,7 +9,7 @@ var app = express();
 app.use(cors());
 
 const api_key = process.env.API_KEY;
-
+app.get("/", (req, res) => res.send("Express on Vercel"));
 app.listen(4000, function () {
   console.log("Server started on port 4000")
 })
