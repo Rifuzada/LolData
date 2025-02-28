@@ -12,7 +12,15 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@v3
 
-            - name: Set environment variables
+            - name: Setup Node.js
+              uses: actions/setup-node@v3
+              with:
+                  node-version: 20 # Garante que a versão seja compatível
+
+            - name: Install dependencies
+              run: npm install # 🔥 Instala todas as dependências do package.json
+
+            - name: Start server
               env:
                   BASE_URL: ${{ secrets.BASE_URL }}
                   API_KEY: ${{ secrets.API_KEY }}
