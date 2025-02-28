@@ -1,5 +1,5 @@
 import { remove, sleep, show } from "./utils.js"
-var env = require('dotenv').config();
+import base_url from "./server.js"
 export async function masteryRequest(
     riotId,
     puuid,
@@ -14,14 +14,14 @@ export async function masteryRequest(
     region = region.toLowerCase();
     riotId = riotId.replace(/\s/g, "");
     let response = await axios
-        .get(`${process.env.BASE_URL}/account`, { params: { riotId } })
+        .get(`${base_url}/account`, { params: { riotId } })
     if (response.config.params.riotId != "") {
         puuid = response.data.puuid;
         regionSelect.style.marginLeft = "5px";
         inputContainer.style.top = "-50px";
         inputContainer.style.left = "376px";
         let maestrias = await axios
-            .get(`${process.env.BASE_URL}/masteries`, {
+            .get(`${base_url}/masteries`, {
                 params: { puuid, region },
             })
         var formatter = new Intl.NumberFormat("pt-BR");

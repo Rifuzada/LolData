@@ -1,5 +1,5 @@
 import { remove, sleep, show } from "./utils.js";
-var env = require('dotenv').config();
+import base_url from "./server.js"
 export async function rankedRequest(
     puuid,
     versao,
@@ -21,14 +21,14 @@ export async function rankedRequest(
     region = region.toLowerCase();
     riotId = riotId.replace(/\s/g, "");
     let response = await axios
-        .get(`${process.env.BASE_URL}/account`, { params: { riotId } })
+        .get(`${base_url}/account`, { params: { riotId } })
     if (response.config.params.riotId != "") {
         puuid = response.data.puuid;
         regionSelect.style.marginLeft = "5px";
         inputContainer.style.top = "-50px";
         inputContainer.style.left = "376px";
         let profileresponse = await axios
-            .get(`${process.env.BASE_URL}/profile`, {
+            .get(`${base_url}/profile`, {
                 params: { puuid, region },
             })
         var iconID = profileresponse.data.profileIconId;
@@ -45,7 +45,7 @@ export async function rankedRequest(
             Lvl.innerHTML = "Level: " + Level;
         });
         let ranked = await axios
-            .get(`${process.env.BASE_URL}/ranked`, {
+            .get(`${base_url}/ranked`, {
                 params: { sumID, region },
             })
         if (ranked.data[0]?.queueType == "CHERRY") {

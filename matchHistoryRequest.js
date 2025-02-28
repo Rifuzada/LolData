@@ -1,5 +1,5 @@
 import { performNewSearch } from "./script.js";
-var env = require('dotenv').config();
+import base_url from "./server.js"
 
 export async function matchHistoryRequest(
     riotId,
@@ -24,7 +24,7 @@ export async function matchHistoryRequest(
         if (!riotId) return;
 
         // Fetch account data
-        const response = await axios.get(`${process.env.BASE_URL}/account`, { params: { riotId } });
+        const response = await axios.get(`${base_url}/account`, { params: { riotId } });
         puuid = response.data.puuid;
 
         // Update UI
@@ -33,9 +33,9 @@ export async function matchHistoryRequest(
         inputContainer.style.left = "376px";
 
         // Fetch match data
-        const matchIdsResponse = await axios.get(`${process.env.BASE_URL}/matchIds`, { params: { puuid } });
+        const matchIdsResponse = await axios.get(`${base_url}/matchIds`, { params: { puuid } });
         const matchIds = matchIdsResponse.data.slice(0, 10); // Limit to 10 matches
-        const matchHistoryResponse = await axios.get(`${process.env.BASE_URL}/matchHistory`, { params: { matches: matchIds } });
+        const matchHistoryResponse = await axios.get(`${base_url}/matchHistory`, { params: { matches: matchIds } });
         const matchHistory = matchHistoryResponse.data;
 
         // Fetch necessary data in parallel
