@@ -1,5 +1,4 @@
 {
-  "homepage": "https://rifuzada.github.io/LolData",
   "scripts": {
     "predeploy": "npm run build",
     "start": "nodemon server.js",
