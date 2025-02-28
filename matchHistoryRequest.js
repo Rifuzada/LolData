@@ -1,4 +1,5 @@
 import { performNewSearch } from "./script.js";
+require('dotenv').config();
 
 export async function matchHistoryRequest(
     riotId,
