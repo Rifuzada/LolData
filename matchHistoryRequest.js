@@ -12,7 +12,7 @@ export async function matchHistoryRequest(
 ) {
     try {
         // Get latest version once
-        const versionResponse = await axios.get("http://ddragon.leagueoflegends.com/api/versions.json");
+        const versionResponse = await axios.get("https://ddragon.leagueoflegends.com/api/versions.json");
         versao = versionResponse.data[0];
 
         // Format parameters

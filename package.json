@@ -1,6 +1,9 @@
 {
+  "homepage": "https://rifuzada.github.io/LolData",
   "scripts": {
-    "start": "nodemon server.js"
+    "predeploy": "npm run build",
+    "start": "nodemon server.js",
+    "deploy": "gh-pages -d build"
   },
   "dependencies": {
     "axios": "^1.7.0",
@@ -8,5 +11,8 @@
     "dotenv": "^8.6.0",
     "express": "^4.19.2",
     "nodemon": "^3.1.0"
+  },
+  "devDependencies": {
+    "gh-pages": "^6.3.0"
   }
 }

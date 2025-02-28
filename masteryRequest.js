@@ -29,7 +29,7 @@ export async function masteryRequest(
         var maestriaData = await Object.keys(maestrias.data);
         var arrayLength = maestriaData.length;
         let versionresponse = await axios
-            .get("http://ddragon.leagueoflegends.com/api/versions.json")
+            .get("https://ddragon.leagueoflegends.com/api/versions.json")
         versao = versionresponse.data[0];
         let nomes = await axios
             .get(

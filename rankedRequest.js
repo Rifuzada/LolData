@@ -34,7 +34,7 @@ export async function rankedRequest(
         var Level = profileresponse.data.summonerLevel;
         var sumID = profileresponse.data.id;
         let versionresponse = await axios
-            .get("http://ddragon.leagueoflegends.com/api/versions.json")
+            .get("https://ddragon.leagueoflegends.com/api/versions.json")
         versao = versionresponse.data[0];
         img.src = `https://ddragon.leagueoflegends.com/cdn/${versao}/img/profileicon/${iconID}.png`;
         sleep(300).then(() => {
