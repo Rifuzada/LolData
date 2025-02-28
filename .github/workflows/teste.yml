@@ -1,0 +1,18 @@
+name: CI
+
+on:
+    push:
+        branches: [main]
+    workflow_dispatch:
+
+jobs:
+    build-and-deploy:
+        runs-on: ubuntu-latest
+        env:
+            base_url: ${{ secrets.BASE_URL }}
+            api_key: ${{ secrets.API_KEY }}
+            port: ${{ secrets.PORT }}
+        steps:
+            - name: Print environment variables
+              run: |
+                  echo "base_url: ${{ env.base_url }} api_key: ${{ env.api_key }} port: ${{ env.port }}"
