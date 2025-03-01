@@ -6,7 +6,7 @@ var app = express();
 app.use(cors());
 const api_key = process.env.API_KEY;
 
-console.log(api_key, this.base_url)
+console.log(api_key)
 
 app.listen(process.env.PORT, function () {
   console.log("Server started on port 4000")
