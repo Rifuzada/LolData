@@ -1,5 +1,6 @@
 import { remove, sleep, show } from "./utils.js"
-const base_url = require('env');
+const base_url = process.env.BASE_URL;
+
 
 export async function masteryRequest(
     riotId,
