@@ -1,4 +1,5 @@
 import { remove, sleep, show } from "./utils.js"
+import 'dotenv/config'
 const base_url = process.env.BASE_URL;
 
 
