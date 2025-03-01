@@ -1,6 +1,6 @@
-var express = require('express');
-var cors = require('cors');
-const axios = require('axios');
+import express from 'express';
+import cors from 'cors';
+import axios from 'axios';
 require('dotenv').config();
 
 
