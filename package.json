@@ -1,7 +1,7 @@
 {
   "scripts": {
     "predeploy": "npm run build",
-    "start": "nodemon server.js",
+    "start": "node server.js",
     "deploy": "gh-pages -d build"
   },
   "dependencies": {
