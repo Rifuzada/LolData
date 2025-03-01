@@ -1,8 +1,8 @@
 {
+  "main": "server.js",
   "scripts": {
-    "predeploy": "npm run build",
     "start": "nodemon server.js",
-    "deploy": "gh-pages -d build"
+    "build": "mkdir -p dist && cp -r public dist && cp -r views dist"
   },
   "dependencies": {
     "axios": "^1.7.0",
