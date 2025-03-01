@@ -1,5 +1,5 @@
 import { remove, sleep, show } from "./utils.js";
-import { base_url } from './server.js';
+import { base_url } from 'env.js';
 
 
 export async function rankedRequest(
