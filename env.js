@@ -1,4 +1,4 @@
-const env = require('dotenv');
+import env from 'dotenv';
 env.config();
 
 // Export base_url
