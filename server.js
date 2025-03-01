@@ -1,8 +1,10 @@
 const express = require('express');
 require('dotenv').config(); // Carregar variáveis de ambiente
-module.exports.base_url = process.env.BASE_URL;
 const cors = require('cors');
 const axios = require('axios');
+
+// Exportar base_url
+module.exports.base_url = process.env.BASE_URL;
 
 var app = express();
 
@@ -22,6 +24,11 @@ const endpointSummonerPuuid = "lol/summoner/v4/summoners/by-puuid"
 const endpointRankedID = "lol/league/v4/entries/by-summoner"
 const endpointMatchIDS = "/lol/match/v5/matches/by-puuid/"
 const endpointMatches = "/lol/match/v5/matches/"
+
+app.get('/config', (req, res) => {
+  res.json({ base_url: process.env.BASE_URL });
+});
+
 
 app.get('/account', async (req, res) => {
   const { riotId } = req.query
