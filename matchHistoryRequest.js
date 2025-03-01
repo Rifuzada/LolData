@@ -1,5 +1,5 @@
 import { performNewSearch } from "./script.js";
-const base_url = require('env.js');
+const base_url = require('env');
 
 export async function matchHistoryRequest(
     riotId,

@@ -1,5 +1,5 @@
 import { remove, sleep, show } from "./utils.js";
-const base_url = require('env.js');
+const base_url = require('env');
 
 
 export async function rankedRequest(
