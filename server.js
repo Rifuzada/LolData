@@ -5,11 +5,13 @@ const env = require('dotenv');
 env.config();
 
 // Export base_url
-exports.base_url = process.env.BASE_URL;
+export const base_url = process.env.BASE_URL;
 
 var app = express();
 app.use(cors());
 const api_key = process.env.API_KEY;
+
+console.log(api_key, this.base_url)
 
 app.listen(process.env.PORT, function () {
   console.log("Server started on port 4000")
