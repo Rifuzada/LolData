@@ -1,5 +1,6 @@
 import { performNewSearch } from "./script.js";
-const { base_url } = require('./server.js');
+import { base_url } from './server.js';
+
 
 
 export async function matchHistoryRequest(
