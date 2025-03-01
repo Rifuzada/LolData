@@ -1,16 +1,14 @@
-import express from 'node:express';
-import cors from 'cors';
-import axios from 'axios';
-import env from 'dotenv';
+const express = require('express');
+const cors = require('cors');
+const axios = require('axios');
+const env = require('dotenv');
 env.config();
 
-// Exportar base_url
-export const base_url = process.env.BASE_URL;
+// Export base_url
+exports.base_url = process.env.BASE_URL;
 
 var app = express();
-
 app.use(cors());
-
 const api_key = process.env.API_KEY;
 
 app.listen(process.env.PORT, function () {
@@ -25,7 +23,6 @@ const endpointSummonerPuuid = "lol/summoner/v4/summoners/by-puuid"
 const endpointRankedID = "lol/league/v4/entries/by-summoner"
 const endpointMatchIDS = "/lol/match/v5/matches/by-puuid/"
 const endpointMatches = "/lol/match/v5/matches/"
-
 
 app.get('/account', async (req, res) => {
   const { riotId } = req.query
@@ -58,6 +55,7 @@ app.get('/profile', async (req, res) => {
     .catch(err => err)
   res.json(response)
 })
+
 app.get('/ranked', async (req, res) => {
   const { region } = req.query;
   const { sumID } = req.query
@@ -69,6 +67,7 @@ app.get('/ranked', async (req, res) => {
     .catch(err => err)
   res.json(response)
 })
+
 app.get('/matchIds', async (req, res) => {
   const { puuid } = req.query
   const matchIdUrl = `${riotUrl}${endpointMatchIDS}${puuid}/ids?start=0&count=20&api_key=${api_key}`
@@ -77,25 +76,24 @@ app.get('/matchIds', async (req, res) => {
     .catch(err => err)
   res.json(response)
 })
+
 app.get('/matchHistory', async (req, res) => {
   try {
     const { matches } = req.query;
     const matchDataPromises = [];
-
     for (let i = 0; i < 10; i++) {
       const matchDataUrl = `${riotUrl}${endpointMatches}${matches[i]}?api_key=${api_key}`;
       matchDataPromises.push(axios.get(matchDataUrl));
     }
-
     const matchDataResponses = await Promise.all(matchDataPromises);
     const matchData = matchDataResponses.map(response => response.data);
-
     res.json(matchData);
   } catch (error) {
     res.status(500).json({ error: "Internal Server Error" });
     console.error("Error fetching data from Riot API:", error);
   }
 });
+
 app.get('/PuuidToName', async (req, res) => {
   try {
     const { Ids } = req.query; // Assuming Ids parameter contains an array of IDs
@@ -106,10 +104,11 @@ app.get('/PuuidToName', async (req, res) => {
     }
     const puuidDataResponses = await Promise.all(puuIdPromises);
     const puuidData = puuidDataResponses.map(response => response.data);
-
     res.json(puuidData);
   } catch (error) {
     console.error("Error fetching data from Riot API:", error);
     //res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
+module.exports = app;
