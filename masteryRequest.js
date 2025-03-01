@@ -1,11 +1,6 @@
 import { remove, sleep, show } from "./utils.js"
 import { base_url } from './server.js';
 
-const response = await fetch('https://rifuzada.github.io/LolData/config');
-const data = await response.json();
-const base_url = data.base_url;
-
-
 export async function masteryRequest(
     riotId,
     puuid,
