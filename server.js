@@ -2,7 +2,7 @@ const express = require('express');
 require('dotenv').config(); // Carregar variáveis de ambiente
 module.exports.base_url = process.env.BASE_URL;
 const cors = require('cors');
-const acxios = require('axios');
+const axios = require('axios');
 
 var app = express();
 
