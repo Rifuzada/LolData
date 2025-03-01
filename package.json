@@ -1,7 +1,7 @@
 {
   "scripts": {
     "predeploy": "npm run build",
-    "start": "node server.js",
+    "start": "node --experimental-specifier-resolution=node server.js",
     "deploy": "gh-pages -d build"
   },
   "dependencies": {

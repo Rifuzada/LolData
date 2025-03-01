@@ -1,4 +1,4 @@
-import express from './express';
+import express from 'node:express';
 import cors from 'cors';
 import axios from 'axios';
 import env from 'dotenv';
