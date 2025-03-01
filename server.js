@@ -1,8 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import axios from 'axios';
-import * as dotenv from 'dotenv';
-dotenv.config();
+import env from 'dotenv';
+env.config();
 
 // Exportar base_url
 export const base_url = process.env.BASE_URL;
