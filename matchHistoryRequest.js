@@ -1,5 +1,5 @@
 import { performNewSearch } from "./script.js";
-import 'dotenv/config'
+import 'dotenv/config';
 const base_url = process.env.BASE_URL;
 
 export async function matchHistoryRequest(
