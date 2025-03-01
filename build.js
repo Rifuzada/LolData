@@ -2,7 +2,17 @@ const fs = require("fs");
 const path = require("path");
 
 const distDir = path.join(__dirname, "dist");
-const filesToCopy = ["index.html", "style.css", "script.js"];
+const filesToCopy = [
+    "index.html",
+    "style.css",
+    "script.js",
+    "masteryRequest.js",
+    "matchHistoryRequest.js",
+    "rankedRequest.js",
+    "utils.js",
+    "allVars.js",
+    "LoLData.ico"
+];
 
 // 🔹 Verifica se a pasta dist existe, se não, cria
 if (!fs.existsSync(distDir)) {
