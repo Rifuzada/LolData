@@ -2,7 +2,7 @@
   "main": "server.js",
   "scripts": {
     "start": "nodemon server.js",
-    "build": "mkdir -p dist && cp -r public dist && cp -r views dist"
+    "build": "node build.js"
   },
   "dependencies": {
     "axios": "^1.7.0",
