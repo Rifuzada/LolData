@@ -1,3 +1,3 @@
-Versao discontinuada.
+Versao descontinuada.
 
 Nova versao em breve...
