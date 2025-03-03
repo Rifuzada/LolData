@@ -1,0 +1,283 @@
+.input_containerSyle {
+  top: -37.2vh;
+  left: 47.1vw;
+}
+#search_button{
+  margin: 0 0.5em 2em;
+  }
+#region{
+  margin-left: 5px;
+}
+
+#container {
+  background-color: #2a2a2a;
+  height: 20%;
+  border-radius: 5px;
+  border: 2px solid #d4af37;
+  text-align: center;
+  padding: 10px 5px 4px 5px;
+  width: 255px;
+  display: block;
+  margin-left: 224px;
+  margin-top: -237px;
+}
+
+#container > span {
+  font-size: 1.3em;
+}
+
+#icon > img {
+  display: block;
+  width: 222px;
+  height: 222px;
+  border-radius: 5px;
+  border: 2px solid #d4af37;
+  margin-bottom: 15px;
+}
+
+#generalContainer {
+  position: relative; /* Adicione position: relative se for necessário */
+  left: -15vw;
+  top: 12vh;
+}
+
+#rankedIcon, #rankedFlexIcon {
+  width: 68px;
+  height: 68px;
+  margin: auto;
+}
+
+#containerRanked {
+  display: flex;
+  justify-content: center;
+  gap: 1.8px;
+  flex-wrap: wrap;
+  position: relative; /* Adicione position: relative se for necessário */
+  top: -0.3em;
+  left: -10.4em;
+}
+
+#containerRankedSoloq,
+#containerRankedFlex {
+  height: 152.8px;
+  width: 254px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #2a2a2a;
+  padding: 10px;
+  border-radius: 8px;
+  border: 2px solid #d4af37;
+  margin-top: 10px; /* Use margin-top em vez de top */
+}
+
+span {
+  font-size: 0.75em;
+}
+
+#containerMastery {
+  display: flex;
+  position: relative; /* Adicione position: relative se for necessário */
+  left: 13.7em;
+  top: -3.6px;
+}
+
+#containerMasteries1,
+#containerMasteries2,
+#containerMasteries3,
+#containerMasteries4,
+#containerMasteries5 {
+  background-color: #2a2a2a;
+  height: 155px;
+  width: 254px;
+  border-radius: 5px;
+  border: 2px solid #d4af37;
+  margin-left: 5px;
+}
+
+#mastery1, #mastery2, #mastery3, #mastery4, #mastery5 {
+  border-radius: 10%;
+  width: 80px;
+  height: 80px;
+  margin-left: 30%;
+}
+
+#masteryTxt1, #masteryTxt2, #masteryTxt3, #masteryTxt4, #masteryTxt5 {
+  position: relative; /* Adicione position: relative se for necessário */
+  top: -25.5px;
+}
+
+/* Estilos para o contêiner de histórico de partidas */
+#matchHistoryContainer {
+  width: 1295px;
+  height: 200%;
+  background-color: #2a2a2a;
+  border-radius: 10px;
+  top: -80.4px;
+  border: 2px solid #d4af37;
+  margin-left: -37px;
+  left: 13.8vw;
+  display: grid;
+}
+
+
+/* Estilos para cada partida */
+.match {
+  position: relative;
+  cursor: default;
+}
+
+/* Estilos para a data do jogo */
+.game-date {
+  font-size: 12px;
+  color: rgb(204, 204, 204);
+  margin-left: 260px;
+  justify-content: right;
+  display: flex;
+  margin-right: 30px;
+}
+
+/* Estilos para o ícone de seta */
+.arrow-icon {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  font-size: 16px;
+  cursor: pointer;
+  color: #d4af37;
+}
+
+/* Estilos para o contêiner de detalhes da partida */
+.matchesDetails {
+  margin-top: 10px;
+  padding: 10px;
+  background-color: #2a2a2a;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+/* Estilos para as colunas de times */
+.team-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Estilos para cada participante */
+.participant {
+  display: flex;
+  align-items: center;
+  padding: 5px;
+  border-radius: 5px;
+}
+
+/* Estilos para o time vencedor */
+.winning-team {
+  background-color: #2a5a2a;
+}
+
+/* Estilos para o time perdedor */
+.losing-team {
+  background-color: #5a2a2a;
+}
+
+/* Estilos para o ícone do campeão */
+.champion-icon {
+  width: 60px;
+  height: 60px;
+  float: left;
+  margin-left: 8px;
+}
+
+/* Estilos para as informações do participante */
+.participant-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-left: 1.5em;
+}
+
+/* Estilos para o nome do invocador */
+.riot-id {
+  color: #fff;
+  font-weight: bold;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* Estilos para o KDA */
+.kdaTxt {
+  color: #ccc;
+  font-size: 12px;
+}
+
+/* Estilos para os itens */
+.items {
+  width: 500px;
+  left: 10%;
+  top: -10%;
+  display: flex;
+}
+.itemIcon{
+  border: 2px solid #d4af37; 
+  border-radius: 15px; 
+  width: 40px;
+  height: 40px;
+  margin-top: 10px;
+  margin-right: 3px;
+}
+
+/* Estilos para o contêiner de estatísticas do jogo */
+.gamestats {
+  float: left;
+  margin-left: 10px;
+  display: flex;
+  align-items: center;
+  height: 60px;
+}
+
+/* Estilos para o resultado do jogo */
+.game-result {
+  font-weight: bold;
+  font-size: 18px;
+  margin-right: 10px;
+}
+
+/* Estilos para o tipo de fila */
+.queue-type {
+  color: #ccc;
+  font-size: 14px;
+  margin-right: 10px;
+}
+
+/* Estilos para o ícone da runa principal */
+.main-rune-icon {
+  width: 25px;
+  height: 25px;
+  float: left;
+  margin-top: 15px;
+  margin-left: 6px;
+  border: 2px solid #d4af37;
+  border-radius: 15px;
+}
+
+/* Estilos para o ícone da runa secundária */
+.secondary-rune-icon {
+  width: 15px;
+  height: 15px;
+  float: left;
+  margin-top: 20px;
+  margin-left: 2px;
+  padding: 2px;
+  border: 2px solid #d4af37;
+  border-radius: 15px;
+}
+
+.matches{
+  height: 90px;
+  border-bottom: 2px solid #d4af37;
+  margin: 5px 5px 5px 5px;
+}
