@@ -1,41 +1,25 @@
+// Home.tsx
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation'; // Use 'next/navigation' for the app directory
+import { useSearchHandler } from './searchHandler'; // Import the custom hook
 
 const Home: React.FC = () => {
-  const router = useRouter();
-
   const [riotid, setriotid] = useState('');
   const [region, setRegion] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSearch = async () => {
-    if (riotid === '' || region === '') {
-      setError('Antes de clicar no botão, escreva um Riot ID ou selecione uma Região!');
-      return;
-    }
-  
-    // Remover todos os espaços antes de dividir o Riot ID
-    const sanitizedRiotId = riotid.replace(/\s+/g, '');
-    
-    // Separar o nome e a tag, garantindo que ambos existam
-    const [gameName, tagLine = 'default'] = sanitizedRiotId.split('#');
-  
-    // Converter a região para lowercase
-    const sanitizedRegion = region.toLowerCase();
-  
-    console.log(sanitizedRiotId, sanitizedRegion);
-    setError('');
-  
-    // Navega para a rota dinâmica
-    router.push(`/summoner/${sanitizedRegion}/${gameName}/${tagLine}`);
+  const { handleSearch } = useSearchHandler(); // Use the custom hook
+
+  const search = () => {
+    setLoading(true);
+    handleSearch(riotid, region).finally(() => setLoading(false));
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
-      handleSearch();
+      search();
     }
   };
 
@@ -90,7 +74,7 @@ const Home: React.FC = () => {
           className="input"
           id="search_button"
           type="button"
-          onClick={handleSearch}
+          onClick={search}
           disabled={loading}
         >
           {loading ? 'Loading...' : 'Pesquisar Usuário'}

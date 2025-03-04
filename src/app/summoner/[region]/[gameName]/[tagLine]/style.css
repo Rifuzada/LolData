@@ -2,9 +2,26 @@
   top: -37.2vh;
   left: 47.1vw;
 }
-#search_button{
-  margin: 0 0.5em 2em;
-  }
+#search_button {
+  border-radius: 5px;
+  padding: 10px 20px;
+  border: 0px solid;
+  box-shadow: rgba(28, 28, 33, 0.5) 0px 0px 20px inset, rgba(28, 28, 33, 0.2) 0px 0px 20px;
+  outline: rgba(255, 255, 255, 0.5) solid 1px;
+  outline-color: rgba(255, 255, 255, 0.5);
+  outline-offset: 0px;
+  color: #ffffff;
+  text-shadow: none;
+  position: relative;
+  z-index: 1;
+  transition: 750ms cubic-bezier(0.19, 1, 0.22, 1);
+  background-color: #d4af37;
+  font-size: 1em;
+  font-family: "JetBrains Mono", monospace;
+  cursor: pointer;
+  margin: 0px 0px 2em;
+  text-decoration: none;
+}
 #region{
   margin-left: 5px;
 }

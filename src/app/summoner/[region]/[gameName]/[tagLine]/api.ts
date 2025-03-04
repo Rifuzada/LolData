@@ -2,6 +2,7 @@ const riotUrl = "https://americas.api.riotgames.com";
  
 const apiKey = process.env.NEXT_PUBLIC_API_KEY;
 
+import { useSearchHandler } from '@/app/searchHandler';
 import { ChampionMastery, ChampionsResponse, ChampionData } from './type';
 
 export const fetchVersion = async () => {
@@ -82,7 +83,7 @@ export const fetchHistory = async (region: string, puuid: string, version: strin
     // Espera todas as promessas serem resolvidas
     const matchData = await Promise.all(matchDataPromises);
 
-    // Process and display each match
+    // Process and display each match$
     await renderMatchHistory(matchData, puuid, itemData, runeData, queueType);
 
     return matchData;
@@ -93,7 +94,10 @@ async function renderMatchHistory(matchData: any[], puuid: string, itemData: any
     await Promise.all(
         matchData.map(async (match, matchIndex) => {
             const matchDiv = document.getElementById(`match${matchIndex + 1}`);
-            if (!matchDiv) return;
+            if (!matchDiv) {
+                console.error(`Match div for match ${matchIndex + 1} not found.`);
+                return;
+            }
 
             // Add game date
             await appendGameDateElement(matchDiv, match.info.gameStartTimestamp);
@@ -204,6 +208,12 @@ async function toggleMatchDetails(matchIndex: number, puuid: string, participant
     const detailsId = `matchDetails${matchIndex + 1}`;
     const existingDetails = document.getElementById(detailsId);
     const arrowIcon = document.querySelector(`#${matchId} .arrow-icon`);
+    
+
+    if (!arrowIcon) {
+        console.error(`Arrow icon for match ${matchId} not found.`);
+        return;
+    }
 
     // If details exist for this player
     if (existingDetails && existingDetails.getAttribute("data-puuid") === puuid) {
@@ -219,11 +229,12 @@ async function toggleMatchDetails(matchIndex: number, puuid: string, participant
 
         // Create new details asynchronously
         const newDetails = await createMatchDetails(matchIndex, puuid, participants, itemData, runeData, queueName);
-        document.getElementById(matchId).insertAdjacentElement("afterend", newDetails);
+        document.getElementById(matchId)?.insertAdjacentElement("afterend", newDetails);
         arrowIcon.innerHTML = "▲";
         body.style.top = "200px";
     }
 }
+
 
 async function createMatchDetails(matchIndex: number, puuid: string, participants: any[], itemData: any, runeData: any, queueName: string) {
     const detailsContainer = document.createElement("div");
@@ -300,20 +311,37 @@ async function createTeamColumn(team: any[], isWinningTeam: boolean, itemData: a
     return teamColumn;
 }
 
+
 async function createParticipantInfo(participant: any) {
     const participantInfo = document.createElement("div");
 
     // Create Riot ID element
     const riotIdElement = document.createElement("span");
     const riotId = `${participant.riotIdGameName}#${participant.riotIdTagline}`;
+   
     riotIdElement.textContent = riotId;
     riotIdElement.style.cssText = `
-    color: #fff; 
-    font-weight: bold; 
-    font-size: 14px; 
-    cursor: pointer;
+        color: #fff;
+        font-weight: bold;
+        font-size: 14px;
+        cursor: pointer;
     `;
 
+    // Assuming useSearchHandler is a custom hook that returns an object with handleSearch method
+    // const { handleNewSearch } = useSearchHandler();
+
+    // // // Define the search function
+    
+    // // const search = () => {
+    // //     
+    // // };
+
+    // riotIdElement.onclick = () =>console.log(riotId)
+    // // Add click event listener to the Riot ID element
+    // riotIdElement.addEventListener("click",async(e) =>  {
+    //     e.stopPropagation();
+    //     await handleNewSearch(riotId);
+    // });
 
     participantInfo.appendChild(riotIdElement);
 
