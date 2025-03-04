@@ -317,8 +317,13 @@ async function createParticipantInfo(participant: any) {
 
     // Create Riot ID element
     const riotIdElement = document.createElement("span");
+    const participantLink = document.createElement("a");
+    participantInfo.appendChild(participantLink);
+    //console.log(participant)
+
     const riotId = `${participant.riotIdGameName}#${participant.riotIdTagline}`;
    
+    //console.log(riotIdElement)
     riotIdElement.textContent = riotId;
     riotIdElement.style.cssText = `
         color: #fff;
@@ -326,9 +331,10 @@ async function createParticipantInfo(participant: any) {
         font-size: 14px;
         cursor: pointer;
     `;
-
+    participantLink.target = "_blank"
+    participantLink.href = `localhost:3000/summoner/br1/${participant.riotIdGameName}/${participant.riotIdTagline}`
+    participantLink.appendChild(riotIdElement);
     // Assuming useSearchHandler is a custom hook that returns an object with handleSearch method
-    // const { handleNewSearch } = useSearchHandler();
 
     // // // Define the search function
     
@@ -336,14 +342,13 @@ async function createParticipantInfo(participant: any) {
     // //     
     // // };
 
-    // riotIdElement.onclick = () =>console.log(riotId)
-    // // Add click event listener to the Riot ID element
-    // riotIdElement.addEventListener("click",async(e) =>  {
-    //     e.stopPropagation();
-    //     await handleNewSearch(riotId);
-    // });
+    //riotIdElement.onclick = () => console.log(riotIdElement)
+    // Add click event listener to the Riot ID element
+    //riotIdElement.addEventListener("click", console.log(riotIdElement));
+    // var goToLink = riotIdElement.getAttribute("href");
+    
+    // riotIdElement.href = `localhost:3000/summoner/${participant.region}/${participant.riotIdGameName}/${participant.riotIdTagline}`
 
-    participantInfo.appendChild(riotIdElement);
 
     // Create KDA element
     const kda = document.createElement("span");

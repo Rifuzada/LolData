@@ -1,11 +1,10 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-export const useSearchHandler = () => {
+export function useSearchHandler(){
   const router = useRouter();
-  const [lastRegion, setLastRegion] = useState('');
 
-  const handleSearch = async (riotid: string, region: string) => {
+  async function handleSearch(riotid: string, region: string){
     if (riotid === '' || region === '') {
       console.error('Antes de clicar no botão, escreva um Riot ID ou selecione uma Região!');
       return;
@@ -20,8 +19,6 @@ export const useSearchHandler = () => {
     // Converter a região para lowercase
     const sanitizedRegion = region.toLowerCase();
 
-    // Atualizar a última região usada
-    setLastRegion(sanitizedRegion);
 
     console.log(sanitizedRiotId, sanitizedRegion);
 
@@ -29,26 +26,26 @@ export const useSearchHandler = () => {
     router.push(`/summoner/${sanitizedRegion}/${gameName}/${tagLine}`);
   };
 
-  const handleNewSearch = async (riotid: string) => {
-    if (riotid === '') {
-      console.error('Antes de clicar no botão, escreva um Riot ID!');
-      return;
-    }
-    if (lastRegion === '') {
-      console.error('Nenhuma região foi usada anteriormente. Faça uma busca inicial primeiro!');
-      return;
-    }
-    console.log(lastRegion)
+  // async function handleNewSearch(riotid: string){
+  //   if (riotid === '') {
+  //     console.error('Antes de clicar no botão, escreva um Riot ID!');
+  //     return;
+  //   }
+  //   if (lastRegion === '') {
+  //     console.error('Nenhuma região foi usada anteriormente. Faça uma busca inicial primeiro!');
+  //     return;
+  //   }
+  //   console.log(lastRegion)
 
-    // Remover todos os espaços antes de dividir o Riot ID
-    const sanitizedRiotId = riotid.replace(/\s+/g, '');
+  //   // Remover todos os espaços antes de dividir o Riot ID
+  //   const sanitizedRiotId = riotid.replace(/\s+/g, '');
 
-    // Separar o nome e a tag, garantindo que ambos existam
-    const [gameName, tagLine = 'default'] = sanitizedRiotId.split('#');
+  //   // Separar o nome e a tag, garantindo que ambos existam
+  //   const [gameName, tagLine = 'default'] = sanitizedRiotId.split('#');
 
-    // Navega para a rota dinâmica com a última região usada
-    router.push(`/summoner/${lastRegion}/${gameName}/${tagLine}`);
-  };
+  //   // Navega para a rota dinâmica com a última região usada
+  //   router.push(`/summoner/${lastRegion}/${gameName}/${tagLine}`);
+  // };
 
-  return { handleSearch, handleNewSearch };
+  return { handleSearch };
 };
