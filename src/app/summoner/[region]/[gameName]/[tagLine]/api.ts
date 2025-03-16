@@ -1,8 +1,8 @@
 const riotUrl = "https://americas.api.riotgames.com";
  
-const apiKey = process.env.NEXT_PUBLIC_API_KEY;
+const apiKey = process.env.API_KEY || "";
 
-import { useSearchHandler } from '@/app/searchHandler';
+import axios from 'axios';
 import { ChampionMastery, ChampionsResponse, ChampionData } from './type';
 
 export const fetchVersion = async () => {
@@ -12,29 +12,28 @@ export const fetchVersion = async () => {
 };
 
 export const fetchAccount = async (region: string, gameName: string, tagLine: string) => {
-    const response = await fetch(`${riotUrl}/riot/account/v1/accounts/by-riot-id/${gameName}/${tagLine}?api_key=${apiKey}`);
-    const data = await response.json();
+    let response = await axios.get("http://localhost:4000/account", { params: { gameName, tagLine } });
+    const data = response.data;
     return data;
 };
 
 export const fetchRanked = async (region: string, sumID: string) => {
-    const rankedUrl = `https://${region}.api.riotgames.com/lol/league/v4/entries/by-summoner/${sumID}?api_key=${apiKey}`;
-    const response = await fetch(rankedUrl);
-    const data = await response.json();
+    const response = await axios.get("http://localhost:4000/ranked", { params: { region, sumID } });
+    const data = await response.data;
+
+
     return data;
 };
 
 export const fetchProfile = async (region: string, puuid: string) => {
-    const profileUrl = `https://${region}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}?api_key=${apiKey}`;
-    const response = await fetch(profileUrl);
-    const data = await response.json();
+    const response = await axios.get("http://localhost:4000/profile", { params: { region ,puuid } });
+    const data = await response.data;
     return data;
 };
 
 export const fetchMastery = async (region: string, puuid: string, version: string) => {
-    const masteryUrl = `https://${region}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/${puuid}?api_key=${apiKey}`;
-    const masteryResponse = await fetch(masteryUrl);
-    const dataMastery = await masteryResponse.json();
+    const response = await axios.get("http://localhost:4000/masteries", { params: { region ,puuid } });
+    const dataMastery = await response.data;
 
     const topChampions = dataMastery.slice(0, 5).map((champion: any) => ({
         id: champion.championId.toString(),
@@ -55,20 +54,17 @@ export const fetchMastery = async (region: string, puuid: string, version: strin
             points: champion.points
         };
     });
-
+    console.log(dataMastery)
     return championNames;
 };
 
 export const fetchHistory = async (region: string, puuid: string, version: string) => {
-    const matchIdUrl = `${riotUrl}/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=10&api_key=${apiKey}`;
-    const matchIdResponse = await fetch(matchIdUrl);
-    const dataMatchIds = await matchIdResponse.json();
+    const response = await axios.get("http://localhost:4000/matchIds", { params: { puuid } });
+    const dataMatchIds = await response.data;
 
-    // Cria um array de promessas para buscar os dados das partidas em paralelo
-    const matchDataPromises = dataMatchIds.slice(0, 10).map((matchId: string) =>
-        fetch(`${riotUrl}/lol/match/v5/matches/${matchId}?api_key=${apiKey}`)
-            .then(response => response.json())
-    );
+    // Chama o endpoint do servidor para obter os dados das partidas
+    const matchDataResponse = await axios.get("http://localhost:4000/matchHistory", { params: { matches: dataMatchIds.slice(0, 10) } });
+    const matchData = matchDataResponse.data;
 
     const [runeResponse, itemsResponse, matchTypeResponse] = await Promise.all([
         fetch(`https://ddragon.leagueoflegends.com/cdn/${version}/data/en_US/runesReforged.json`),
@@ -80,10 +76,7 @@ export const fetchHistory = async (region: string, puuid: string, version: strin
     const itemData = await itemsResponse.json();
     const queueType = await matchTypeResponse.json();
 
-    // Espera todas as promessas serem resolvidas
-    const matchData = await Promise.all(matchDataPromises);
-
-    // Process and display each match$
+    // Process and display each match
     await renderMatchHistory(matchData, puuid, itemData, runeData, queueType);
 
     return matchData;
@@ -334,23 +327,7 @@ async function createParticipantInfo(participant: any) {
     participantLink.target = "_blank"
     participantLink.href = `localhost:3000/summoner/br1/${participant.riotIdGameName}/${participant.riotIdTagline}`
     participantLink.appendChild(riotIdElement);
-    // Assuming useSearchHandler is a custom hook that returns an object with handleSearch method
-
-    // // // Define the search function
     
-    // // const search = () => {
-    // //     
-    // // };
-
-    //riotIdElement.onclick = () => console.log(riotIdElement)
-    // Add click event listener to the Riot ID element
-    //riotIdElement.addEventListener("click", console.log(riotIdElement));
-    // var goToLink = riotIdElement.getAttribute("href");
-    
-    // riotIdElement.href = `localhost:3000/summoner/${participant.region}/${participant.riotIdGameName}/${participant.riotIdTagline}`
-
-
-    // Create KDA element
     const kda = document.createElement("span");
     kda.textContent = `${participant.kills} / ${participant.deaths} / ${participant.assists}`;
     participantInfo.appendChild(kda);

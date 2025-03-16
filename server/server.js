@@ -2,8 +2,6 @@ var express = require('express');
 var cors = require('cors');
 const axios = require('axios');
 require('dotenv').config();
-
-
 var app = express();
 
 app.use(cors());
@@ -24,33 +22,31 @@ const endpointMatchIDS = "/lol/match/v5/matches/by-puuid/"
 const endpointMatches = "/lol/match/v5/matches/"
 
 app.get('/account', async (req, res) => {
-  const { riotId } = req.query
-  const formattedRiotId = riotId.replace("#", "/");
-  const fullUrl = `${riotUrl}/${endpointRiotId}/${formattedRiotId}?api_key=${api_key}`
-  const response = await axios.get(fullUrl)
-    .then(response => response.data)
+  const { gameName, tagLine } = req.query
+  const fullUrl = `${riotUrl}/${endpointRiotId}/${gameName}/${tagLine}?api_key=${api_key}`
+  const response = await fetch(fullUrl)
+    .then(response => response.json())
     .catch(err => err)
   res.json(response)
 });
 
 app.get('/masteries', async (req, res) => {
-  const { puuid } = req.query
-  const { region } = req.query;
+  const { puuid, region } = req.query
   const riotUrlReg = `https://${region}.api.riotgames.com`
   const puuidUrl = `${riotUrlReg}/${endpointPuuid}/${puuid}?api_key=${api_key}`
-  const response = await axios.get(puuidUrl)
-    .then(response => response.data)
+  const response = await fetch(puuidUrl)
+    .then(response => response.json())
     .catch(err => err)
+
   res.json(response)
 });
 
 app.get('/profile', async (req, res) => {
-  const { puuid } = req.query
-  const { region } = req.query;
+  const { puuid, region } = req.query;
   const riotUrlReg = `https://${region}.api.riotgames.com`
   const profileUrl = `${riotUrlReg}/${endpointSummonerPuuid}/${puuid}?api_key=${api_key}`
-  const response = await axios.get(profileUrl)
-    .then(response => response.data)
+  const response = await fetch(profileUrl)
+    .then(response => response.json())
     .catch(err => err)
   res.json(response)
 })
@@ -59,7 +55,6 @@ app.get('/ranked', async (req, res) => {
   const { sumID } = req.query
   const riotUrlReg = `https://${region}.api.riotgames.com`
   const rankedUrl = `${riotUrlReg}/${endpointRankedID}/${sumID}?api_key=${api_key}`
-  //console.log(rankedUrl)
   const response = await axios.get(rankedUrl)
     .then(response => response.data)
     .catch(err => err)

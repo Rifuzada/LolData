@@ -55,7 +55,7 @@
 #generalContainer {
   position: relative; /* Adicione position: relative se for necessário */
   left: -15vw;
-  top: 12vh;
+  top: 13vh;
 }
 
 #rankedIcon, #rankedFlexIcon {
@@ -89,7 +89,7 @@
 }
 
 span {
-  font-size: 0.75em;
+  font-size: 0.70em;
 }
 
 #containerMastery {

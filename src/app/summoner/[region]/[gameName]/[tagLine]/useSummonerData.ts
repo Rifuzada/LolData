@@ -26,18 +26,31 @@ const useSummonerData = (region: string, gameName: string, tagLine: string) => {
             const version = await fetchVersion();
             const accountData = await fetchAccount(region, gameName, tagLine);
             const historyData = await fetchHistory(region, accountData.puuid, version);
+            const profileData = await fetchProfile(region, accountData.puuid);
             setPuuid(accountData.puuid);
             if (accountData.puuid) {
-                const profileData = await fetchProfile(region, accountData.puuid);
+                
                 setSummonerLevel(profileData.summonerLevel);
                 setIconID(profileData.profileIconId);
 
                 const rankedData = await fetchRanked(region, profileData.id);
+                const tierTranslation: { [key: string]: string } = {
+                    'IRON': 'Ferro',
+                    'BRONZE': 'Bronze', 
+                    'SILVER': 'Prata',
+                    'GOLD': 'Ouro',
+                    'PLATINUM': 'Platina',
+                    'EMERALD': 'Esmeralda', 
+                    'DIAMOND': 'Diamante',
+                    'GRANDMASTER': 'Grão Mestre',
+                    'MASTER': 'Mestre',
+                    'CHALLENGER': 'Desafiante'
+                };
 
                 // Process rankedData for Solo/Duo
                 const soloqData = rankedData.find((queue: any) => queue.queueType === "RANKED_SOLO_5x5");
                 if (soloqData) {
-                    setEloSoloq(`${soloqData.tier} ${soloqData.rank}`);
+                    setEloSoloq(`${tierTranslation[soloqData.tier]} ${soloqData.rank}`);
                     setWinsSoloq(soloqData.wins);
                     setLosesSoloq(soloqData.losses);
                     setLpSoloq(soloqData.leaguePoints);
@@ -48,7 +61,7 @@ const useSummonerData = (region: string, gameName: string, tagLine: string) => {
                 // Process rankedData for Flex
                 const flexData = rankedData.find((queue: any) => queue.queueType === "RANKED_FLEX_SR");
                 if (flexData) {
-                    setEloFlex(`${flexData.tier} ${flexData.rank}`);
+                    setEloFlex(`${tierTranslation[flexData.tier]} ${flexData.rank}`);
                     setWinsFlex(flexData.wins);
                     setLosesFlex(flexData.losses);
                     setLpFlex(flexData.leaguePoints);
