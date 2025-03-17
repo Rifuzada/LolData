@@ -6,7 +6,7 @@
     "dev": "concurrently \"nodemon server/server.js\" \"next dev\"",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "server": "node server/server.js"
   },
   "dependencies": {
     "@next/env": "^15.2.0",
