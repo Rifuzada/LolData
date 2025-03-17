@@ -71,39 +71,35 @@ export const fetchMastery = async (region: string, puuid: string, version: strin
 };
 
 export const fetchHistory = async (region: string, puuid: string, version: string) => {
-    const response = await fetch(`${riotUrl}${endpointMatchIDS}${puuid}/ids?start=0&count=10&api_key=${api_key}`);
-    const dataMatchIds = await response.json();
-    console.log(dataMatchIds);
+    try {
+        const response = await fetch(`${riotUrl}${endpointMatchIDS}${puuid}/ids?start=0&count=10&api_key=${api_key}`);
+        const dataMatchIds = await response.json();
+        console.log(dataMatchIds);
 
-    // Chama o endpoint do servidor para obter os dados das partidas
-    
-    const matches = await dataMatchIds.slice(0, 10);
-    const matchDataPromises = [];
+        const matches = dataMatchIds.slice(0, 10);
+        const matchDataPromises = matches.map((matchId: string) => 
+            fetch(`${riotUrl}${endpointMatches}${matchId}?api_key=${api_key}`).then(res => res.json())
+        );
 
-    for (let i = 0; i < 10; i++) {
-        const matchDataResponse = await fetch(`${riotUrl}${endpointMatches}${matches[i]}?api_key=${api_key}`);
-        const matchData = matchDataResponse.json(); ;
-        matchDataPromises.push(matchData);
+        const matchData = await Promise.all(matchDataPromises);
+
+        const [runeResponse, itemsResponse, matchTypeResponse] = await Promise.all([
+            fetch(`https://ddragon.leagueoflegends.com/cdn/${version}/data/en_US/runesReforged.json`),
+            fetch(`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/items.json`),
+            fetch("https://static.developer.riotgames.com/docs/lol/queues.json")
+        ]);
+
+        const runeData = await runeResponse.json();
+        const itemData = await itemsResponse.json();
+        const queueType = await matchTypeResponse.json();
+
+        await renderMatchHistory(matchData, puuid, itemData, runeData, queueType);
+
+        return matchData;
+    } catch (error) {
+        console.error("Erro ao buscar histórico de partidas:", error);
+        throw error;
     }
-
-    const matchDataResponses = await Promise.all(matchDataPromises);
-    const matchData = matchDataResponses.map(response => response.json());
-
-
-    const [runeResponse, itemsResponse, matchTypeResponse] = await Promise.all([
-        fetch(`https://ddragon.leagueoflegends.com/cdn/${version}/data/en_US/runesReforged.json`),
-        fetch(`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/items.json`),
-        fetch("https://static.developer.riotgames.com/docs/lol/queues.json")
-    ]);
-
-    const runeData = await runeResponse.json();
-    const itemData = await itemsResponse.json();
-    const queueType = await matchTypeResponse.json();
-
-    // Process and display each match
-    await renderMatchHistory(matchData, puuid, itemData, runeData, queueType);
-
-    return matchData;
 };
 
 async function renderMatchHistory(matchData: any[], puuid: string, itemData: any, runeData: any, queueType: any) {
