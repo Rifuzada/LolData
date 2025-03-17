@@ -8,6 +8,10 @@ app.use(cors());
 
 const api_key = process.env.API_KEY;
 
+app.listen(4000, function () {
+  console.log("Server started on port 4000")
+})
+
 const riotUrl = "https://americas.api.riotgames.com"
 const endpointRiotId = "riot/account/v1/accounts/by-riot-id"
 const endpointPuuIDtoName = "/riot/account/v1/accounts/by-puuid"
