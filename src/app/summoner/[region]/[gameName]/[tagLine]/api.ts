@@ -77,8 +77,18 @@ export const fetchHistory = async (region: string, puuid: string, version: strin
 
     // Chama o endpoint do servidor para obter os dados das partidas
     
-    const matchDataResponse = await axios.get("http://localhost:4000/matchHistory", { params: { matches: dataMatchIds.slice(0, 10) } });
-    const matchData = matchDataResponse.data;
+    const matches = await dataMatchIds.slice(0, 10);
+    const matchDataPromises = [];
+
+    for (let i = 0; i < 10; i++) {
+        const matchDataResponse = await fetch(`${riotUrl}${endpointMatches}${matches[i]}?api_key=${api_key}`);
+        const matchData = matchDataResponse.json(); ;
+        matchDataPromises.push(matchDataResponse);
+    }
+
+    const matchDataResponses = await Promise.all(matchDataPromises);
+    const matchData = matchDataResponses.map(response => response.json());
+
 
     const [runeResponse, itemsResponse, matchTypeResponse] = await Promise.all([
         fetch(`https://ddragon.leagueoflegends.com/cdn/${version}/data/en_US/runesReforged.json`),
