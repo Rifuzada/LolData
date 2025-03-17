@@ -4,7 +4,13 @@ const axios = require('axios');
 require('dotenv').config();
 var app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: 'https://lol-data-blond.vercel.app/',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  maxAge: 3600
+}));
 
 const api_key = process.env.API_KEY;
 
