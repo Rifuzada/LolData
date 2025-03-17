@@ -83,7 +83,7 @@ export const fetchHistory = async (region: string, puuid: string, version: strin
     for (let i = 0; i < 10; i++) {
         const matchDataResponse = await fetch(`${riotUrl}${endpointMatches}${matches[i]}?api_key=${api_key}`);
         const matchData = matchDataResponse.json(); ;
-        matchDataPromises.push(matchDataResponse);
+        matchDataPromises.push(matchData);
     }
 
     const matchDataResponses = await Promise.all(matchDataPromises);
