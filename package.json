@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"nodemon server/server.js\" \"next dev\"",
+    "dev": "next dev",
     "build": "next build",
-    "start": "concurrently \"nodemon server/server.js\""
+    "start": "next build && next start && node server/server.js"
   },
   "dependencies": {
     "@next/env": "^15.2.0",

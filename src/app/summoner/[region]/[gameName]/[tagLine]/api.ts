@@ -1,6 +1,14 @@
-const riotUrl = "https://americas.api.riotgames.com";
+const riotUrl = "https://americas.api.riotgames.com"
+const endpointRiotId = "riot/account/v1/accounts/by-riot-id"
+const endpointPuuIDtoName = "/riot/account/v1/accounts/by-puuid"
+const endpointPuuid = "lol/champion-mastery/v4/champion-masteries/by-puuid"
+const endpointSummonerPuuid = "lol/summoner/v4/summoners/by-puuid"
+const endpointRankedID = "lol/league/v4/entries/by-summoner"
+const endpointMatchIDS = "/lol/match/v5/matches/by-puuid/"
+const endpointMatches = "/lol/match/v5/matches/"
+require('dotenv').config();
  
-const apiKey = process.env.API_KEY || "";
+const api_key = process.env.API_KEY || "";
 
 import axios from 'axios';
 import { ChampionMastery, ChampionsResponse, ChampionData } from './type';
@@ -12,28 +20,32 @@ export const fetchVersion = async () => {
 };
 
 export const fetchAccount = async (region: string, gameName: string, tagLine: string) => {
-    let response = await axios.get("http://localhost:4000/account", { params: { gameName, tagLine } });
-    const data = response.data;
+    const response = await fetch(`${riotUrl}/${endpointRiotId}/${gameName}/${tagLine}?api_key=${api_key}`);
+    const data = await response.json();
+    console.log(data);
     return data;
 };
 
 export const fetchRanked = async (region: string, sumID: string) => {
-    const response = await axios.get("http://localhost:4000/ranked", { params: { region, sumID } });
-    const data = await response.data;
+    const riotUrlReg = `https://${region}.api.riotgames.com`
+    const response = await fetch(`${riotUrlReg}/${endpointRankedID}/${sumID}?api_key=${api_key}`);
+    const data = await response.json();
 
 
     return data;
 };
 
 export const fetchProfile = async (region: string, puuid: string) => {
-    const response = await axios.get("http://localhost:4000/profile", { params: { region ,puuid } });
-    const data = await response.data;
+    const riotUrlReg = `https://${region}.api.riotgames.com`
+    const response = await fetch(`${riotUrlReg}/${endpointSummonerPuuid}/${puuid}?api_key=${api_key}`);
+    const data = await response.json();
     return data;
 };
 
 export const fetchMastery = async (region: string, puuid: string, version: string) => {
-    const response = await axios.get("http://localhost:4000/masteries", { params: { region ,puuid } });
-    const dataMastery = await response.data;
+    const riotUrlReg = `https://${region}.api.riotgames.com`
+    const response = await fetch(`${riotUrlReg}/${endpointPuuid}/${puuid}?api_key=${api_key}`)
+    const dataMastery = await response.json();
 
     const topChampions = dataMastery.slice(0, 5).map((champion: any) => ({
         id: champion.championId.toString(),
@@ -54,15 +66,17 @@ export const fetchMastery = async (region: string, puuid: string, version: strin
             points: champion.points
         };
     });
-    console.log(dataMastery)
+
     return championNames;
 };
 
 export const fetchHistory = async (region: string, puuid: string, version: string) => {
-    const response = await axios.get("http://localhost:4000/matchIds", { params: { puuid } });
-    const dataMatchIds = await response.data;
+    const response = await fetch(`${riotUrl}${endpointMatchIDS}${puuid}/ids?start=0&count=10&api_key=${api_key}`);
+    const dataMatchIds = await response.json();
+    console.log(dataMatchIds);
 
     // Chama o endpoint do servidor para obter os dados das partidas
+    
     const matchDataResponse = await axios.get("http://localhost:4000/matchHistory", { params: { matches: dataMatchIds.slice(0, 10) } });
     const matchData = matchDataResponse.data;
 
