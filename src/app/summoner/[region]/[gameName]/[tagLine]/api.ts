@@ -1,3 +1,5 @@
+'use server'
+
 const riotUrl = "https://americas.api.riotgames.com"
 const endpointRiotId = "riot/account/v1/accounts/by-riot-id"
 const endpointPuuIDtoName = "/riot/account/v1/accounts/by-puuid"
@@ -8,9 +10,8 @@ const endpointMatchIDS = "/lol/match/v5/matches/by-puuid/"
 const endpointMatches = "/lol/match/v5/matches/"
 require('dotenv').config();
  
-const api_key = process.env.API_KEY || "";
+const api_key = process.env.RIOT_API_KEY || "";
 
-import axios from 'axios';
 import { ChampionMastery, ChampionsResponse, ChampionData } from './type';
 
 export const fetchVersion = async () => {
@@ -20,15 +21,22 @@ export const fetchVersion = async () => {
 };
 
 export const fetchAccount = async (region: string, gameName: string, tagLine: string) => {
-    const response = await fetch(`${riotUrl}/${endpointRiotId}/${gameName}/${tagLine}?api_key=${api_key}`);
+    const response = await fetch(`${riotUrl}/${endpointRiotId}/${gameName}/${tagLine}`, {
+        headers: {
+            'X-Riot-Token': api_key
+        }
+    });
     const data = await response.json();
-    console.log(data);
     return data;
 };
 
 export const fetchRanked = async (region: string, sumID: string) => {
     const riotUrlReg = `https://${region}.api.riotgames.com`
-    const response = await fetch(`${riotUrlReg}/${endpointRankedID}/${sumID}?api_key=${api_key}`);
+    const response = await fetch(`${riotUrlReg}/${endpointRankedID}/${sumID}`, {
+        headers: {
+            'X-Riot-Token': api_key
+        }
+    });
     const data = await response.json();
 
 
@@ -37,14 +45,22 @@ export const fetchRanked = async (region: string, sumID: string) => {
 
 export const fetchProfile = async (region: string, puuid: string) => {
     const riotUrlReg = `https://${region}.api.riotgames.com`
-    const response = await fetch(`${riotUrlReg}/${endpointSummonerPuuid}/${puuid}?api_key=${api_key}`);
+    const response = await fetch(`${riotUrlReg}/${endpointSummonerPuuid}/${puuid}`, {
+        headers: {
+            'X-Riot-Token': api_key
+        }
+    });
     const data = await response.json();
     return data;
 };
 
 export const fetchMastery = async (region: string, puuid: string, version: string) => {
     const riotUrlReg = `https://${region}.api.riotgames.com`
-    const response = await fetch(`${riotUrlReg}/${endpointPuuid}/${puuid}?api_key=${api_key}`)
+    const response = await fetch(`${riotUrlReg}/${endpointPuuid}/${puuid}`, {
+        headers: {
+            'X-Riot-Token': api_key
+        }
+    })
     const dataMastery = await response.json();
 
     const topChampions = dataMastery.slice(0, 5).map((champion: any) => ({
@@ -71,17 +87,22 @@ export const fetchMastery = async (region: string, puuid: string, version: strin
 };
 
 export const fetchHistory = async (region: string, puuid: string, version: string) => {
+    //console.log('Fetching history for puuid:', puuid);
     try {
-        const response = await fetch(`${riotUrl}${endpointMatchIDS}${puuid}/ids?start=0&count=10&api_key=${api_key}`);
+        const response = await fetch(`${riotUrl}${endpointMatchIDS}${puuid}/ids?start=0&count=10`, {
+            headers: {
+                'X-Riot-Token': api_key
+            }
+        });
         const dataMatchIds = await response.json();
-        console.log(dataMatchIds);
 
-        const matches = dataMatchIds.slice(0, 10);
-        const matchDataPromises = matches.map((matchId: string) => 
+
+        const matchDataPromises = dataMatchIds.map((matchId: string) => 
             fetch(`${riotUrl}${endpointMatches}${matchId}?api_key=${api_key}`).then(res => res.json())
         );
 
         const matchData = await Promise.all(matchDataPromises);
+        //console.log('Match data:', matchData);
 
         const [runeResponse, itemsResponse, matchTypeResponse] = await Promise.all([
             fetch(`https://ddragon.leagueoflegends.com/cdn/${version}/data/en_US/runesReforged.json`),
@@ -92,59 +113,13 @@ export const fetchHistory = async (region: string, puuid: string, version: strin
         const runeData = await runeResponse.json();
         const itemData = await itemsResponse.json();
         const queueType = await matchTypeResponse.json();
-
-        await renderMatchHistory(matchData, puuid, itemData, runeData, queueType);
-
-        return matchData;
+    
+        return { runeData, itemData, queueType, matchData};
     } catch (error) {
         console.error("Erro ao buscar histórico de partidas:", error);
         throw error;
     }
 };
-
-async function renderMatchHistory(matchData: any[], puuid: string, itemData: any, runeData: any, queueType: any) {
-    // Process matches in parallel for better performance
-    await Promise.all(
-        matchData.map(async (match, matchIndex) => {
-            const matchDiv = document.getElementById(`match${matchIndex + 1}`);
-            if (!matchDiv) {
-                console.error(`Match div for match ${matchIndex + 1} not found.`);
-                return;
-            }
-
-            // Add game date
-            await appendGameDateElement(matchDiv, match.info.gameStartTimestamp);
-
-            // Get participants and queue name
-            const participants = match.info.participants;
-            const queueName = getTranslatedQueueName(match.info.queueId, queueType);
-
-            // Add toggle arrow
-            const arrowIcon = await createArrowIcon();
-            matchDiv.appendChild(arrowIcon);
-            arrowIcon.addEventListener("click", () =>
-                toggleMatchDetails(matchIndex, puuid, participants, itemData, runeData, queueName)
-            );
-
-            // Find current player and add their data
-            const currentPlayer = participants.find((p: any) => p.puuid === puuid);
-            if (currentPlayer) {
-                // Add rune icons - can be processed in parallel
-                const runeIcons = await createRuneIcons(currentPlayer, runeData);
-                await Promise.all(runeIcons.map(icon => matchDiv.appendChild(icon)));
-
-                // Add champion icon
-                matchDiv.appendChild(await createChampionIcon(currentPlayer));
-
-                // Add stats container
-                matchDiv.appendChild(await createGameStatsContainer(currentPlayer, queueName));
-
-                // Add item icons
-                matchDiv.appendChild(await createItemIcons(currentPlayer, itemData));
-            }
-        })
-    );
-}
 
 
 // Helper functions
@@ -332,11 +307,9 @@ async function createParticipantInfo(participant: any) {
     const riotIdElement = document.createElement("span");
     const participantLink = document.createElement("a");
     participantInfo.appendChild(participantLink);
-    //console.log(participant)
 
     const riotId = `${participant.riotIdGameName}#${participant.riotIdTagline}`;
    
-    //console.log(riotIdElement)
     riotIdElement.textContent = riotId;
     riotIdElement.style.cssText = `
         color: #fff;
@@ -345,7 +318,7 @@ async function createParticipantInfo(participant: any) {
         cursor: pointer;
     `;
     participantLink.target = "_blank"
-    participantLink.href = `localhost:3000/summoner/br1/${participant.riotIdGameName}/${participant.riotIdTagline}`
+    participantLink.href = `https://lol-data-blond.vercel.app/summoner/br1/${participant.riotIdGameName}/${participant.riotIdTagline}`
     participantLink.appendChild(riotIdElement);
     
     const kda = document.createElement("span");

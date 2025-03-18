@@ -1,9 +1,17 @@
 .input_containerSyle {
-  top: -37.2vh;
+  top: -391.4px;
   left: 47.1vw;
 }
+#mobile-text{
+  display: none;
+}
+#mobile-input-container{
+  display: none;
+}
+
 #search_button {
   border-radius: 5px;
+  left: 8px;
   padding: 10px 20px;
   border: 0px solid;
   box-shadow: rgba(28, 28, 33, 0.5) 0px 0px 20px inset, rgba(28, 28, 33, 0.2) 0px 0px 20px;
@@ -26,6 +34,12 @@
   margin-left: 5px;
 }
 
+#rankedFlexDataMobile, #rankedSoloqDataMobile{
+  display: none;
+}
+#rankedSoloqData, #rankedFlexData{
+  display: flex;
+}
 #container {
   background-color: #2a2a2a;
   height: 20%;
@@ -39,7 +53,7 @@
   margin-top: -237px;
 }
 
-#container > span {
+#nickName{
   font-size: 1.3em;
 }
 
@@ -91,7 +105,11 @@
 span {
   font-size: 0.70em;
 }
-
+.gameQueueType{
+  color: #ccc; 
+  font-size: 14px; 
+  margin-right: 10px;
+}
 #containerMastery {
   display: flex;
   position: relative; /* Adicione position: relative se for necessário */
@@ -136,8 +154,14 @@ span {
   left: 13.8vw;
   display: grid;
 }
-
-
+.gameDate{
+  font-size: 12px;
+  color: rgb(204, 204, 204);
+  margin-left: 260px;
+  justify-content: right;
+  display: flex;
+  margin-right: 30px;
+}
 /* Estilos para cada partida */
 .match {
   position: relative;
@@ -162,6 +186,7 @@ span {
   font-size: 16px;
   cursor: pointer;
   color: #d4af37;
+
 }
 
 /* Estilos para o contêiner de detalhes da partida */
@@ -254,12 +279,8 @@ span {
   display: flex;
   align-items: center;
   height: 60px;
-}
-
-/* Estilos para o resultado do jogo */
-.game-result {
-  font-weight: bold;
-  font-size: 18px;
+  font-weight: bold; 
+  font-size: 18px; 
   margin-right: 10px;
 }
 
@@ -297,4 +318,463 @@ span {
   height: 90px;
   border-bottom: 2px solid #d4af37;
   margin: 5px 5px 5px 5px;
+}
+
+@media screen and (max-width: 385px), (max-height: 854px) {
+.input_containerSyle{
+  display: none;
+}
+
+#icon > img{ 
+  width: 70px;
+  height: 70px;
+}
+#icon{
+  width: 80px;
+  height: 80px;
+  left: -24.0vw;
+  top: 1vh;
+}
+#mobile-input-container{
+  display: flex;
+  left: 52.5vw;
+  top: -8.4vh;
+  border: 2px solid #d4af37;
+  border-radius: 8px;
+  background-color: #2a2a2a;
+  width: 70px;
+  height: 70px;
+}
+#mobile-button-open-container-background{
+  align-items: center;
+  justify-content: center;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  cursor:pointer
+}
+#mobile-input-container-background{
+  display: none;
+  width: 50vw;
+  height: 100vh;
+  background-color: #2a2a2a;
+  border: 2px solid #d4af37;
+  border-radius: 8px;
+  position: absolute;
+  top: -5px;
+  left: -27.3vw;
+  animation: slideInFromRight 0.4s ease-out;
+}
+
+@keyframes slideInFromRight {
+  0% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+.matches{
+  width:335px;
+  height: 70px;
+}
+#matchHistoryContainer{
+  width: 95vw;
+  height: 196.7%;
+  background-color: #2a2a2a;
+  border-radius: 10px;
+  top: 45.3px;
+  border: 2px solid #d4af37;
+  left: -14.0vw;
+  z-index: 0;
+}
+.matches > span{
+  margin-right: unset;
+  margin-left: unset;
+}
+.gameDate{display: none;}
+.matches > .champion-icon{
+  width: 40px;
+  height: 40px;
+  margin-top: 20px;
+}
+.secondary-rune-icon{
+  margin-top: 35px;
+}
+.main-rune-icon{
+  margin-top: 25px;
+}
+.items{
+  margin-left: 66.7px;
+  top: -162%;
+}
+#nickName{
+  font-size: 9.5px;
+}
+#Lvl{
+  font-size: 8.5px;
+}
+.itemIcon{
+  border-radius: 8px;
+  width: 30px;
+  height: 30px;
+  margin-top: 13.5px;
+}
+.arrow-icon{
+  right: 10px;
+}
+.gamestatsContainer > span{
+  font-size: 10px;
+}
+.gamestatsContainer{
+  top: -10vh;
+  left: -5.7vw;
+}
+#rankedFlexDataMobile, #rankedSoloqDataMobile{
+  font-size: 8px;
+  display: flex;
+}
+#rankedSoloqData, #rankedFlexData{
+  display: none;
+}
+#mobile-button-close-container-background{
+  align-items: center;
+  justify-content: center;
+  display: flex;
+  background-color: #2a2a2a;
+  border: 2px solid #d4af37;
+  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  margin-left: 76.7%;
+}
+#riotid{
+  max-width: 166px;
+  margin-left: unset;
+  margin-bottom: 5px;
+  margin-top: 18px;
+}
+#region{
+  margin-bottom: 5px;
+}
+#search_button{
+  width: 166px;
+  margin-left: -15px;
+}
+#generalContainer{
+  left: 17.8vw;
+  top: -4.0vh;
+}
+#containerRanked{
+  left: 39vw;
+  width: 60px;
+  height: 60px;
+  top: -9vh;
+}
+#container{
+  padding:0px;
+  padding-top: 5px;
+  width: 70px;
+  height: 70px;
+  display: block;
+  margin-left: 19.0vw;
+  margin-top: -10vh;
+  font-size: 10px;
+}
+#containerRankedFlex{
+  top: -9.8vh;
+  margin-left: 37.4vw;
+}
+#containerRankedFlex, #containerRankedSoloq{
+  width: 70px;
+  height: 70px;
+}
+
+#span{
+  font-size: 8px;
+}
+#rankedIcon, #rankedFlexIcon{
+  width: 23px;
+  height: 23px;
+  margin: unset;
+
+}
+#containerMastery{
+  max-width: 100000%;
+  display:unset;
+  left: -0.3em;
+  top: -6.5vh;
+}
+#full-text{display:none}
+#mobile-text{
+  margin-left: 4px;
+  display:flex;
+  margin-top: 22px;
+  font-size: 9px;
+}
+#containerMasteries1, #containerMasteries2, #containerMasteries3, #containerMasteries4, #containerMasteries5{
+  width: 18vw;
+  height: 30vw;
+}
+#containerMasteries2{
+  left: 19.2vw;
+  top: -13.4vh;
+}
+#containerMasteries3{
+  left: 38.4vw;
+  top: -26.8vh;
+}
+#containerMasteries4{
+  left: 57.6vw;
+  top: -40.2vh;
+}
+#containerMasteries5{
+  left: 76.8vw;
+  top: -53.4vh;
+}
+#containerRankedFlex > img, #containerRankedSoloq > img{
+  margin-top: -10px;
+}
+#mastery1, #mastery2, #mastery3, #mastery4, #mastery5 {
+  border-radius: 10%;
+  width: 60px;
+  height: 60px;
+  margin-left: unset;
+
+}
+}
+
+@media screen and (max-width: 360px), (max-height: 760px) {
+  :root{
+    --varWidthandHeight: 65px;
+  }
+  .input_containerSyle{
+    display: none;
+  }
+  
+  #icon > img{ 
+    width: var(--varWidthandHeight);
+    height: var(--varWidthandHeight);
+    margin-bottom: 2.5vh;
+  }
+  #icon{
+    width: var(--varWidthandHeight);
+    height: var(--varWidthandHeight);
+    left: -24.0vw;
+    top: 1vh;
+
+  }
+  #mobile-input-container{
+    display: flex;
+    left: 49.5vw;
+    top: -7.5vh;
+    border: 2px solid #d4af37;
+    border-radius: 8px;
+    background-color: #2a2a2a;
+    width: var(--varWidthandHeight);
+    height: var(--varWidthandHeight);
+  }
+  #mobile-button-open-container-background{
+    align-items: center;
+    justify-content: center;
+    display: flex;
+    width: 100%;
+    height: 100%;
+    cursor:pointer
+  }
+  #mobile-input-container-background{
+    display: none;
+    width: 50vw;
+    height: 30vh;
+    background-color: #2a2a2a;
+    border: 2px solid #d4af37;
+    border-radius: 8px;
+    position: absolute;
+    top: -5px;
+    left: -27.3vw;
+    animation: slideInFromRight 0.4s ease-out;
+  }
+  
+  @keyframes slideInFromRight {
+    0% {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    100% {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  .matches{
+    width: 318px;
+    height: 70px;
+  }
+  #matchHistoryContainer{
+    width: 92.5vw;
+    height: 196.7%;
+    background-color: #2a2a2a;
+    border-radius: 10px;
+    top: 53.3px;
+    border: 2px solid #d4af37;
+    left: -14.0vw;
+    z-index: 0;
+  }
+  .matches > span{
+    margin-right: unset;
+    margin-left: unset;
+  }
+  .gameDate{display: none;}
+  .matches > .champion-icon{
+    width: 40px;
+    height: 40px;
+    margin-top: 20px;
+  }
+  .secondary-rune-icon{
+    margin-top: 35px;
+  }
+  .main-rune-icon{
+    margin-top: 25px;
+  }
+  .items{
+    margin-left: 66.7px;
+    top: -162%;
+  }
+  #nickName{
+    font-size: 8.5px;
+  }
+  #Lvl{
+    font-size: 8.5px;
+  }
+  .itemIcon{
+    border-radius: 8px;
+    width: 30px;
+    height: 30px;
+    margin-top: 13.5px;
+  }
+  .arrow-icon{
+    right: 10px;
+  }
+  .gamestatsContainer > span{
+    font-size: 10px;
+  }
+  .gamestatsContainer{
+    top: -10vh;
+    left: -5.7vw;
+  }
+  #rankedFlexDataMobile, #rankedSoloqDataMobile{
+    font-size: 8px;
+    display: flex;
+  }
+  #rankedSoloqData, #rankedFlexData{
+    display: none;
+  }
+  #mobile-button-close-container-background{
+    align-items: center;
+    justify-content: center;
+    display: flex;
+    background-color: #2a2a2a;
+    border: 2px solid #d4af37;
+    border-radius: 8px;
+    width: 40px;
+    height: 40px;
+    margin-left: 76.7%;
+  }
+  #riotid{
+    max-width: 166px;
+    margin-left: unset;
+    margin-bottom: 5px;
+    margin-top: 18px;
+  }
+  #region{
+    margin-bottom: 5px;
+  }
+  #search_button{
+    width: 166px;
+    margin-left: -15px;
+  }
+  #generalContainer{
+    left: 17.8vw;
+    top: 1.8vh;
+  }
+  #containerRanked{
+    left: 37vw;
+    width: 65px;
+    height: 65px;
+    top: -9.4vh;
+  }
+  #container{
+    padding:0px;
+    padding-top: 5px;
+    width: 65px;
+    height: 65px;
+    display: block;
+    margin-left: 18.5vw;
+    margin-top: -11.1vh;
+    font-size: 10px;
+  }
+  #containerRankedFlex{
+    margin-left: 36.4vw;
+    margin-top: 0.75vh;
+  }
+  #containerRankedFlex, #containerRankedSoloq{
+    width: 65px;
+    height: 65px;
+  }
+  
+  #span{
+    font-size: 8px;
+  }
+  #rankedIcon, #rankedFlexIcon{
+    width: 23px;
+    height: 23px;
+    margin: unset;
+  
+  }
+  #containerMastery{
+    max-width: 100000%;
+    display:inline-block;
+    left: -0.3em;
+    top: -8vh;
+    width: 100vw;
+    height: 14vh;
+  }
+  #full-text{display:none}
+  #mobile-text{
+    margin-left: 4px;
+    display:flex;
+    margin-top: 22px;
+    font-size: 8.5px;
+  }
+  #containerMasteries1, #containerMasteries2, #containerMasteries3, #containerMasteries4, #containerMasteries5{
+    width: 18vw;
+    height: 30vw;
+  }
+  #containerMasteries2{
+    left: 18.5vw;
+    top: -14.2vh;
+  }
+  #containerMasteries3{
+    left: 37vw;
+    top: -28.4vh;
+  }
+  #containerMasteries4{
+    left: 55.5vw;
+    top: -42.6vh;
+  }
+  #containerMasteries5{
+    left: 74vw;
+    top: -56.8vh;
+  }
+  #containerRankedFlex > img, #containerRankedSoloq > img{
+    margin-top: -10px;
+  }
+  #mastery1, #mastery2, #mastery3, #mastery4, #mastery5 {
+    border-radius: 10%;
+    width: var(--varWidthandHeight);
+    height: var(--varWidthandHeight);
+    margin-left: unset;
+  
+  }
 }
