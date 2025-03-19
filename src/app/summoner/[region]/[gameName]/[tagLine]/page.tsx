@@ -49,9 +49,12 @@ export default function Summoner() {
 
     useEffect(() => {
         const searchButton = document.getElementById('search_button');
-        const riotIdInput = document.getElementById('riotid') as HTMLInputElement | null;
-        if (searchButton && riotIdInput) {
+        const searchButtonMobile = document.getElementById('search_button_mobile');
+        
+        if (searchButton && searchButtonMobile) {
             const handleSearch = () => {
+                const riotIdInput = document.getElementById('riotid') as HTMLInputElement | null;
+                const riotIdInputMobile = document.getElementById('riotid-mobile') as HTMLInputElement | null;
                 const regionSelect = document.getElementById('region') as HTMLSelectElement | null;
                 if (riotIdInput && regionSelect) {
                     const riotId = riotIdInput.value.split('#');
@@ -60,6 +63,7 @@ export default function Summoner() {
                     const region = regionSelect.value;
                     if (gameName && tagLine) {
                         window.location.href = `https://lol-data-blond.vercel.app/summoner/${region}/${gameName}/${tagLine}`;
+                        riotIdInput.addEventListener('keypress', (event) => {if (event.key === 'Enter') {window.location.href = `https://lol-data-blond.vercel.app/summoner/${region}/${gameName}/${tagLine}`;}})
                     } else {
                         alert('Por favor, insira um Riot ID válido no formato Nome#Tag.');
                     }
@@ -69,11 +73,7 @@ export default function Summoner() {
             };
 
             searchButton.addEventListener('click', handleSearch);
-            riotIdInput.addEventListener('keypress', (event) => {
-                if (event.key === 'Enter') {
-                    handleSearch();
-                }
-            });
+            searchButtonMobile.addEventListener('click', handleSearch);
         }
     }, []);
 
@@ -157,7 +157,7 @@ export default function Summoner() {
                                 buttonOpen.style.display = 'flex';
                             }
                         }}>x</button>
-                        <input className="input" type="text" id="riotid" placeholder="Riot#ID" />
+                        <input className="input" type="text" id="riotid-mobile" placeholder="Riot#ID" />
                         <select className="input" id="region">
                             <optgroup label="Americas" className="Americas">
                                 <option value="BR1">Brazil</option>
@@ -183,7 +183,7 @@ export default function Summoner() {
                                 <option value="OC1">Oceania</option>
                             </optgroup>
                         </select>
-                        <input className="input" type="button" value="Pesquisar" id="search_button" />
+                        <input className="input" type="button" value="Pesquisar" id="search_button_mobile" />
                     </div>
                 </div>
                 <div id="input-container" className="input_containerSyle">

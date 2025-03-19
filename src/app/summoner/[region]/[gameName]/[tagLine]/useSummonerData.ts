@@ -54,6 +54,8 @@ const useSummonerData = (region: string, gameName: string, tagLine: string) => {
             const profileData = await fetchProfile(region, accountData.puuid);
             const rankedFlexData = document.getElementById("rankedFlexData");
             const rankedSoloqData = document.getElementById("rankedSoloqData");
+            const rankedFlexDataMobile = document.getElementById("rankedFlexDataMobile");
+            const rankedSoloqDataMobile = document.getElementById("rankedSoloqDataMobile");
             setPuuid(accountData.puuid);
             if (accountData.puuid) {
                 setSummonerLevel(profileData.summonerLevel);
@@ -74,7 +76,6 @@ const useSummonerData = (region: string, gameName: string, tagLine: string) => {
                 };
 
                 const soloqData = rankedData.find((queue: any) => queue.queueType === "RANKED_SOLO_5x5");
-                console.log(soloqData)
                 if (soloqData) {
                     setEloSoloq(`${tierTranslation[soloqData.tier]} ${soloqData.rank}`);
                     setWinsSoloq(soloqData.wins);
@@ -84,10 +85,12 @@ const useSummonerData = (region: string, gameName: string, tagLine: string) => {
                     setSoloqImg(`https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${soloqData.tier.toLowerCase()}.svg`);
                 } else if (rankedSoloqData) {
                     rankedSoloqData.innerHTML = "Não ranqueado";
+                    if (rankedSoloqDataMobile) {
+                        rankedSoloqDataMobile.innerHTML = "Não ranqueado";
+                    }
                 }
 
                 const flexData = rankedData.find((queue: any) => queue.queueType === "RANKED_FLEX_SR");
-                console.log(flexData)
                 if (flexData) {
                     setEloFlex(`${tierTranslation[flexData.tier]} ${flexData.rank}`);
                     setWinsFlex(flexData.wins);
@@ -97,6 +100,9 @@ const useSummonerData = (region: string, gameName: string, tagLine: string) => {
                     setFlexImg(`https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${flexData.tier.toLowerCase()}.svg`);
                 } else if (rankedFlexData) {
                     rankedFlexData.innerHTML = "Não ranqueado";
+                    if (rankedFlexDataMobile) {
+                        rankedFlexDataMobile.innerHTML = "Não ranqueado";
+                    }
                 }
 
                 const masteryData = await fetchMastery(region, accountData.puuid, version);
@@ -119,11 +125,9 @@ const useSummonerData = (region: string, gameName: string, tagLine: string) => {
             console.error("Nenhum dado de partida encontrado no histórico.");
             return;
         }
-        console.log(history.matchData.length)
         for (let matchIndex = 0; matchIndex < history.matchData.length; matchIndex++) {
             const match = history.matchData[matchIndex];
             const matchDiv = document.getElementById(`match${matchIndex + 1}`);
-            console.log(matchIndex)
             if (!matchDiv) {
                 console.error(`Div de partida para a partida ${matchIndex + 1} não encontrada.`);
                 continue;

@@ -87,7 +87,6 @@ export const fetchMastery = async (region: string, puuid: string, version: strin
 };
 
 export const fetchHistory = async (region: string, puuid: string, version: string) => {
-    //console.log('Fetching history for puuid:', puuid);
     try {
         const response = await fetch(`${riotUrl}${endpointMatchIDS}${puuid}/ids?start=0&count=10`, {
             headers: {
@@ -95,6 +94,7 @@ export const fetchHistory = async (region: string, puuid: string, version: strin
             }
         });
         const dataMatchIds = await response.json();
+        
 
 
         const matchDataPromises = dataMatchIds.map((matchId: string) => 
@@ -102,7 +102,6 @@ export const fetchHistory = async (region: string, puuid: string, version: strin
         );
 
         const matchData = await Promise.all(matchDataPromises);
-        //console.log('Match data:', matchData);
 
         const [runeResponse, itemsResponse, matchTypeResponse] = await Promise.all([
             fetch(`https://ddragon.leagueoflegends.com/cdn/${version}/data/en_US/runesReforged.json`),
