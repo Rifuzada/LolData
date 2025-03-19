@@ -571,7 +571,7 @@ span {
     border-radius: 8px;
     position: absolute;
     top: -5px;
-    left: -33.3vw;  
+    left: -33.3vw;
     animation: slideInFromRight 0.4s ease-out;
   }
   
@@ -643,7 +643,7 @@ span {
   }
   #rankedFlexDataMobile, #rankedSoloqDataMobile{
     font-size: 6.8px;
-    display: inline-flex;
+    display: flex;
   }
   #rankedSoloqData, #rankedFlexData{
     display: none;
@@ -673,14 +673,73 @@ span {
     margin-left: -15px;
   }
   #generalContainer{
-    left: 19rem;
-    top: 29rem;
+    left: 19.7rem;
+    top: 16rem;
   }
   #containerRanked{
     left: 9rem;
     width: 70px;
     height: 65px;
-    top: -6.2rem;
+    top: -4.7rem;
   }
+ 
+  #container{
+    padding:0px;
+    padding-top: 5px;
+    width: 70px;
+    height: 70px;
+    display: block;
+    margin-left: 4.5rem;
+    margin-top: -5.68rem;
+    font-size: 10px;
   }
-
+  #containerRankedFlex{
+    margin-top: -4.55rem;
+    margin-left: 8.7rem;
+  }
+  #containerRankedFlex, #containerRankedSoloq{
+    width: 70px;
+    height:70px;
+  }
+  
+  #span{
+    font-size: 8px;
+  }
+  #rankedIcon, #rankedFlexIcon{
+    width: 23px;
+    height: 23px;
+    margin: unset;
+  
+  }
+  #containerMastery{
+    max-width: 100000%;
+    display: inline-flex;
+    left: -0.25em;
+    top: -3.8rem;
+    width: 26rem;
+    height: 14vh;
+    flex-wrap: wrap;
+  }
+  #full-text{display:none}
+  #mobile-text{
+    margin-left: 4px;
+    display:flex;
+    margin-top: 22px;
+    font-size: 8.5px;
+  }
+  #containerMasteries1, #containerMasteries2, #containerMasteries3, #containerMasteries4, #containerMasteries5{
+    width: 4.3rem;
+    height: 7.4rem;
+    margin-right: -0.2rem;
+  }
+  #containerRankedFlex > img, #containerRankedSoloq > img{
+    margin-top: -10px;
+  }
+  #mastery1, #mastery2, #mastery3, #mastery4, #mastery5 {
+    border-radius: 10%;
+    width: var(--varWidthandHeight);
+    height: var(--varWidthandHeight);
+    margin-left: unset;
+  
+  }
+}
