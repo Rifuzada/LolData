@@ -2,8 +2,8 @@ import { Router } from 'express';
 import { RequestHandler } from 'express';
 import { summonerController } from '../controllers/summoner.controller';
 import { validateQuery } from '../middleware/validator.middleware';
-import { riotApiRateLimiter } from '../middleware/rateLimit.middleware';
-import { summonerSchemas } from '../validators/summonerValidators';
+import { riotApiRateLimiter } from '../middleware/rate-limit.middleware';
+import { summonerSchemas } from '../validators/summoner.validator';
 
 /**
  * Router para endpoints relacionados a invocadores do League of Legends

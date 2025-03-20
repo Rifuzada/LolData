@@ -1,12 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import { TypedRequestQuery } from '../interfaces/api.interface';
-import { AppError } from '../utils/error.class';
 import { ApiResponseUtils } from '../utils/response.utils';
 import { logger } from '../middleware/logger.middleware';
-import { summonerSchemas } from '../validators/summonerValidators';
-import { z } from 'zod';
 import { apiService } from '../services/api.service';
-import { cacheService } from '../services/cache.service';
 
 // Interfaces para tipar as respostas da API
 interface SummonerDTO {

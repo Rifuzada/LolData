@@ -17,7 +17,7 @@ class RiotService {
    * Inicializa o serviço com a chave de API
    */
   constructor() {
-    this.apiKey = process.env.RIOT_API_KEY || '';
+    this.apiKey = config.api.riotKey;
     this.americasUrl = config.riotApi.americas;
   }
 

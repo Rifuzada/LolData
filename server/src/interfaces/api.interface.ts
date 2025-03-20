@@ -1,9 +1,11 @@
 import { Request } from 'express';
+import { ParamsDictionary } from 'express-serve-static-core';
+import { ParsedQs } from 'qs';
 
 /**
  * Interface para estender Request com query tipada
  */
-export interface TypedRequestQuery<T = Record<string, any>> extends Request {
+export interface TypedRequestQuery<T extends ParsedQs = ParsedQs> extends Request {
   query: T;
 }
 
@@ -17,17 +19,17 @@ export interface TypedRequestBody<T = Record<string, any>> extends Request {
 /**
  * Interface para estender Request com params tipado
  */
-export interface TypedRequestParams<T = Record<string, any>> extends Request {
+export interface TypedRequestParams<T extends ParamsDictionary = ParamsDictionary> extends Request {
   params: T;
 }
 
 /**
- * Interface para estender Request com query e body tipados
+ * Interface para estender Request com query, body e params tipados
  */
 export interface TypedRequest<
-  QueryType = Record<string, any>,
+  QueryType extends ParsedQs = ParsedQs,
   BodyType = Record<string, any>,
-  ParamsType = Record<string, any>
+  ParamsType extends ParamsDictionary = ParamsDictionary
 > extends Request {
   query: QueryType;
   body: BodyType;
