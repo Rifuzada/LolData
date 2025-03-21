@@ -36,8 +36,8 @@ export function SummonerProfile({
   lpFlex,
 }: SummonerProfileProps) {
   // Determinar o nome de display - usar gameName+tagLine se disponível, senão usar name
-  const displayName = gameName && tagLine
-    ? `${gameName}#${tagLine}`
+  const displayName = gameName?.replace(/\s+/g, '') && tagLine
+    ? `${gameName.replace(/\s+/g, '')}#${tagLine}`
     : (name || "Carregando...");
 
   // Log para debug dos dados de elo

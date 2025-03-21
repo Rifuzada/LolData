@@ -40,26 +40,39 @@ export function SummonerSearch({ defaultRegion = 'br1' }: SummonerSearchProps) {
         <select
           value={region}
           onChange={(e) => setRegion(e.target.value)}
-          className="h-10 px-3 py-2 rounded-md text-sm border border-input bg-background w-20"
+          className="h-10 px-3 py-2 rounded-md text-sm border border-input bg-background w-20 cursor-pointer"
         >
-          <option value="br1">BR</option>
-          <option value="na1">NA</option>
-          <option value="euw1">EUW</option>
-          <option value="eun1">EUNE</option>
-          <option value="kr">KR</option>
-          <option value="jp1">JP</option>
-          <option value="la1">LAN</option>
-          <option value="la2">LAS</option>
-          <option value="oc1">OCE</option>
-          <option value="tr1">TR</option>
-          <option value="ru">RU</option>
+      <option value="">Região</option>
+        <optgroup label="Americas">
+          <option value="BR1">Brasil</option>
+          <option value="NA1">América do Norte</option>
+          <option value="LA1">América Latina Norte</option>
+          <option value="LA2">América Latina Sul</option>
+        </optgroup>
+        <optgroup label="Europa">
+          <option value="EUW1">Europa Oeste</option>
+          <option value="EUN1">Europa Nórdica e Leste</option>
+          <option value="RU">Rússia</option>
+        </optgroup>
+        <optgroup label="Ásia">
+          <option value="KR">Coreia</option>
+          <option value="JP1">Japão</option>
+          <option value="TW2">Taiwan, Hong Kong e Macau</option>
+          <option value="TH2">Tailândia</option>
+          <option value="VN2">Vietnã</option>
+          <option value="TR1">Turquia</option>
+          <option value="SG2">Singapura</option>
+        </optgroup>
+        <optgroup label="Oceania">
+          <option value="OC1">Oceania</option>
+        </optgroup>
         </select>
         <div className="relative flex-1">
           <input
             type="text"
             value={summonerName}
             onChange={(e) => setSummonerName(e.target.value)}
-            placeholder="Nome#TAG ou Nome do invocador"
+            placeholder="Riot#ID"
             className="h-10 px-3 py-2 w-full rounded-md text-sm border border-input bg-background"
             required
           />
