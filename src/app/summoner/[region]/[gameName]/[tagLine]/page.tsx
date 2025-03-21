@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { MatchHistory } from "@/app/components/match/MatchHistory";
 import { SummonerProfile } from "@/app/components/summoner/SummonerProfile";
+import { SummonerSearch } from "@/app/components/summoner/SummonerSearch";
 import { getChampionMasteries, getMatchHistory, getQueueTypes, getSummonerByRiotId } from "@/app/actions/summoner";
 
 interface ChampionMastery {
@@ -68,6 +69,8 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
 
     return (
       <main className="container mx-auto min-h-screen space-y-8 py-8">
+        <SummonerSearch defaultRegion={region} />
+
         <div className="relative">
           <div className="absolute inset-0 -z-10 bg-gradient-to-b from-background/80 to-background" />
           <SummonerProfile
@@ -88,7 +91,7 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
             lpSoloq={lpSoloq}
             lpFlex={lpFlex}
           />
-                        </div>
+        </div>
 
         <div className="rounded-lg border bg-card p-6">
           <div className="mb-6">
@@ -96,7 +99,7 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
             <p className="text-sm text-muted-foreground">
               Recent games played by {summoner.name}
             </p>
-                        </div>
+          </div>
 
           <Suspense
             fallback={
@@ -106,8 +109,8 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
                     key={i}
                     className="h-32 animate-pulse rounded-lg bg-muted/50"
                   />
-                        ))}
-                    </div>
+                ))}
+              </div>
             }
           >
             <MatchHistory
@@ -116,7 +119,7 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
               queueTypes={(queueTypes as any)}
             />
           </Suspense>
-                    </div>
+        </div>
       </main>
     );
   } catch (error) {
@@ -129,5 +132,5 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
         </div>
       </main>
     );
-}
+  }
 }
