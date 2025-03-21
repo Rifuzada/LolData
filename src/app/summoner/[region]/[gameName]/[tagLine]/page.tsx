@@ -55,8 +55,16 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
     const formatElo = (entry: any) => entry ? `${entry.tier.charAt(0) + entry.tier.slice(1).toLowerCase()} ${entry.rank}` : null;
     const eloSoloq = formatElo(soloQData);
     const eloFlex = formatElo(flexData);
-    const lpSoloq = soloQData?.leaguePoints || null;
-    const lpFlex = flexData?.leaguePoints || null;
+
+    // Garante que os pontos de liga sejam números válidos
+    const lpSoloq = soloQData && typeof soloQData.leaguePoints === 'number' ? soloQData.leaguePoints : null;
+    const lpFlex = flexData && typeof flexData.leaguePoints === 'number' ? flexData.leaguePoints : null;
+
+    // Log para depuração dos dados de elo
+    console.log("Dados de elo:", {
+      soloQ: { elo: eloSoloq, lp: lpSoloq, raw: soloQData },
+      flex: { elo: eloFlex, lp: lpFlex, raw: flexData }
+    });
 
     return (
       <main className="container mx-auto min-h-screen space-y-8 py-8">
@@ -69,7 +77,7 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
             level={summoner.summonerLevel}
             profileIconId={summoner.profileIconId}
             region={region.toUpperCase()}
-            masteries={masteries.slice(0, 5).map((mastery: ChampionMastery) => ({
+            masteries={(masteries as ChampionMastery[]).slice(0, 5).map((mastery) => ({
               championId: mastery.championId,
               championName: mastery.championName,
               level: mastery.championLevel,
@@ -80,7 +88,7 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
             lpSoloq={lpSoloq}
             lpFlex={lpFlex}
           />
-        </div>
+                        </div>
 
         <div className="rounded-lg border bg-card p-6">
           <div className="mb-6">
@@ -88,7 +96,7 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
             <p className="text-sm text-muted-foreground">
               Recent games played by {summoner.name}
             </p>
-          </div>
+                        </div>
 
           <Suspense
             fallback={
@@ -98,17 +106,17 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
                     key={i}
                     className="h-32 animate-pulse rounded-lg bg-muted/50"
                   />
-                ))}
-              </div>
+                        ))}
+                    </div>
             }
           >
             <MatchHistory
-              matches={matches}
+              matches={(matches as any[])}
               puuid={summoner.puuid}
-              queueTypes={queueTypes}
+              queueTypes={(queueTypes as any)}
             />
           </Suspense>
-        </div>
+                    </div>
       </main>
     );
   } catch (error) {
@@ -121,5 +129,5 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
         </div>
       </main>
     );
-  }
+}
 }

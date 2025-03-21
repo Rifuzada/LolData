@@ -19,14 +19,19 @@ const TRANSLATION_MAP = {
     "5v5": "5x5"
 };
 
-type MatchInfo = {
-    info: {
-        gameStartTimestamp: number;
-        participants: any[];
-        queueId: number;
-    };
-    // Adicione outras propriedades conforme necessário
-};
+// Interface para histórico de partidas
+interface MatchHistory {
+    matchData: {
+        info: {
+            gameStartTimestamp: number;
+            participants: any[];
+            queueId: number;
+        };
+    }[];
+    queueType: any[];
+    itemData: any[];
+    runeData: any[];
+}
 
 const useSummonerData = (region: string, gameName: string, tagLine: string) => {
     const [puuid, setPuuid] = useState<string | null>(null);
@@ -45,7 +50,8 @@ const useSummonerData = (region: string, gameName: string, tagLine: string) => {
     const [soloqImg, setSoloqImg] = useState<string | null>(null);
     const [flexImg, setFlexImg] = useState<string | null>(null);
     const [championMastery, setMastery] = useState<ChampionMastery[]>([]);
-    const [history, setHistory] = useState<any>({});
+    const [history, setHistory] = useState<MatchHistory | null>(null);
+    const [isHistoryRendered, setIsHistoryRendered] = useState(false);
 
     const fetchData = async () => {
         try {
@@ -121,10 +127,14 @@ const useSummonerData = (region: string, gameName: string, tagLine: string) => {
     }, [region, gameName, tagLine]);
 
     const renderMatchHistory = async () => {
-        if (!history.matchData || history.matchData.length === 0) {
+        if (!history?.matchData || history.matchData.length === 0) {
             console.error("Nenhum dado de partida encontrado no histórico.");
             return;
         }
+
+        // Verificar se o histórico já foi renderizado para evitar loop
+        if (isHistoryRendered) return;
+
         for (let matchIndex = 0; matchIndex < history.matchData.length; matchIndex++) {
             const match = history.matchData[matchIndex];
             const matchDiv = document.getElementById(`match${matchIndex + 1}`);
@@ -160,10 +170,14 @@ const useSummonerData = (region: string, gameName: string, tagLine: string) => {
                 matchDiv.appendChild(await createItemIcons(currentPlayer, history.itemData));
             }
         }
+        setIsHistoryRendered(true);
     }
+
     useEffect(() => {
-    renderMatchHistory();
-    });
+        if (history && !isHistoryRendered) {
+            renderMatchHistory();
+        }
+    }, [history, isHistoryRendered]);
 
 
     return {

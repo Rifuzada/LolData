@@ -1,8 +1,37 @@
-import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import axios from 'axios';
 import { AppError } from '../utils/error.class';
 import { logger } from '../middleware/logger.middleware';
 import config from '../config/config';
 import { cacheService } from './cache.service';
+
+// Definindo tipos internos com base no que o axios usa
+interface AxiosConfig {
+  method?: string;
+  url?: string;
+  headers?: Record<string, string>;
+  data?: any;
+  timeout?: number;
+  params?: any;
+}
+
+interface AxiosErrorResponse {
+  status: number;
+  data: any;
+  config: AxiosConfig;
+}
+
+interface AxiosErrorType {
+  response?: AxiosErrorResponse;
+  request?: any;
+  message?: string;
+  config?: AxiosConfig;
+}
+
+interface AxiosResponseType<T = any> {
+  status: number;
+  data: T;
+  config: AxiosConfig;
+}
 
 /**
  * Serviço para fazer requisições HTTP
@@ -10,7 +39,7 @@ import { cacheService } from './cache.service';
 class ApiService {
   private readonly apiKey: string;
   private readonly apiKeyHeader: string;
-  private client: AxiosInstance;
+  private client: any;
 
   constructor() {
     this.apiKey = process.env.API_KEY || '';
@@ -36,11 +65,11 @@ class ApiService {
   private setupInterceptors(): void {
     // Interceptador de requisição para logging
     this.client.interceptors.request.use(
-      (config) => {
+      (config: AxiosConfig) => {
         logger.debug(`Requisição: ${config.method?.toUpperCase()} ${config.url}`);
         return config;
       },
-      (error) => {
+      (error: any) => {
         logger.error('Erro ao preparar requisição', error);
         return Promise.reject(error);
       }
@@ -48,11 +77,11 @@ class ApiService {
 
     // Interceptador de resposta para logging e tratamento de erros
     this.client.interceptors.response.use(
-      (response) => {
+      (response: AxiosResponseType) => {
         logger.debug(`Resposta: ${response.status} ${response.config.url}`);
         return response;
       },
-      (error: AxiosError) => {
+      (error: AxiosErrorType) => {
         return this.handleApiError(error);
       }
     );
@@ -63,7 +92,7 @@ class ApiService {
    * @param error Erro do Axios
    * @returns Promise rejeitada com um AppError
    */
-  private handleApiError(error: AxiosError): Promise<never> {
+  private handleApiError(error: AxiosErrorType): Promise<never> {
     if (error.response) {
       const { status, data, config } = error.response;
       const url = config?.url || 'unknown URL';
@@ -120,7 +149,7 @@ class ApiService {
 
       // Faz a requisição
       logger.debug(`Fazendo requisição GET para: ${url}`);
-      const response: AxiosResponse<T> = await this.client.get(url);
+      const response: AxiosResponseType<T> = await this.client.get(url);
 
       // Armazena em cache se necessário
       if (useCache) {
@@ -130,7 +159,7 @@ class ApiService {
 
       return response.data;
     } catch (error) {
-      this.handleError(error as AxiosError, url);
+      this.handleError(error as AxiosErrorType, url);
       throw error; // Este throw nunca será alcançado pois handleError sempre lança uma exceção
     }
   }
@@ -142,7 +171,7 @@ class ApiService {
    * @param config Configurações adicionais para o Axios
    * @returns Promise com o dado da resposta
    */
-  async post<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+  async post<T>(url: string, data?: any, config?: AxiosConfig): Promise<T> {
     return this.request<T>('POST', url, data, config);
   }
 
@@ -153,7 +182,7 @@ class ApiService {
    * @param config Configurações adicionais para o Axios
    * @returns Promise com o dado da resposta
    */
-  async put<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+  async put<T>(url: string, data?: any, config?: AxiosConfig): Promise<T> {
     return this.request<T>('PUT', url, data, config);
   }
 
@@ -163,7 +192,7 @@ class ApiService {
    * @param config Configurações adicionais para o Axios
    * @returns Promise com o dado da resposta
    */
-  async delete<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
+  async delete<T>(url: string, config?: AxiosConfig): Promise<T> {
     return this.request<T>('DELETE', url, undefined, config);
   }
 
@@ -179,10 +208,10 @@ class ApiService {
     method: string,
     url: string,
     data?: any,
-    config?: AxiosRequestConfig
+    config?: AxiosConfig
   ): Promise<T> {
     try {
-      const response: AxiosResponse<T> = await this.client.request({
+      const response: AxiosResponseType<T> = await this.client.request({
         method,
         url,
         data,
@@ -203,7 +232,7 @@ class ApiService {
    * @param error Erro da requisição
    * @param url URL da requisição
    */
-  private handleError(error: AxiosError, url: string): never {
+  private handleError(error: AxiosErrorType, url: string): never {
     const status = error.response?.status || 500;
     const errorData = error.response?.data as Record<string, any> || {};
     const message = errorData.message || error.message || 'Erro ao comunicar com o servidor';

@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import { useErrorHandler } from '../services/errorHandling';
 import apiService from '../services/apiService';
 import { useSummonerContext } from '../context/SummonerContext';
-import { Account, RankedData, ChampionMastery, ChampionWithMastery, MatchHistory } from '../types';
+import { Account, RankedData, ChampionMastery, ChampionWithMastery } from '../types';
 
 /**
  * Interface para parâmetros de busca

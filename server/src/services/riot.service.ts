@@ -5,6 +5,37 @@ import { Account, Profile, RankedData, ChampionMastery } from '../types';
 import { logger } from '../middleware/logger.middleware';
 import { AppError } from '../utils/error.class';
 
+// Interfaces para tipagem do axios
+interface AxiosResponse<T = any> {
+  data: T;
+  status: number;
+  statusText: string;
+  headers: Record<string, string>;
+  config: any;
+}
+
+interface AxiosError {
+  response?: {
+    data: any;
+    status: number;
+    headers: Record<string, string>;
+    statusText: string;
+  };
+  request?: any;
+  message: string;
+  config?: any;
+  isAxiosError?: boolean;
+}
+
+// Função utilitária para verificar se um erro é do Axios
+function isAxiosError(error: unknown): error is AxiosError {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'isAxiosError' in error
+  );
+}
+
 /**
  * Serviço para comunicação com a API da Riot Games
  * Implementa o princípio de responsabilidade única (S do SOLID)
@@ -30,16 +61,17 @@ class RiotService {
   async getAccountByRiotId(gameName: string, tagLine: string): Promise<Account> {
     try {
       const url = `${this.americasUrl}/${config.endpoints.riotId}/${gameName}/${tagLine}`;
-      const response = await axios.get(url, {
+      const response = await axios.get<Account>(url, {
         headers: { 'X-Riot-Token': this.apiKey }
       });
       return response.data;
     } catch (error) {
       logger.error('Erro ao buscar conta pelo Riot ID:', error);
-      if (axios.isAxiosError(error)) {
+      if (isAxiosError(error)) {
         if (error.response) {
+          const message = error.response.data?.status?.message || error.message;
           throw new AppError(
-            `Erro ao buscar conta: ${error.response.data?.status?.message || error.message}`,
+            `Erro ao buscar conta: ${message}`,
             error.response.status,
             'RIOT_API_ERROR'
           );
@@ -60,16 +92,17 @@ class RiotService {
     try {
       const regionalUrl = getRegionalApiUrl(region);
       const url = `${regionalUrl}/${config.endpoints.summonerByPuuid}/${puuid}`;
-      const response = await axios.get(url, {
+      const response = await axios.get<Profile>(url, {
         headers: { 'X-Riot-Token': this.apiKey }
       });
       return response.data;
     } catch (error) {
       logger.error('Erro ao buscar perfil pelo PUUID:', error);
-      if (axios.isAxiosError(error)) {
+      if (isAxiosError(error)) {
         if (error.response) {
+          const message = error.response.data?.status?.message || error.message;
           throw new AppError(
-            `Erro ao buscar perfil: ${error.response.data?.status?.message || error.message}`,
+            `Erro ao buscar perfil: ${message}`,
             error.response.status,
             'RIOT_API_ERROR'
           );
@@ -90,16 +123,17 @@ class RiotService {
     try {
       const regionalUrl = getRegionalApiUrl(region);
       const url = `${regionalUrl}/${config.endpoints.rankedBySummonerId}/${summonerId}`;
-      const response = await axios.get(url, {
+      const response = await axios.get<RankedData[]>(url, {
         headers: { 'X-Riot-Token': this.apiKey }
       });
       return response.data;
     } catch (error) {
       logger.error('Erro ao buscar dados de ranqueadas:', error);
-      if (axios.isAxiosError(error)) {
+      if (isAxiosError(error)) {
         if (error.response) {
+          const message = error.response.data?.status?.message || error.message;
           throw new AppError(
-            `Erro ao buscar dados de ranqueadas: ${error.response.data?.status?.message || error.message}`,
+            `Erro ao buscar dados de ranqueadas: ${message}`,
             error.response.status,
             'RIOT_API_ERROR'
           );
@@ -120,16 +154,17 @@ class RiotService {
     try {
       const regionalUrl = getRegionalApiUrl(region);
       const url = `${regionalUrl}/${config.endpoints.championMastery}/${puuid}`;
-      const response = await axios.get(url, {
+      const response = await axios.get<ChampionMastery[]>(url, {
         headers: { 'X-Riot-Token': this.apiKey }
       });
       return response.data;
     } catch (error) {
       logger.error('Erro ao buscar maestrias de campeões:', error);
-      if (axios.isAxiosError(error)) {
+      if (isAxiosError(error)) {
         if (error.response) {
+          const message = error.response.data?.status?.message || error.message;
           throw new AppError(
-            `Erro ao buscar maestrias: ${error.response.data?.status?.message || error.message}`,
+            `Erro ao buscar maestrias: ${message}`,
             error.response.status,
             'RIOT_API_ERROR'
           );
@@ -149,16 +184,17 @@ class RiotService {
   async getMatchIds(puuid: string, count: number = 10): Promise<string[]> {
     try {
       const url = `${this.americasUrl}${config.endpoints.matchesByPuuid}${puuid}/ids?start=0&count=${count}`;
-      const response = await axios.get(url, {
+      const response = await axios.get<string[]>(url, {
         headers: { 'X-Riot-Token': this.apiKey }
       });
       return response.data;
     } catch (error) {
       logger.error('Erro ao buscar IDs de partidas:', error);
-      if (axios.isAxiosError(error)) {
+      if (isAxiosError(error)) {
         if (error.response) {
+          const message = error.response.data?.status?.message || error.message;
           throw new AppError(
-            `Erro ao buscar IDs de partidas: ${error.response.data?.status?.message || error.message}`,
+            `Erro ao buscar IDs de partidas: ${message}`,
             error.response.status,
             'RIOT_API_ERROR'
           );
@@ -183,10 +219,11 @@ class RiotService {
       return response.data;
     } catch (error) {
       logger.error(`Erro ao buscar detalhes da partida ${matchId}:`, error);
-      if (axios.isAxiosError(error)) {
+      if (isAxiosError(error)) {
         if (error.response) {
+          const message = error.response.data?.status?.message || error.message;
           throw new AppError(
-            `Erro ao buscar detalhes da partida: ${error.response.data?.status?.message || error.message}`,
+            `Erro ao buscar detalhes da partida: ${message}`,
             error.response.status,
             'RIOT_API_ERROR'
           );
@@ -205,16 +242,17 @@ class RiotService {
   async getAccountByPuuid(puuid: string): Promise<Account> {
     try {
       const url = `${this.americasUrl}${config.endpoints.puuidToName}/${puuid}`;
-      const response = await axios.get(url, {
+      const response = await axios.get<Account>(url, {
         headers: { 'X-Riot-Token': this.apiKey }
       });
       return response.data;
     } catch (error) {
       logger.error('Erro ao buscar conta pelo PUUID:', error);
-      if (axios.isAxiosError(error)) {
+      if (isAxiosError(error)) {
         if (error.response) {
+          const message = error.response.data?.status?.message || error.message;
           throw new AppError(
-            `Erro ao buscar conta pelo PUUID: ${error.response.data?.status?.message || error.message}`,
+            `Erro ao buscar conta pelo PUUID: ${message}`,
             error.response.status,
             'RIOT_API_ERROR'
           );

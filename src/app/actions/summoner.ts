@@ -72,7 +72,7 @@ export async function getChampionMasteries(region: string, puuid: string) {
 export async function getMatchHistory(region: string, puuid: string) {
   try {
     // Primeiro, obter os IDs das partidas
-    const matchIdsResponse = await axios.get(
+    const matchIdsResponse = await axios.get<string[]>(
       `${BASE_URL}/lol/match/v5/matches/by-puuid/${puuid}/ids`,
       {
         headers: {

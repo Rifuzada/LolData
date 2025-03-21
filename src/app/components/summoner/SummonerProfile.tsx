@@ -40,6 +40,9 @@ export function SummonerProfile({
     ? `${gameName}#${tagLine}`
     : (name || "Carregando...");
 
+  // Log para debug dos dados de elo
+  console.log("SummonerProfile - Dados de elo:", { eloSoloq, lpSoloq, eloFlex, lpFlex });
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-6 p-6">
@@ -65,12 +68,12 @@ export function SummonerProfile({
             </p>
             {eloSoloq && (
               <p className="text-sm">
-                <span className="font-medium">SoloQ:</span> {eloSoloq} {lpSoloq !== null && `(${lpSoloq} LP)`}
+                <span className="font-medium">SoloQ:</span> {eloSoloq} {lpSoloq !== null && lpSoloq !== undefined && `(${lpSoloq} LP)`}
               </p>
             )}
             {eloFlex && (
               <p className="text-sm">
-                <span className="font-medium">Flex:</span> {eloFlex} {lpFlex !== null && `(${lpFlex} LP)`}
+                <span className="font-medium">Flex:</span> {eloFlex} {lpFlex !== null && lpFlex !== undefined && `(${lpFlex} LP)`}
               </p>
             )}
           </div>
