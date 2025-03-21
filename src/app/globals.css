@@ -1,145 +1,126 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@theme {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: url('https://lolstatic-a.akamaihd.net/frontpage/apps/prod/preseason-2017/en_US/ff1afb37a0138886dad4826b7d1b75cd0d30c96a/assets/downloads/2017_assassins_wallpaper_1920x1080.jpg');
-    --foreground: #ededed;
-  }
-}
-body::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  margin: 0;
-  top: -200px;
-  padding-bottom: 405px;
-  width: 100%;
-  height: 130%;
-  background: url('https://lolstatic-a.akamaihd.net/frontpage/apps/prod/preseason-2017/en_US/ff1afb37a0138886dad4826b7d1b75cd0d30c96a/assets/downloads/2017_assassins_wallpaper_1920x1080.jpg') repeat fixed 100% ;
-  filter: blur(5px);
-  z-index: 0;
-}
-
-body {
-  color: var(--foreground);
-  font-family: "JetBrains Mono", monospace;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  padding-bottom: 170px;
-  height: 140vh;
-  background-color: #1b1b1b;
-  color: #ffffff;
-  position: relative;
-  overflow-x: hidden;
-  
-}
-
-
-div {
-  text-align: center;
-  position: relative;
-  z-index: 1; 
-}
-span {
-  font-size: 0.78em;
-  margin-bottom: -3px;
-  color: #ffffff;
-  z-index: 1;
-  padding: 2px;
-}
-
-#search_button:hover {
-  background-color: #b78f2d;
-}
-
-#search_button:active{
-  background-color: #d1a535;
-}
-
-#search_button:hover{
-  border: 1px solid;
-  outline-color: rgba(255, 255, 255, 0);
-  outline-offset: 15px;
-  text-shadow: rgb(66, 116, 138) 1px 1px 2px;
-  text-decoration: none;
-}
-
-#search_button {
-  border-radius: 5px;
-  padding: 10px 20px;
-  border: 0px solid;
-  box-shadow: rgba(28, 28, 33, 0.5) 0px 0px 20px inset, rgba(28, 28, 33, 0.2) 0px 0px 20px;
-  outline: rgba(255, 255, 255, 0.5) solid 1px;
-  outline-color: rgba(255, 255, 255, 0.5);
-  outline-offset: 0px;
-  color: #ffffff;
-  text-shadow: none;
-  position: relative;
-  z-index: 1;
-  transition: 750ms cubic-bezier(0.19, 1, 0.22, 1);
-  background-color: #d4af37;
-  font-size: 1em;
-  font-family: "JetBrains Mono", monospace;
-  cursor: pointer;
-  margin: 0px 0px 2em;
-  text-decoration: none;
-}
-
-h1{
-  display: block; font-size: 2em; font-weight: bold; margin-block: .67em
-}
-@media (min-width: 600px) {
-  #search_button {
-    margin: 0px 1em 2em;
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+    --radius: 0.5rem;
   }
 }
 
-#riotid {
-  padding: 10px;
-  width: 16em;
-  max-width: 400px;
-  margin-left: 10px; /* Add some space between the select and input */
-  border: 2px solid #d4af37;
-  border-radius: 5px;
-  font-family: "JetBrains Mono", monospace;
-  background-color: #2a2a2a;
-  color: #ffffff;
-  position: relative; 
-  z-index: 1; 
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply antialiased;
+  }
+
+  body {
+    @apply bg-background text-foreground min-h-screen overflow-x-hidden;
+    background-image: url('https://lolstatic-a.akamaihd.net/frontpage/apps/prod/preseason-2017/en_US/ff1afb37a0138886dad4826b7d1b75cd0d30c96a/assets/downloads/2017_assassins_wallpaper_1920x1080.jpg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+  }
+
+  body::before {
+    content: "";
+    @apply fixed inset-0;
+    background: inherit;
+    filter: blur(5px) brightness(0.3);
+    z-index: -1;
+  }
+
+  /* Scrollbar customization */
+  ::-webkit-scrollbar {
+    @apply w-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-zinc-900/20;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-zinc-700/50 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-zinc-600/50;
+  }
 }
 
-#riotid:focus{
-  outline: none;
-  border: 2px solid #d4af37;
+@layer components {
+  .container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .search-input {
+    @apply w-full md:w-64 px-4 py-2 rounded-md bg-zinc-900/60 border border-zinc-800
+           focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all;
+  }
+
+  .search-button {
+    @apply px-6 py-2 bg-primary text-primary-foreground rounded-md
+           hover:bg-primary/90 transition-colors
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .region-select {
+    @apply px-4 py-2 rounded-md bg-zinc-900/60 border border-zinc-800
+           focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all;
+  }
+
+  .match-history {
+    @apply space-y-2 animate-fadeIn;
+  }
+
+  .match-item {
+    @apply transition-all duration-200;
+  }
+
+  .match-item:hover {
+    @apply transform scale-[1.01];
+  }
 }
 
-#region{
-  background-color: #2a2a2a;
-  border-radius: 5px;
-  border: 2px solid #d4af37;
-  color: #ffffff;
-  cursor: pointer;
-  text-align: center;
-  z-index: 1;
-  height: 40px;
-  margin-left: 15px;
-  width: 115px;
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
 }
-#region:focus{
-  outline: none;
-  border: 2px solid #d4af37;
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out forwards;
 }

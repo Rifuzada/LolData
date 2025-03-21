@@ -2,21 +2,39 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useSearchHandler } from './searchHandler'; // Import the custom hook
+import { useSearchHandler } from './searchHandler';
+import { useSummonerContext } from './context/SummonerContext';
 
+/**
+ * Componente da página inicial
+ * Implementa o princípio de responsabilidade única (S do SOLID)
+ */
 const Home: React.FC = () => {
-  const [riotid, setriotid] = useState('');
-  const [region, setRegion] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  // Estados locais para formulário
+  const [riotid, setRiotid] = useState<string>('');
+  const [region, setRegion] = useState<string>('');
 
-  const { handleSearch } = useSearchHandler(); // Use the custom hook
+  // Context para gerenciar estado global
+  const { clearData } = useSummonerContext();
 
+  // Hook personalizado para pesquisa
+  const { handleSearch, isLoading, error } = useSearchHandler();
+
+  /**
+   * Realiza a pesquisa quando chamado
+   */
   const search = () => {
-    setLoading(true);
-    handleSearch(riotid, region).finally(() => setLoading(false));
+    // Limpa os dados anteriores
+    clearData();
+
+    // Inicia nova pesquisa
+    handleSearch(riotid, region);
   };
 
+  /**
+   * Manipula o evento de tecla pressionada no input
+   * @param event - Evento de teclado
+   */
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
       search();
@@ -24,63 +42,78 @@ const Home: React.FC = () => {
   };
 
   return (
-    <div>
-      <div id="title">
-        <h1>LoLData</h1>
-        {error && <p style={{ color: 'red' }}>{error}</p>}
+    <main className="min-h-screen flex flex-col items-center justify-center p-4">
+      <div id="title" className="text-center mb-8">
+        <h1 className="text-4xl font-bold mb-2">LoLData</h1>
+        <p className="text-lg text-gray-600 mb-2">
+          Pesquise informações de jogadores de League of Legends
+        </p>
+        {error && (
+          <p className="text-red-500 font-medium">{error}</p>
+        )}
       </div>
-      <div id="input-container">
+
+      <div id="input-container" className="w-full max-w-lg flex flex-col gap-4">
         <input
-          className="input"
+          className="input p-3 rounded border-2 border-gray-300 w-full focus:outline-none focus:border-blue-500 transition"
           type="text"
           id="riotid"
-          placeholder="Riot#ID"
+          placeholder="Riot ID (ex: Jogador#BR1)"
           value={riotid}
-          onChange={(e) => setriotid(e.target.value)}
+          onChange={(e) => setRiotid(e.target.value)}
           onKeyDown={handleKeyDown}
         />
+
         <select
-          className="input"
+          className="input p-3 rounded border-2 border-gray-300 w-full focus:outline-none focus:border-blue-500 transition"
           id="region"
           value={region}
           onChange={(e) => setRegion(e.target.value)}
         >
-          <option value="">REGIÃO</option>
+          <option value="">Selecione uma região</option>
           <optgroup label="Americas">
-            <option value="BR1">Brazil</option>
-            <option value="NA1">North America</option>
-            <option value="LA1">Latin America North</option>
-            <option value="LA2">Latin America South</option>
+            <option value="BR1">Brasil</option>
+            <option value="NA1">América do Norte</option>
+            <option value="LA1">América Latina Norte</option>
+            <option value="LA2">América Latina Sul</option>
           </optgroup>
-          <optgroup label="Europe">
-            <option value="EUW1">Europe West</option>
-            <option value="EUN1">Europe Nordic and East</option>
-            <option value="RU">Russia</option>
+          <optgroup label="Europa">
+            <option value="EUW1">Europa Oeste</option>
+            <option value="EUN1">Europa Nórdica e Leste</option>
+            <option value="RU">Rússia</option>
           </optgroup>
-          <optgroup label="Asia">
-            <option value="KR">Republic of Korea</option>
-            <option value="JP1">Japan</option>
-            <option value="TW2">Taiwan, Hong Kong, and Macao</option>
-            <option value="TH2">Thailand</option>
-            <option value="VN2">Vietnam</option>
-            <option value="TR1">Turkey</option>
-            <option value="SG2">Singapore</option>
+          <optgroup label="Ásia">
+            <option value="KR">Coreia</option>
+            <option value="JP1">Japão</option>
+            <option value="TW2">Taiwan, Hong Kong e Macau</option>
+            <option value="TH2">Tailândia</option>
+            <option value="VN2">Vietnã</option>
+            <option value="TR1">Turquia</option>
+            <option value="SG2">Singapura</option>
           </optgroup>
           <optgroup label="Oceania">
             <option value="OC1">Oceania</option>
           </optgroup>
         </select>
+
         <button
-          className="input"
+          className="input p-3 rounded bg-blue-600 text-white font-medium hover:bg-blue-700 transition w-full disabled:bg-blue-400"
           id="search_button"
           type="button"
           onClick={search}
-          disabled={loading}
+          disabled={isLoading}
         >
-          {loading ? 'Loading...' : 'Pesquisar Usuário'}
+          {isLoading ? 'Pesquisando...' : 'Pesquisar Invocador'}
         </button>
       </div>
-    </div>
+
+      <div className="mt-10 text-center text-gray-500">
+        <p>
+          LoLData não é endossado pela Riot Games e não reflete as visões ou opiniões da Riot Games
+          ou de qualquer pessoa oficialmente envolvida na produção ou gerenciamento de League of Legends, fuck Riot Games.
+        </p>
+      </div>
+    </main>
   );
 };
 

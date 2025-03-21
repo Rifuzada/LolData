@@ -8,8 +8,7 @@ const endpointSummonerPuuid = "lol/summoner/v4/summoners/by-puuid"
 const endpointRankedID = "lol/league/v4/entries/by-summoner"
 const endpointMatchIDS = "/lol/match/v5/matches/by-puuid/"
 const endpointMatches = "/lol/match/v5/matches/"
-require('dotenv').config();
- 
+
 const api_key = process.env.RIOT_API_KEY || "";
 
 import { ChampionMastery, ChampionsResponse, ChampionData } from './type';
@@ -94,10 +93,10 @@ export const fetchHistory = async (region: string, puuid: string, version: strin
             }
         });
         const dataMatchIds = await response.json();
-        
 
 
-        const matchDataPromises = dataMatchIds.map((matchId: string) => 
+
+        const matchDataPromises = dataMatchIds.map((matchId: string) =>
             fetch(`${riotUrl}${endpointMatches}${matchId}?api_key=${api_key}`).then(res => res.json())
         );
 
@@ -112,7 +111,7 @@ export const fetchHistory = async (region: string, puuid: string, version: strin
         const runeData = await runeResponse.json();
         const itemData = await itemsResponse.json();
         const queueType = await matchTypeResponse.json();
-    
+
         return { runeData, itemData, queueType, matchData};
     } catch (error) {
         console.error("Erro ao buscar histórico de partidas:", error);
@@ -195,7 +194,7 @@ async function toggleMatchDetails(matchIndex: number, puuid: string, participant
     const detailsId = `matchDetails${matchIndex + 1}`;
     const existingDetails = document.getElementById(detailsId);
     const arrowIcon = document.querySelector(`#${matchId} .arrow-icon`);
-    
+
 
     if (!arrowIcon) {
         console.error(`Arrow icon for match ${matchId} not found.`);
@@ -229,12 +228,12 @@ async function createMatchDetails(matchIndex: number, puuid: string, participant
     detailsContainer.className = "matchesDetails";
     detailsContainer.setAttribute("data-puuid", puuid);
     detailsContainer.style.cssText = `
-    margin-top: 10px; 
-    padding: 10px; 
-    background-color: #2a2a2a; 
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #2a2a2a;
     border-radius: 8px;
-    display: flex; 
-    justify-content: space-between; 
+    display: flex;
+    justify-content: space-between;
     gap: 20px;
 `;
 
@@ -258,9 +257,9 @@ async function createTeamColumn(team: any[], isWinningTeam: boolean, itemData: a
     const teamColumn = document.createElement("div");
     teamColumn.id = isWinningTeam ? "winningTeam" : "losingTeam";
     teamColumn.style.cssText = `
-    flex: 1; 
-    display: flex; 
-    flex-direction: column; 
+    flex: 1;
+    display: flex;
+    flex-direction: column;
     gap: 10px;
 `;
 
@@ -270,10 +269,10 @@ async function createTeamColumn(team: any[], isWinningTeam: boolean, itemData: a
             const participantDiv = document.createElement("div");
             participantDiv.className = "participant";
             participantDiv.style.cssText = `
-            display: flex; 
-            align-items: center; 
+            display: flex;
+            align-items: center;
             padding: 5px;
-            background-color: ${isWinningTeam ? "#2a5a2a" : "#5a2a2a"}; 
+            background-color: ${isWinningTeam ? "#2a5a2a" : "#5a2a2a"};
             border-radius: 5px;
         `;
 
@@ -308,7 +307,7 @@ async function createParticipantInfo(participant: any) {
     participantInfo.appendChild(participantLink);
 
     const riotId = `${participant.riotIdGameName}#${participant.riotIdTagline}`;
-   
+
     riotIdElement.textContent = riotId;
     riotIdElement.style.cssText = `
         color: #fff;
@@ -319,7 +318,7 @@ async function createParticipantInfo(participant: any) {
     participantLink.target = "_blank"
     participantLink.href = `https://lol-data-blond.vercel.app/summoner/br1/${participant.riotIdGameName}/${participant.riotIdTagline}`
     participantLink.appendChild(riotIdElement);
-    
+
     const kda = document.createElement("span");
     kda.textContent = `${participant.kills} / ${participant.deaths} / ${participant.assists}`;
     participantInfo.appendChild(kda);
@@ -330,8 +329,8 @@ async function createParticipantInfo(participant: any) {
 async function createItemsDiv(participant: any, itemData: any) {
     const itemsDiv = document.createElement("div");
     itemsDiv.style.cssText = `
-    display: flex; 
-    gap: 5px; 
+    display: flex;
+    gap: 5px;
     margin-left: auto;
 `;
 
@@ -345,10 +344,10 @@ async function createItemsDiv(participant: any, itemData: any) {
         participant.item6
     ];
     const itemIconStyle = `
-    border: 2px solid #d4af37; 
-    border-radius: 15px; 
-    width: 35px; 
-    height: 35px; 
+    border: 2px solid #d4af37;
+    border-radius: 15px;
+    width: 35px;
+    height: 35px;
     margin-top: 20px;
 `;
 
@@ -423,7 +422,7 @@ async function createMainRuneIcon(iconPath: string) {
     const mainRuneIcon = document.createElement("img");
     mainRuneIcon.src = `https://ddragon.canisback.com/img/${iconPath}`;
     mainRuneIcon.classList.add('main-rune-icon');
-    
+
     return mainRuneIcon;
 }
 
@@ -482,10 +481,10 @@ async function createChampionIcon(participant: any) {
 async function createGameStatsContainer(participant: any, queueName: string) {
     const gameStatsContainer = document.createElement("div");
     gameStatsContainer.style.cssText = `
-    float: left; 
-    margin-left: 10px; 
-    display: flex; 
-    align-items: center; 
+    float: left;
+    margin-left: 10px;
+    display: flex;
+    align-items: center;
     height: 60px;
 `;
 
@@ -508,9 +507,9 @@ async function createGameResult(isWin: boolean) {
     gameStats.textContent = isWin ? "Vitória" : "Derrota";
     gameStats.classList.add("gamestats");
     gameStats.style.cssText = `
-    color: ${isWin ? "#2DEB90" : "#ff5859"}; 
-    font-weight: bold; 
-    font-size: 18px; 
+    color: ${isWin ? "#2DEB90" : "#ff5859"};
+    font-weight: bold;
+    font-size: 18px;
     margin-right: 10px;
 `;
     return gameStats;
@@ -520,8 +519,8 @@ async function createQueueTypeElement(queueName: string) {
     const gameQueueType = document.createElement("span");
     gameQueueType.textContent = queueName;
     gameQueueType.style.cssText = `
-    color: #ccc; 
-    font-size: 14px; 
+    color: #ccc;
+    font-size: 14px;
     margin-right: 10px;
 `;
     return gameQueueType;

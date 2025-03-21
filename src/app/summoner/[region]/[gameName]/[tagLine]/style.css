@@ -1,13 +1,334 @@
 .input_containerSyle {
-  top: -37.2vh;
-  left: 47.1vw;
-}
-#mobile-input-container, #rankedSoloqDataMobile, #rankedFlexDataMobile{
-  display: none;
-}
+    position: relative;
+    top: -10vh;
+    left: 50%;
+    transform: translateX(-50%);
+  }
 
-#search_button {
+  #mobile-text,
+  #mobile-input-container {
+    display: none;
+  }
+
+  #search_button,
+  #search_button_mobile {
+    border-radius: 5px;
+    padding: 10px 20px;
+    border: none;
+    box-shadow: rgba(28, 28, 33, 0.5) 0px 0px 20px inset, rgba(28, 28, 33, 0.2) 0px 0px 20px;
+    outline: rgba(255, 255, 255, 0.5) solid 1px;
+    color: #ffffff;
+    text-shadow: none;
+    position: relative;
+    z-index: 1;
+    transition: 750ms cubic-bezier(0.19, 1, 0.22, 1);
+    background-color: #d4af37;
+    font-size: 1em;
+    font-family: "JetBrains Mono", monospace;
+    cursor: pointer;
+    margin: 0 auto 2em;
+    text-decoration: none;
+  }
+
+  #riotid-mobile {
+    padding: 10px;
+    width: 9em;
+    max-width: 100%;
+    margin: 10px auto;
+    border: 2px solid #d4af37;
+    border-radius: 5px;
+    font-family: "JetBrains Mono", monospace;
+    background-color: #2a2a2a;
+    color: #ffffff;
+    position: relative;
+    z-index: 1;
+  }
+
+  #riotid-mobile:focus {
+    outline: none;
+  }
+
+  #region {
+    margin-left: 5px;
+  }
+
+  #rankedFlexDataMobile,
+  #rankedSoloqDataMobile {
+    display: none;
+  }
+
+  #rankedSoloqData,
+  #rankedFlexData {
+    display: flex;
+  }
+
+  #container {
+    background-color: #2a2a2a;
+    height: 20vh;
+    border-radius: 5px;
+    border: 2px solid #d4af37;
+    text-align: center;
+    padding: 10px 5px;
+    width: 80%;
+    margin: 20px auto;
+  }
+
+  #nickName {
+    font-size: 1.3em;
+  }
+
+  #icon > img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 5px;
+    border: 2px solid #d4af37;
+    margin-bottom: 15px;
+  }
+
+  #generalContainer {
+    position: relative;
+    margin: 0 auto;
+    width: 90%;
+  }
+
+  #rankedIcon,
+  #rankedFlexIcon {
+    width: 68px;
+    height: 68px;
+    margin: auto;
+  }
+
+  #containerRanked {
+    display: flex;
+    justify-content: center;
+    gap: 1.8px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+  }
+
+  #containerRankedSoloq,
+  #containerRankedFlex {
+    height: auto;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #2a2a2a;
+    padding: 10px;
+    border-radius: 8px;
+    border: 2px solid #d4af37;
+    margin-top: 10px;
+  }
+
+  span {
+    font-size: 0.70em;
+  }
+
+  #Lvl {
+    font-size: 1em;
+  }
+
+  .gameQueueType {
+    color: #ccc;
+    font-size: 14px;
+    margin-right: 10px;
+  }
+
+  #containerMastery {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  #containerMasteries1,
+  #containerMasteries2,
+  #containerMasteries3,
+  #containerMasteries4,
+  #containerMasteries5 {
+    background-color: #2a2a2a;
+    height: 155px;
+    width: 100%;
+    border-radius: 5px;
+    border: 2px solid #d4af37;
+  }
+
+  #mastery1,
+  #mastery2,
+  #mastery3,
+  #mastery4,
+  #mastery5 {
+    border-radius: 10%;
+    width: 80px;
+    height: 80px;
+    margin: 0 auto;
+  }
+
+  #masteryTxt1,
+  #masteryTxt2,
+  #masteryTxt3,
+  #masteryTxt4,
+  #masteryTxt5 {
+    text-align: center;
+    margin-top: 10px;
+  }
+
+  #matchHistoryContainer {
+    width: 95%;
+    height: auto;
+    background-color: #2a2a2a;
+    border-radius: 10px;
+    border: 2px solid #d4af37;
+    margin: 20px auto;
+    display: grid;
+    gap: 10px;
+  }
+
+  .gameDate {
+    font-size: 12px;
+    color: rgb(204, 204, 204);
+    justify-content: right;
+    display: flex;
+    margin-right: 30px;
+  }
+
+  .match {
+    position: relative;
+    cursor: default;
+  }
+
+  .game-date {
+    font-size: 12px;
+    color: rgb(204, 204, 204);
+    justify-content: right;
+    display: flex;
+    margin-right: 30px;
+  }
+
+  .arrow-icon {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    color: #d4af37;
+  }
+
+  .matchesDetails {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #2a2a2a;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+  }
+
+  .team-column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .participant {
+    display: flex;
+    align-items: center;
+    padding: 5px;
+    border-radius: 5px;
+  }
+
+  .winning-team {
+    background-color: #2a5a2a;
+  }
+
+  .losing-team {
+    background-color: #5a2a2a;
+  }
+
+  .champion-icon {
+    width: 60px;
+    height: 60px;
+    margin-left: 8px;
+  }
+
+  .participant-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-left: 1.5em;
+  }
+
+  .riot-id {
+    color: #fff;
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .kdaTxt {
+    color: #ccc;
+    font-size: 12px;
+  }
+
+  .items {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+
+  .itemIcon {
+    border: 2px solid #d4af37;
+    border-radius: 15px;
+    width: 40px;
+    height: 40px;
+  }
+
+  .gamestats {
+    display: flex;
+    align-items: center;
+    height: 60px;
+    font-weight: bold;
+    font-size: 18px;
+    margin-right: 10px;
+  }
+
+  .queue-type {
+    color: #ccc;
+    font-size: 14px;
+    margin-right: 10px;
+  }
+
+  .main-rune-icon,
+  .secondary-rune-icon {
+    border: 2px solid #d4af37;
+    border-radius: 15px;
+    margin-top: 10px;
+  }
+
+  .main-rune-icon {
+    width: 25px;
+    height: 25px;
+  }
+
+  .secondary-rune-icon {
+    width: 15px;
+    height: 15px;
+    padding: 2px;
+  }
+
+  .matches {
+    height: auto;
+    border-bottom: 2px solid #d4af37;
+    margin: 5px;
+    padding: 10px;
+  }
+#search_button_mobile {
   border-radius: 5px;
+  left: 8px;
   padding: 10px 20px;
   border: 0px solid;
   box-shadow: rgba(28, 28, 33, 0.5) 0px 0px 20px inset, rgba(28, 28, 33, 0.2) 0px 0px 20px;
@@ -26,10 +347,32 @@
   margin: 0px 0px 2em;
   text-decoration: none;
 }
+#riotid-mobile{
+  padding: 10px;
+  width: 9em;
+  max-width: 400px;
+  margin-left: 10px;
+  border: 2px solid #d4af37;
+  border-radius: 5px;
+  font-family: "JetBrains Mono", monospace;
+  background-color: #2a2a2a;
+  color: #ffffff;
+  position: relative;
+  z-index: 1;
+}
+#riotid-mobile:focus{
+  outline: none;
+}
 #region{
   margin-left: 5px;
 }
 
+#rankedFlexDataMobile, #rankedSoloqDataMobile{
+  display: none;
+}
+#rankedSoloqData, #rankedFlexData{
+  display: flex;
+}
 #container {
   background-color: #2a2a2a;
   height: 20%;
@@ -43,7 +386,7 @@
   margin-top: -237px;
 }
 
-#container > span {
+#nickName{
   font-size: 1.3em;
 }
 
@@ -95,7 +438,14 @@
 span {
   font-size: 0.70em;
 }
-
+#Lvl{
+  font-size: 1em;
+}
+.gameQueueType{
+  color: #ccc;
+  font-size: 14px;
+  margin-right: 10px;
+}
 #containerMastery {
   display: flex;
   position: relative; /* Adicione position: relative se for necessário */
@@ -140,8 +490,14 @@ span {
   left: 13.8vw;
   display: grid;
 }
-
-
+.gameDate{
+  font-size: 12px;
+  color: rgb(204, 204, 204);
+  margin-left: 260px;
+  justify-content: right;
+  display: flex;
+  margin-right: 30px;
+}
 /* Estilos para cada partida */
 .match {
   position: relative;
@@ -166,6 +522,7 @@ span {
   font-size: 16px;
   cursor: pointer;
   color: #d4af37;
+
 }
 
 /* Estilos para o contêiner de detalhes da partida */
@@ -243,8 +600,8 @@ span {
   display: flex;
 }
 .itemIcon{
-  border: 2px solid #d4af37; 
-  border-radius: 15px; 
+  border: 2px solid #d4af37;
+  border-radius: 15px;
   width: 40px;
   height: 40px;
   margin-top: 10px;
@@ -258,10 +615,6 @@ span {
   display: flex;
   align-items: center;
   height: 60px;
-}
-
-/* Estilos para o resultado do jogo */
-.game-result {
   font-weight: bold;
   font-size: 18px;
   margin-right: 10px;
@@ -302,12 +655,13 @@ span {
   border-bottom: 2px solid #d4af37;
   margin: 5px 5px 5px 5px;
 }
-/* @media only screen and (min-width: 600px) {
+
+@media only screen and (min-width: 600px) {
 .input_containerSyle{
   display: none;
 }
 
-#icon > img{ 
+#icon > img{
   width: 70px;
   height: 70px;
 }
@@ -526,14 +880,14 @@ span {
   margin-left: unset;
 
 }
-} */
+}
 
 @media only screen and (max-width: 600px)  {
   .input_containerSyle{
     display: none;
   }
-  
-  #icon > img{ 
+
+  #icon > img{
     width: 70px;
     height: 70px;
     margin-bottom: 2.5vh;
@@ -574,7 +928,7 @@ span {
     left: -33.3vw;
     animation: slideInFromRight 0.4s ease-out;
   }
-  
+
   @keyframes slideInFromRight {
     0% {
       transform: translateX(100%);
@@ -673,16 +1027,16 @@ span {
     margin-left: -15px;
   }
   #generalContainer{
-    left: 19.7rem;
-    top: 16rem;
+    left: 19rem;
+    top: 29rem;
   }
   #containerRanked{
     left: 9rem;
     width: 70px;
     height: 65px;
-    top: -4.7rem;
+    top: -6.2rem;
   }
- 
+  }
   #container{
     padding:0px;
     padding-top: 5px;
@@ -690,7 +1044,7 @@ span {
     height: 70px;
     display: block;
     margin-left: 4.5rem;
-    margin-top: -5.68rem;
+    margin-top: -5.4rem;
     font-size: 10px;
   }
   #containerRankedFlex{
@@ -701,7 +1055,7 @@ span {
     width: 70px;
     height:70px;
   }
-  
+
   #span{
     font-size: 8px;
   }
@@ -709,13 +1063,13 @@ span {
     width: 23px;
     height: 23px;
     margin: unset;
-  
+
   }
   #containerMastery{
     max-width: 100000%;
     display: inline-flex;
-    left: -0.25em;
-    top: -3.8rem;
+    left: -2.5em;
+    top: -5.8rem;
     width: 26rem;
     height: 14vh;
     flex-wrap: wrap;
@@ -730,7 +1084,7 @@ span {
   #containerMasteries1, #containerMasteries2, #containerMasteries3, #containerMasteries4, #containerMasteries5{
     width: 4.3rem;
     height: 7.4rem;
-    margin-right: -0.2rem;
+    margin-right: -0.8rem;
   }
   #containerRankedFlex > img, #containerRankedSoloq > img{
     margin-top: -10px;
@@ -740,6 +1094,5 @@ span {
     width: var(--varWidthandHeight);
     height: var(--varWidthandHeight);
     margin-left: unset;
-  
+
   }
-}

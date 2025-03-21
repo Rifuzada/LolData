@@ -64,11 +64,11 @@ const useSummonerData = (region: string, gameName: string, tagLine: string) => {
                 const rankedData = await fetchRanked(region, profileData.id);
                 const tierTranslation: { [key: string]: string } = {
                     'IRON': 'Ferro',
-                    'BRONZE': 'Bronze', 
+                    'BRONZE': 'Bronze',
                     'SILVER': 'Prata',
                     'GOLD': 'Ouro',
                     'PLATINUM': 'Platina',
-                    'EMERALD': 'Esmeralda', 
+                    'EMERALD': 'Esmeralda',
                     'DIAMOND': 'Diamante',
                     'GRANDMASTER': 'Grão Mestre',
                     'MASTER': 'Mestre',
@@ -256,7 +256,7 @@ async function createMainRuneIcon(iconPath: string) {
     const mainRuneIcon = document.createElement("img");
     mainRuneIcon.src = `https://ddragon.canisback.com/img/${iconPath}`;
     mainRuneIcon.classList.add('main-rune-icon');
-    
+
     return mainRuneIcon;
 }
 
@@ -278,10 +278,10 @@ async function createGameStatsContainer(participant: any, queueName: string) {
     const gameStatsContainer = document.createElement("div");
     gameStatsContainer.classList.add("gamestatsContainer");
     gameStatsContainer.style.cssText = `
-        float: left; 
-        margin-left: 10px; 
-        display: flex; 
-        align-items: center; 
+        float: left;
+        margin-left: 10px;
+        display: flex;
+        align-items: center;
         height: 60px;
     `;
 
@@ -304,7 +304,7 @@ async function createGameResult(isWin: boolean) {
     gameStats.textContent = isWin ? "Vitória" : "Derrota";
     gameStats.classList.add("gamestats");
     gameStats.style.cssText = `
-        color: ${isWin ? "#2DEB90" : "#ff5859"}; 
+        color: ${isWin ? "#2DEB90" : "#ff5859"};
     `;
     return gameStats;
 }
@@ -408,12 +408,12 @@ async function createMatchDetails(matchIndex: number, puuid: string, participant
     detailsContainer.className = "matchesDetails";
     detailsContainer.setAttribute("data-puuid", puuid);
     detailsContainer.style.cssText = `
-    margin-top: 10px; 
-    padding: 10px; 
-    background-color: #2a2a2a; 
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #2a2a2a;
     border-radius: 8px;
-    display: flex; 
-    justify-content: space-between; 
+    display: flex;
+    justify-content: space-between;
     gap: 20px;
 `;
 
@@ -436,9 +436,9 @@ async function createTeamColumn(team: any[], isWinningTeam: boolean, itemData: a
     const teamColumn = document.createElement("div");
     teamColumn.id = isWinningTeam ? "winningTeam" : "losingTeam";
     teamColumn.style.cssText = `
-    flex: 1; 
-    display: flex; 
-    flex-direction: column; 
+    flex: 1;
+    display: flex;
+    flex-direction: column;
     gap: 10px;
 `;
 
@@ -448,10 +448,10 @@ async function createTeamColumn(team: any[], isWinningTeam: boolean, itemData: a
             const participantDiv = document.createElement("div");
             participantDiv.className = "participant";
             participantDiv.style.cssText = `
-            display: flex; 
-            align-items: center; 
+            display: flex;
+            align-items: center;
             padding: 5px;
-            background-color: ${isWinningTeam ? "#2a5a2a" : "#5a2a2a"}; 
+            background-color: ${isWinningTeam ? "#2a5a2a" : "#5a2a2a"};
             border-radius: 5px;
         `;
 
@@ -485,7 +485,7 @@ async function createParticipantInfo(participant: any) {
     participantInfo.appendChild(participantLink);
 
     const riotId = `${participant.riotIdGameName}#${participant.riotIdTagline}`;
-   
+
     riotIdElement.textContent = riotId;
     riotIdElement.style.cssText = `
         color: #fff;
@@ -496,7 +496,7 @@ async function createParticipantInfo(participant: any) {
     participantLink.target = "_blank"
     participantLink.href = `https://lol-data-blond.vercel.app/summoner/br1/${participant.riotIdGameName}/${participant.riotIdTagline}`
     participantLink.appendChild(riotIdElement);
-    
+
     const kda = document.createElement("span");
     kda.textContent = `${participant.kills} / ${participant.deaths} / ${participant.assists}`;
     participantInfo.appendChild(kda);
@@ -507,8 +507,8 @@ async function createParticipantInfo(participant: any) {
 async function createItemsDiv(participant: any, itemData: any) {
     const itemsDiv = document.createElement("div");
     itemsDiv.style.cssText = `
-    display: flex; 
-    gap: 5px; 
+    display: flex;
+    gap: 5px;
     margin-left: auto;
 `;
 
@@ -522,10 +522,10 @@ async function createItemsDiv(participant: any, itemData: any) {
         participant.item6
     ];
     const itemIconStyle = `
-    border: 2px solid #d4af37; 
-    border-radius: 15px; 
-    width: 35px; 
-    height: 35px; 
+    border: 2px solid #d4af37;
+    border-radius: 15px;
+    width: 35px;
+    height: 35px;
     margin-top: 20px;
 `;
 
