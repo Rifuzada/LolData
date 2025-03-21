@@ -22,15 +22,41 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
   const { region, gameName, tagLine } = params;
 
   try {
+    // Log dos parâmetros antes da decodificação
+    console.log("Parâmetros da URL:", {
+      region,
+      gameName: decodeURIComponent(gameName),
+      tagLine: decodeURIComponent(tagLine)
+    });
+
     // Buscar dados do invocador
     const summoner = await getSummonerByRiotId(region, gameName, tagLine);
 
+    // Log para depuração
+    console.log("Dados do invocador:", JSON.stringify(summoner, null, 2));
+
     // Buscar dados em paralelo
-    const [queueTypes, masteries, matches] = await Promise.all([
+    const [queueTypes, masteries, matches, rankedData] = await Promise.all([
       getQueueTypes(),
       getChampionMasteries(region, summoner.puuid),
       getMatchHistory(region, summoner.puuid),
+      fetch(`https://${region}.api.riotgames.com/lol/league/v4/entries/by-summoner/${summoner.id}`, {
+        headers: {
+          'X-Riot-Token': process.env.RIOT_API_KEY as string
+        }
+      }).then(res => res.json())
     ]);
+
+    // Processa dados de ranqueadas
+    const soloQData = rankedData.find((queue: any) => queue.queueType === "RANKED_SOLO_5x5");
+    const flexData = rankedData.find((queue: any) => queue.queueType === "RANKED_FLEX_SR");
+
+    // Formata informações de elo
+    const formatElo = (entry: any) => entry ? `${entry.tier.charAt(0) + entry.tier.slice(1).toLowerCase()} ${entry.rank}` : null;
+    const eloSoloq = formatElo(soloQData);
+    const eloFlex = formatElo(flexData);
+    const lpSoloq = soloQData?.leaguePoints || null;
+    const lpFlex = flexData?.leaguePoints || null;
 
     return (
       <main className="container mx-auto min-h-screen space-y-8 py-8">
@@ -38,6 +64,8 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
           <div className="absolute inset-0 -z-10 bg-gradient-to-b from-background/80 to-background" />
           <SummonerProfile
             name={summoner.name}
+            gameName={gameName}
+            tagLine={tagLine}
             level={summoner.summonerLevel}
             profileIconId={summoner.profileIconId}
             region={region.toUpperCase()}
@@ -47,6 +75,10 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
               level: mastery.championLevel,
               points: mastery.championPoints
             }))}
+            eloSoloq={eloSoloq}
+            eloFlex={eloFlex}
+            lpSoloq={lpSoloq}
+            lpFlex={lpFlex}
           />
         </div>
 
