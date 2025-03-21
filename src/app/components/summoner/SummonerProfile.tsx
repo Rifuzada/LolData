@@ -20,6 +20,10 @@ interface SummonerProfileProps {
   eloFlex?: string | null
   lpSoloq?: number | null
   lpFlex?: number | null
+  winsSoloq?: number | null
+  winsFlex?: number | null
+  losesSoloq?: number | null
+  losesFlex?: number | null
 }
 
 export function SummonerProfile({
@@ -34,6 +38,10 @@ export function SummonerProfile({
   eloFlex,
   lpSoloq,
   lpFlex,
+  winsSoloq,
+  winsFlex,
+  losesSoloq,
+  losesFlex
 }: SummonerProfileProps) {
   // Determinar o nome de display - usar gameName+tagLine se disponível, senão usar name
   const displayName = gameName?.replace(/\s+/g, '') && tagLine
@@ -42,7 +50,9 @@ export function SummonerProfile({
 
   // Log para debug dos dados de elo
   console.log("SummonerProfile - Dados de elo:", { eloSoloq, lpSoloq, eloFlex, lpFlex });
-
+  console.log("SummonerProfile - Dados de wins e loses:", { winsSoloq, losesSoloq, winsFlex, losesFlex });
+  const winrateSoloq = (winsSoloq ?? 0) + (losesSoloq ?? 0) > 0 ? (winsSoloq ?? 0) / ((winsSoloq ?? 0) + (losesSoloq ?? 0)) * 100 : null;
+  const winrateFlex = (winsFlex ?? 0) + (losesFlex ?? 0) > 0 ? (winsFlex ?? 0) / ((winsFlex ?? 0) + (losesFlex ?? 0)) * 100 : null;
   // Função para obter URL do ícone do tier
   const getTierIconUrl = (elo: string | null) => {
     if (!elo) return null;
@@ -88,7 +98,7 @@ export function SummonerProfile({
                     className="inline-block"
                   />
                 )}
-                <span>{eloSoloq} {lpSoloq !== null && lpSoloq !== undefined && `(${lpSoloq} LP)`}</span>
+                <span>{eloSoloq} {lpSoloq !== null && lpSoloq !== undefined && `(${lpSoloq} LP)`} {winsSoloq !== null && winsSoloq !== undefined && `(${winsSoloq}-${losesSoloq})`}{winrateSoloq}%</span>
               </p>
             )}
             {eloFlex && (
@@ -103,7 +113,7 @@ export function SummonerProfile({
                     className="inline-block"
                   />
                 )}
-                <span>{eloFlex} {lpFlex !== null && lpFlex !== undefined && `(${lpFlex} LP)`}</span>
+                <span>{eloFlex} {lpFlex !== null && lpFlex !== undefined && `(${lpFlex} LP)`} {winsFlex !== null && winsFlex !== undefined && `(${winsFlex}-${losesFlex})`}{winrateFlex}%</span>
               </p>
             )}
           </div>
