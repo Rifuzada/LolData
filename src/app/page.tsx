@@ -110,7 +110,7 @@ const Home: React.FC = () => {
       <div className="mt-10 text-center text-gray-500">
         <p>
           LoLData não é endossado pela Riot Games e não reflete as visões ou opiniões da Riot Games
-          ou de qualquer pessoa oficialmente envolvida na produção ou gerenciamento de League of Legends, fuck Riot Games.
+          ou de qualquer pessoa oficialmente envolvida na produção ou gerenciamento de League of Legends.
         </p>
       </div>
     </main>

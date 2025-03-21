@@ -7,7 +7,10 @@ const fontSans = FontSans({
   variable: "--font-sans",
 })
 
-export const metadata = {
+export const metadata = {  
+  icons: {
+    icon: '/favicon.ico', // /public path
+  },
   title: 'LolData',
   description: 'Visualize suas estatísticas do League of Legends',
 }
