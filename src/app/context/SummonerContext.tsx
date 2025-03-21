@@ -2,12 +2,16 @@
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import {
-  Account,
-  Profile,
-  RankedData,
-  ChampionWithMastery,
-  MatchHistory
+  ChampionWithMastery
 } from '../types';
+
+// Definição da interface MatchHistory localmente
+interface MatchHistory {
+  matchData: any[]; // Dados das partidas
+  runeData: any | null; // Dados das runas
+  itemData: any | null; // Dados dos itens
+  queueType: any[] | null; // Tipos de fila
+}
 
 /**
  * Interface para o contexto de invocador

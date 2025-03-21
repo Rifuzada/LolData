@@ -1,4 +1,8 @@
+'use client';
+
 import { MatchHistoryItem } from "./MatchHistoryItem"
+import { useEffect, useState } from "react"
+import apiService from "@/app/services/apiService"
 
 interface Participant {
   puuid: string
@@ -54,6 +58,25 @@ interface MatchHistoryProps {
 }
 
 export function MatchHistory({ matches, puuid, queueTypes, isLoading = false }: MatchHistoryProps) {
+  const [leagueVersion, setLeagueVersion] = useState<string>("15.6.1") // Versão padrão
+  const [isLoadingVersion, setIsLoadingVersion] = useState<boolean>(true)
+
+  useEffect(() => {
+    const fetchLeagueVersion = async () => {
+      try {
+        setIsLoadingVersion(true)
+        const version = await apiService.getLatestVersion()
+        setLeagueVersion(version)
+      } catch (error) {
+        console.error("Erro ao buscar versão da liga:", error)
+      } finally {
+        setIsLoadingVersion(false)
+      }
+    }
+
+    fetchLeagueVersion()
+  }, [])
+
   function getTranslatedQueueName(queueId: number) {
     const queue = queueTypes.find(q => q.queueId === queueId)
     return queue?.description || "Custom Game"
@@ -72,14 +95,14 @@ export function MatchHistory({ matches, puuid, queueTypes, isLoading = false }: 
 
   function getItemImageUrl(itemId: number) {
     if (itemId === 0) return ""
-    return `https://ddragon.leagueoflegends.com/cdn/14.4.1/img/item/${itemId}.png`
+    return `https://ddragon.leagueoflegends.com/cdn/${leagueVersion}/img/item/${itemId}.png`
   }
 
   function getChampionImageUrl(championId: number) {
     return `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${championId}.png`
   }
 
-  if (isLoading) {
+  if (isLoading || isLoadingVersion) {
     return (
       <div className="space-y-4">
         {Array.from({ length: 5 }).map((_, i) => (

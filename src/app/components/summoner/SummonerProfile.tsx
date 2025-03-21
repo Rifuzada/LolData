@@ -40,6 +40,19 @@ export function SummonerProfile({
     ? `${gameName}#${tagLine}`
     : (name || "Carregando...");
 
+  // Log para debug dos dados de elo
+  console.log("SummonerProfile - Dados de elo:", { eloSoloq, lpSoloq, eloFlex, lpFlex });
+
+  // Função para obter URL do ícone do tier
+  const getTierIconUrl = (elo: string | null) => {
+    if (!elo) return null;
+
+    // Extrair o tier da string de elo (ex: "Diamond II" -> "diamond")
+    const tier = elo.split(' ')[0].toLowerCase();
+
+    return `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${tier}.svg`;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-6 p-6">
@@ -64,13 +77,33 @@ export function SummonerProfile({
               Region: {region}
             </p>
             {eloSoloq && (
-              <p className="text-sm">
-                <span className="font-medium">SoloQ:</span> {eloSoloq} {lpSoloq !== null && `(${lpSoloq} LP)`}
+              <p className="text-sm flex items-center gap-1">
+                <span className="font-medium">SoloQ:</span>
+                {getTierIconUrl(eloSoloq) && (
+                  <Image
+                    src={getTierIconUrl(eloSoloq)!}
+                    alt={`${eloSoloq} tier`}
+                    width={20}
+                    height={20}
+                    className="inline-block"
+                  />
+                )}
+                <span>{eloSoloq} {lpSoloq !== null && lpSoloq !== undefined && `(${lpSoloq} LP)`}</span>
               </p>
             )}
             {eloFlex && (
-              <p className="text-sm">
-                <span className="font-medium">Flex:</span> {eloFlex} {lpFlex !== null && `(${lpFlex} LP)`}
+              <p className="text-sm flex items-center gap-1">
+                <span className="font-medium">Flex:</span>
+                {getTierIconUrl(eloFlex) && (
+                  <Image
+                    src={getTierIconUrl(eloFlex)!}
+                    alt={`${eloFlex} tier`}
+                    width={20}
+                    height={20}
+                    className="inline-block"
+                  />
+                )}
+                <span>{eloFlex} {lpFlex !== null && lpFlex !== undefined && `(${lpFlex} LP)`}</span>
               </p>
             )}
           </div>

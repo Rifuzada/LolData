@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { MatchHistory } from "@/app/components/match/MatchHistory";
 import { SummonerProfile } from "@/app/components/summoner/SummonerProfile";
+import { SummonerSearch } from "@/app/components/summoner/SummonerSearch";
 import { getChampionMasteries, getMatchHistory, getQueueTypes, getSummonerByRiotId } from "@/app/actions/summoner";
 
 interface ChampionMastery {
@@ -55,11 +56,21 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
     const formatElo = (entry: any) => entry ? `${entry.tier.charAt(0) + entry.tier.slice(1).toLowerCase()} ${entry.rank}` : null;
     const eloSoloq = formatElo(soloQData);
     const eloFlex = formatElo(flexData);
-    const lpSoloq = soloQData?.leaguePoints || null;
-    const lpFlex = flexData?.leaguePoints || null;
+
+    // Garante que os pontos de liga sejam números válidos
+    const lpSoloq = soloQData && typeof soloQData.leaguePoints === 'number' ? soloQData.leaguePoints : null;
+    const lpFlex = flexData && typeof flexData.leaguePoints === 'number' ? flexData.leaguePoints : null;
+
+    // Log para depuração dos dados de elo
+    console.log("Dados de elo:", {
+      soloQ: { elo: eloSoloq, lp: lpSoloq, raw: soloQData },
+      flex: { elo: eloFlex, lp: lpFlex, raw: flexData }
+    });
 
     return (
       <main className="container mx-auto min-h-screen space-y-8 py-8">
+        <SummonerSearch defaultRegion={region} />
+
         <div className="relative">
           <div className="absolute inset-0 -z-10 bg-gradient-to-b from-background/80 to-background" />
           <SummonerProfile
@@ -69,7 +80,7 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
             level={summoner.summonerLevel}
             profileIconId={summoner.profileIconId}
             region={region.toUpperCase()}
-            masteries={masteries.slice(0, 5).map((mastery: ChampionMastery) => ({
+            masteries={(masteries as ChampionMastery[]).slice(0, 5).map((mastery) => ({
               championId: mastery.championId,
               championName: mastery.championName,
               level: mastery.championLevel,
@@ -103,9 +114,9 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
             }
           >
             <MatchHistory
-              matches={matches}
+              matches={(matches as any[])}
               puuid={summoner.puuid}
-              queueTypes={queueTypes}
+              queueTypes={(queueTypes as any)}
             />
           </Suspense>
         </div>

@@ -42,10 +42,11 @@ export interface ChampionMastery {
   tokensEarned: number;
 }
 
-export interface ChampionWithMastery extends ChampionMastery {
+export interface ChampionWithMastery {
+  id: string;
   name: string;
-  title: string;
-  image: string;
+  level: number;
+  points: number;
 }
 
 export interface Participant {
