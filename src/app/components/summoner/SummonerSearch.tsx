@@ -44,27 +44,27 @@ export function SummonerSearch({ defaultRegion = 'br1' }: SummonerSearchProps) {
         >
       <option value="">Região</option>
         <optgroup label="Americas">
-          <option value="BR1">Brasil</option>
-          <option value="NA1">América do Norte</option>
-          <option value="LA1">América Latina Norte</option>
-          <option value="LA2">América Latina Sul</option>
+          <option className="cursor-pointer" value="BR1">Brasil</option>
+          <option className="cursor-pointer" value="NA1">América do Norte</option>
+          <option className="cursor-pointer" value="LA1">América Latina Norte</option>
+          <option className="cursor-pointer" value="LA2">América Latina Sul</option>
         </optgroup>
         <optgroup label="Europa">
-          <option value="EUW1">Europa Oeste</option>
-          <option value="EUN1">Europa Nórdica e Leste</option>
-          <option value="RU">Rússia</option>
+          <option className="cursor-pointer" value="EUW1">Europa Oeste</option>
+          <option className="cursor-pointer" value="EUN1">Europa Nórdica e Leste</option>
+          <option className="cursor-pointer" value="RU">Rússia</option>
         </optgroup>
         <optgroup label="Ásia">
-          <option value="KR">Coreia</option>
-          <option value="JP1">Japão</option>
-          <option value="TW2">Taiwan, Hong Kong e Macau</option>
-          <option value="TH2">Tailândia</option>
-          <option value="VN2">Vietnã</option>
-          <option value="TR1">Turquia</option>
-          <option value="SG2">Singapura</option>
+          <option className="cursor-pointer" value="KR">Coreia</option>
+          <option className="cursor-pointer" value="JP1">Japão</option>
+          <option className="cursor-pointer" value="TW2">Taiwan, Hong Kong e Macau</option>
+          <option className="cursor-pointer" value="TH2">Tailândia</option>
+          <option className="cursor-pointer" value="VN2">Vietnã</option>
+          <option className="cursor-pointer" value="TR1">Turquia</option>
+          <option className="cursor-pointer" value="SG2">Singapura</option>
         </optgroup>
         <optgroup label="Oceania">
-          <option value="OC1">Oceania</option>
+          <option className="cursor-pointer"value="OC1">Oceania</option>
         </optgroup>
         </select>
         <div className="relative flex-1">
@@ -73,7 +73,7 @@ export function SummonerSearch({ defaultRegion = 'br1' }: SummonerSearchProps) {
             value={summonerName}
             onChange={(e) => setSummonerName(e.target.value)}
             placeholder="Riot#ID"
-            className="h-10 px-3 py-2 w-full rounded-md text-sm border border-input bg-background"
+            className="h-10 px-3 py-2 w-full rounded-md text-sm border focus:outline-none border-input bg-background"
             required
           />
         </div>
