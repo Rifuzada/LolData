@@ -23,18 +23,10 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
   const { region, gameName, tagLine } = params;
 
   try {
-    // Log dos parâmetros antes da decodificação
-    console.log("Parâmetros da URL:", {
-      region,
-      gameName: decodeURIComponent(gameName),
-      tagLine: decodeURIComponent(tagLine)
-    });
 
     // Buscar dados do invocador
     const summoner = await getSummonerByRiotId(region, gameName, tagLine);
 
-    // Log para depuração
-    console.log("Dados do invocador:", JSON.stringify(summoner, null, 2));
 
     // Buscar dados em paralelo
     const [queueTypes, masteries, matches, rankedData] = await Promise.all([
@@ -61,11 +53,6 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
     const lpSoloq = soloQData && typeof soloQData.leaguePoints === 'number' ? soloQData.leaguePoints : null;
     const lpFlex = flexData && typeof flexData.leaguePoints === 'number' ? flexData.leaguePoints : null;
 
-    // Log para depuração dos dados de elo
-    console.log("Dados de elo:", {
-      soloQ: { elo: eloSoloq, lp: lpSoloq, raw: soloQData },
-      flex: { elo: eloFlex, lp: lpFlex, raw: flexData }
-    });
 
     return (
       <main className="container mx-auto min-h-screen space-y-8 py-8">
@@ -90,6 +77,10 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
             eloFlex={eloFlex}
             lpSoloq={lpSoloq}
             lpFlex={lpFlex}
+            winsSoloq={soloQData?.wins}
+            losesSoloq={soloQData?.losses}
+            winsFlex={flexData?.wins}
+            losesFlex={flexData?.losses}
           />
         </div>
 
