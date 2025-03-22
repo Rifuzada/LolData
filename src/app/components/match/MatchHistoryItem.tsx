@@ -2,6 +2,8 @@
 
 import { cn } from "@/lib/utils"
 import Image from "next/image"
+import { useRouter } from "next/navigation";
+import { useParams } from 'next/navigation';
 import { useState } from "react"
 
 interface MatchHistoryItemProps {
@@ -63,6 +65,8 @@ export function MatchHistoryItem({
   summonerName,
   participants,
 }: MatchHistoryItemProps) {
+  const params = useParams();
+  const region = params.region as string;
   const [isExpanded, setIsExpanded] = useState(false)
   const kda = ((kills + assists) / Math.max(1, deaths)).toFixed(2)
 
@@ -97,7 +101,10 @@ export function MatchHistoryItem({
               src={champion.imageUrl}
               alt={champion.name}
               fill
-              className="rounded-full object-cover"
+              className="rounded-full border-4 object-cover"
+              style={{
+                clipPath: "inset(10% 10% round 50%)"
+              }}
             />
           </div>
 
@@ -203,7 +210,7 @@ export function MatchHistoryItem({
                           className="hidden sm:inline text-sm truncate cursor-pointer hover:underline max-w-[120px] inline-block"
                           onClick={(e) => {
                             e.stopPropagation()
-                            window.location.href = `/summoner/br1/${participant.riotIdGameName}/${participant.riotIdTagline}`
+                            window.location.href = `/summoner/${region}/${participant.riotIdGameName}/${participant.riotIdTagline}`
                           }}
                           title={participant.summonerName}
                         >
@@ -213,7 +220,7 @@ export function MatchHistoryItem({
                           className="sm:hidden text-sm cursor-pointer hover:underline font-medium"
                           onClick={(e) => {
                             e.stopPropagation()
-                            window.location.href = `/summoner/br1/${participant.riotIdGameName}/${participant.riotIdTagline}`
+                            window.location.href = `/summoner/${region}/${participant.riotIdGameName}/${participant.riotIdTagline}`
                           }}
                         >
                           {participant.summonerName.charAt(0)}.
@@ -265,7 +272,7 @@ export function MatchHistoryItem({
                           className="hidden sm:inline text-sm truncate cursor-pointer hover:underline max-w-[120px] inline-block"
                           onClick={(e) => {
                             e.stopPropagation()
-                            window.location.href = `/summoner/br1/${participant.riotIdGameName}/${participant.riotIdTagline}`
+                            window.location.href = `/summoner/${region}/${participant.riotIdGameName}/${participant.riotIdTagline}`
                           }}
                           title={participant.summonerName}
                         >
@@ -275,7 +282,7 @@ export function MatchHistoryItem({
                           className="sm:hidden text-sm cursor-pointer hover:underline font-medium"
                           onClick={(e) => {
                             e.stopPropagation()
-                            window.location.href = `/summoner/br1/${participant.riotIdGameName}/${participant.riotIdTagline}`
+                            window.location.href = `/summoner/${region}/${participant.riotIdGameName}/${participant.riotIdTagline}`
                           }}
                         >
                           {participant.summonerName.charAt(0)}.

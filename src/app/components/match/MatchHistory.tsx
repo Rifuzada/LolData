@@ -99,7 +99,8 @@ export function MatchHistory({ matches, puuid, queueTypes, isLoading = false }: 
   }
 
   function getChampionImageUrl(championId: number) {
-    return `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${championId}.png`
+    // console.log(`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${championId}.png`)
+    return `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${championId}.png`;
   }
 
   if (isLoading || isLoadingVersion) {

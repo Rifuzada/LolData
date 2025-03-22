@@ -85,7 +85,7 @@ export function SummonerProfile({
             </p>
             {eloSoloq && (
               <p className="text-sm flex items-center gap-1">
-                <span className="font-medium">SoloQ:</span>
+                <span className="font-medium">Solo/Duo:</span>
                 {getTierIconUrl(eloSoloq) && (
                   <Image
                     src={getTierIconUrl(eloSoloq)!}
@@ -95,7 +95,7 @@ export function SummonerProfile({
                     className="inline-block"
                   />
                 )}
-                <span>{eloSoloq} {lpSoloq !== null && lpSoloq !== undefined && `(${lpSoloq} LP)`} {winsSoloq !== null && winsSoloq !== undefined && `(${winsSoloq}-${losesSoloq})`}{"Winrate: "+winrateSoloq}%</span>
+                <span>{eloSoloq} {lpSoloq !== null && lpSoloq !== undefined && `(${lpSoloq} LP)`} - {winsSoloq !== null && winsSoloq !== undefined && `(${winsSoloq}-${losesSoloq})`} - {winrateSoloq}%</span>
               </p>
             )}
             {eloFlex && (
@@ -110,7 +110,7 @@ export function SummonerProfile({
                     className="inline-block"
                   />
                 )}
-                <span>{eloFlex} {lpFlex !== null && lpFlex !== undefined && `(${lpFlex} LP)`} {winsFlex !== null && winsFlex !== undefined && `(${winsFlex}-${losesFlex})`}{"Winrate: "+winrateFlex}%</span>
+                <span>{eloFlex} {lpFlex !== null && lpFlex !== undefined && `(${lpFlex} LP)`} - {winsFlex !== null && winsFlex !== undefined && `(${winsFlex}-${losesFlex})`} - {winrateFlex}%</span>
               </p>
             )}
           </div>
@@ -122,12 +122,16 @@ export function SummonerProfile({
           <Card key={champion.championId} className="overflow-hidden">
             <div className="flex flex-col items-center gap-2 p-4">
               <div className="relative h-16 w-16">
-                <Image
+              <Image
                   src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${champion.championId}.png`}
                   alt={champion.championName}
                   fill
-                  className="rounded-full border-2 border-accent/50"
+                  className="rounded-full border-4 border-accent/50 object-cover object-top"
+                  style={{
+                    clipPath: "inset(10% 10% round 50%)", // Adjust this if needed
+                  }}
                 />
+
                 <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border border-accent/50 bg-background text-xs font-medium">
                   {champion.level}
                 </div>
