@@ -12,11 +12,11 @@ export function MatchFilter() {
   const tagLine = params.tagLine as string;
 
   useEffect(() => {
-    console.log('MatchFilter');
+    //console.log('MatchFilter');
   }, []); // Adicionando useEffect para evitar múltiplas execuções
 
   function handleQueueChange(queueId: string) {
-    console.log(queueId);
+    //console.log(queueId);
     if (queueId !== "All" && queueId !== "") {
       const queueIdTranslated = queueId.replace('420', 'soloDuo')
                                         .replace('440', 'flex')
@@ -26,10 +26,10 @@ export function MatchFilter() {
                                         .replace('1710', 'arena');
       router.push(`/summoner/${region}/${gameName}/${tagLine}/${queueIdTranslated}`);
     } else if (queueId === "All") {
-      console.log('Selecionado: All');
+      //console.log('Selecionado: All');
       router.push(`/summoner/${region}/${gameName}/${tagLine}`);
     } else if (queueId === "") {
-      console.log('Selecionado: All');
+      //console.log('Selecionado: All');
     }
   }
 
