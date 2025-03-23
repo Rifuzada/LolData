@@ -81,14 +81,14 @@ const Home: React.FC = () => {
             <option className='cursor-pointer'  value="EUW1">🇪🇸 - Europa Oeste</option>
             <option className='cursor-pointer'  value="EUN1">🇸🇪 - Europa Nórdica e Leste</option>
             <option className='cursor-pointer'  value="RU">🇷🇺 - Rússia</option>
+            <option className='cursor-pointer'  value="TR1">🇹🇷 - Turquia</option>
+            <option className='cursor-pointer'  value="ME1">🇸🇦 - Arábia Saudita</option>
           </optgroup>
           <optgroup label="Ásia">
             <option className='cursor-pointer'  value="KR">🇰🇷 - Coreia</option>
             <option className='cursor-pointer'  value="JP1">🇯🇵 - Japão</option>
             <option className='cursor-pointer'  value="TW2">🇹🇼 - Taiwan, Hong Kong e Macau</option>
-            <option className='cursor-pointer'  value="TH2">🇹🇭 - Tailândia</option>
             <option className='cursor-pointer'  value="VN2">🇻🇳 - Vietnã</option>
-            <option className='cursor-pointer'  value="TR1">🇹🇷 - Turquia</option>
             <option className='cursor-pointer'  value="SG2">🇸🇬 - Singapura</option>
           </optgroup>
           <optgroup label="Oceania">

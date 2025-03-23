@@ -26,6 +26,9 @@ export function getRegionalApiUrl(region: string): string {
  * Retorna a URL da API das Américas da Riot Games
  */
 export const AMERICAS_API_URL = 'https://americas.api.riotgames.com';
+export const EUROPE_API_URL = 'https://europe.api.riotgames.com';
+export const ASIA_API_URL = 'https://asia.api.riotgames.com';
+export const SEA_API_URL = 'https://sea.api.riotgames.com';
 
 /**
  * Formata um timestamp para uma data legível

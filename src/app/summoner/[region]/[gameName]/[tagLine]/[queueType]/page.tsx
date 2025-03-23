@@ -24,7 +24,7 @@ interface SummonerPageProps {
 
 export default async function SummonerPage({ params }: SummonerPageProps) {
   const { region, gameName, tagLine, queueType } = params;
-  const queueId = queueType.replace('soloDuo', '420').replace('flex', '440').replace('aram', '450').replace('normal', '400').replace('quickplay', '490');
+  const queueId = queueType.replace('soloDuo', '420').replace('flex', '440').replace('aram', '450').replace('normal', '400').replace('quickplay', '490').replace('arena', '1710');
 
   try {
     // Buscar dados do invocador
