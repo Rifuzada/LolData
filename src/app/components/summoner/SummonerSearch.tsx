@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 interface SummonerSearchProps {
@@ -9,7 +9,8 @@ interface SummonerSearchProps {
 
 export function SummonerSearch({ defaultRegion = 'br1' }: SummonerSearchProps) {
   const router = useRouter();
-  const [region, setRegion] = useState(defaultRegion);
+  const params = useParams();
+  const [region, setRegion] = useState(params.region || defaultRegion);
   const [summonerName, setSummonerName] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -20,7 +21,7 @@ export function SummonerSearch({ defaultRegion = 'br1' }: SummonerSearchProps) {
     const parts = summonerName.split('#');
     const gameName = encodeURIComponent(parts[0].trim());
     const tagLine = parts.length > 1 ? encodeURIComponent(parts[1].trim()) : 'BR1';
-
+    console.log(gameName, tagLine, region);
     router.push(`/summoner/${region}/${gameName}/${tagLine}`);
   };
 

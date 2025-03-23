@@ -27,7 +27,7 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
   try {
     // Buscar dados do invocador
     const summoner = await getSummonerByRiotId(region, gameName, tagLine);
-
+    const puuid = summoner.puuid;
     // Decodificar o tagLine
     const decodedGameName = decodeURIComponent(gameName);
     const decodedTagLine = decodeURIComponent(tagLine);
@@ -109,7 +109,7 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
           >
             <MatchHistory
               matches={(matches as any[])}
-              puuid={summoner.puuid}
+              puuid={puuid}
               queueTypes={(queueTypes as any)}
             />
           </Suspense>

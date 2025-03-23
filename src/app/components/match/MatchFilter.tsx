@@ -1,12 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getMatchHistoryByQueue, getSummonerByRiotId } from '@/app/actions/summoner'
 import { useParams, useRouter } from 'next/navigation';
 
 export function MatchFilter() {
-  const [queueId, setQueueId] = useState<string>('')
-  const [summoner, setSummoner] = useState<any>(null);
+  const [queueId, setQueueId] = useState<string>('');
   const params = useParams();
   const router = useRouter();
   const region = params.region as string;
@@ -14,30 +12,32 @@ export function MatchFilter() {
   const tagLine = params.tagLine as string;
 
   useEffect(() => {
-    const fetchSummoner = async () => {
-      const fetchedSummoner = await getSummonerByRiotId(region, gameName, tagLine);
-      setSummoner(fetchedSummoner);
-    };
+    console.log('MatchFilter');
+  }, []); // Adicionando useEffect para evitar múltiplas execuções
 
-    fetchSummoner();
-  }, [region, gameName, tagLine]);
-
-  useEffect(() => {
+  function handleQueueChange(queueId: string) {
     console.log(queueId);
-    if (queueId && queueId !== 'All') {
-      const queueIdTranslated = queueId.replace('420', 'soloDuo').replace('440', 'flex').replace('450', 'aram').replace('400', 'normal').replace('490', 'quickplay').replace('1710', 'arena');
+    if (queueId !== "All" && queueId !== "") {
+      const queueIdTranslated = queueId.replace('420', 'soloDuo')
+                                        .replace('440', 'flex')
+                                        .replace('450', 'aram')
+                                        .replace('400', 'normal')
+                                        .replace('490', 'quickplay')
+                                        .replace('1710', 'arena');
       router.push(`/summoner/${region}/${gameName}/${tagLine}/${queueIdTranslated}`);
-    } else {
+    } else if (queueId === "All") {
       console.log('Selecionado: All');
       router.push(`/summoner/${region}/${gameName}/${tagLine}`);
+    } else if (queueId === "") {
+      console.log('Selecionado: All');
     }
-  }, [queueId, region, gameName, tagLine, router]);
+  }
 
   return (
     <div>
         <select
             value={queueId}
-            onChange={(e) => setQueueId(e.target.value)}
+            onChange={(e) => handleQueueChange(e.target.value)}
             className="cursor-pointer w-1/5 p-2 rounded-md border border-input bg-background">
             <option className='cursor-pointer' value="">Filtro de Partidas</option>
             <option className="cursor-pointer" value="All">Todos</option>

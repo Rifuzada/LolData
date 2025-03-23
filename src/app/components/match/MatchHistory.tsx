@@ -61,19 +61,19 @@ export function MatchHistory({ matches, puuid, queueTypes, isLoading = false }: 
   const [leagueVersion, setLeagueVersion] = useState<string>("15.6.1") // Versão padrão
   const [isLoadingVersion, setIsLoadingVersion] = useState<boolean>(true)
 
-  useEffect(() => {
-    const fetchLeagueVersion = async () => {
-      try {
-        setIsLoadingVersion(true)
-        const version = await apiService.getLatestVersion()
-        setLeagueVersion(version)
-      } catch (error) {
-        console.error("Erro ao buscar versão da liga:", error)
-      } finally {
-        setIsLoadingVersion(false)
-      }
+  const fetchLeagueVersion = async () => {
+    try {
+      setIsLoadingVersion(true)
+      const version = await apiService.getLatestVersion()
+      setLeagueVersion(version)
+    } catch (error) {
+      console.error("Erro ao buscar versão da liga:", error)
+    } finally {
+      setIsLoadingVersion(false)
     }
+  }
 
+  useEffect(() => {
     fetchLeagueVersion()
   }, [])
 
