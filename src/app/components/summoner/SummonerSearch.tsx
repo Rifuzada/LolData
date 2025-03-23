@@ -42,7 +42,7 @@ export function SummonerSearch({ defaultRegion = 'br1' }: SummonerSearchProps) {
           onChange={(e) => setRegion(e.target.value)}
           className="h-10 px-3 py-2 rounded-md text-sm border border-input bg-background w-24 cursor-pointer"
         >
-      <option className='cursor-pointer'  value="">Região</option>
+      <option className='cursor-pointer'  value="">🌎 Região</option>
       <optgroup label="Americas">
             <option className='cursor-pointer' value="BR1">🇧🇷 - Brasil</option>
             <option className='cursor-pointer'  value="NA1">🇺🇸 - América do Norte</option>
