@@ -53,7 +53,7 @@ export function useSearchHandler(): SearchHandlerHook {
       }
 
       // Remover todos os espaços antes de dividir o Riot ID
-      const sanitizedRiotId = riotid.replace(/\s+/g, '');
+      const sanitizedRiotId = riotid.replace(/\s+/g, ' ');
 
       // Separar o nome e a tag, garantindo que ambos existam
       const parts = sanitizedRiotId.split('#');

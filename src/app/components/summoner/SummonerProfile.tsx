@@ -44,8 +44,8 @@ export function SummonerProfile({
   losesFlex
 }: SummonerProfileProps) {
   // Determinar o nome de display - usar gameName+tagLine se disponível, senão usar name
-  const displayName = gameName?.replace(/\s+/g, '') && tagLine
-    ? `${gameName.replace(/\s+/g, '')}#${tagLine}`
+  const displayName = gameName?.replace(/\s+/g, ' ') && tagLine
+    ? `${gameName.replace(/\s+/g, ' ')}#${tagLine}`
     : (name || "Carregando...");
     
   const winrateSoloq = (winsSoloq ?? 0) + (losesSoloq ?? 0) > 0 ? (winsSoloq ?? 0) / ((winsSoloq ?? 0) + (losesSoloq ?? 0)) * 100 : null;
@@ -95,7 +95,7 @@ export function SummonerProfile({
                     className="inline-block"
                   />
                 )}
-                <span>{eloSoloq} {lpSoloq !== null && lpSoloq !== undefined && `(${lpSoloq} LP)`} - {winsSoloq !== null && winsSoloq !== undefined && `(${winsSoloq}-${losesSoloq})`} - {winrateSoloq}%</span>
+                <span>{eloSoloq} {lpSoloq !== null && lpSoloq !== undefined && `(${lpSoloq} LP)`} - {winsSoloq !== null && winsSoloq !== undefined && `(${winsSoloq}-${losesSoloq})`} - {winrateSoloq?.toFixed(2)}%</span>
               </p>
             )}
             {eloFlex && (
@@ -110,7 +110,7 @@ export function SummonerProfile({
                     className="inline-block"
                   />
                 )}
-                <span>{eloFlex} {lpFlex !== null && lpFlex !== undefined && `(${lpFlex} LP)`} - {winsFlex !== null && winsFlex !== undefined && `(${winsFlex}-${losesFlex})`} - {winrateFlex}%</span>
+                <span>{eloFlex} {lpFlex !== null && lpFlex !== undefined && `(${lpFlex} LP)`} - {winsFlex !== null && winsFlex !== undefined && `(${winsFlex}-${losesFlex})`} - {winrateFlex?.toFixed(2)}%</span>
               </p>
             )}
           </div>

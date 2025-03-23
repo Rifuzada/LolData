@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { MatchHistory } from "@/app/components/match/MatchHistory";
 import { SummonerProfile } from "@/app/components/summoner/SummonerProfile";
 import { SummonerSearch } from "@/app/components/summoner/SummonerSearch";
@@ -23,10 +23,12 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
   const { region, gameName, tagLine } = params;
 
   try {
-
     // Buscar dados do invocador
     const summoner = await getSummonerByRiotId(region, gameName, tagLine);
 
+    // Decodificar o tagLine
+    const decodedGameName = decodeURIComponent(gameName);
+    const decodedTagLine = decodeURIComponent(tagLine);
 
     // Buscar dados em paralelo
     const [queueTypes, masteries, matches, rankedData] = await Promise.all([
@@ -53,17 +55,15 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
     const lpSoloq = soloQData && typeof soloQData.leaguePoints === 'number' ? soloQData.leaguePoints : null;
     const lpFlex = flexData && typeof flexData.leaguePoints === 'number' ? flexData.leaguePoints : null;
 
-
     return (
       <main className="container mx-auto min-h-screen space-y-8 py-8">
         <SummonerSearch defaultRegion={region} />
-
         <div className="relative">
           <div className="absolute inset-0 -z-10 bg-gradient-to-b from-background/80 to-background" />
           <SummonerProfile
             name={summoner.name}
-            gameName={gameName}
-            tagLine={tagLine}
+            gameName={decodedGameName}
+            tagLine={decodedTagLine} // Use o tagLine decodificado
             level={summoner.summonerLevel}
             profileIconId={summoner.profileIconId}
             region={region.toUpperCase()}
