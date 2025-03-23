@@ -70,7 +70,7 @@ const Home: React.FC = () => {
           value={region}
           onChange={(e) => setRegion(e.target.value)}
         >
-          <option value="">Selecione uma região</option>
+          <option className='cursor-pointer' value="">Selecione uma região</option>
           <optgroup label="Americas">
             <option className='cursor-pointer' value="BR1">🇧🇷 - Brasil</option>
             <option className='cursor-pointer'  value="NA1">🇺🇸 - América do Norte</option>

@@ -105,6 +105,42 @@ export async function getMatchHistory(region: string, puuid: string) {
   }
 }
 
+export async function getMatchHistoryByQueue(region: string, puuid: string, queueId: string) {
+  try {
+    const response = await axios.get<string[]>(
+      `${BASE_URL}/lol/match/v5/matches/by-puuid/${puuid}/ids`,
+      {
+        headers: {
+          "X-Riot-Token": API_KEY,
+        },
+        params: {
+          start: 0,
+          count: 10,
+          queue: queueId,
+        },
+      }
+    );
+    //console.log(response.data);
+    // Depois, obter os detalhes de cada partida
+    const matches = await Promise.all(
+      response.data.map((matchId: string) =>
+        axios
+          .get(`${BASE_URL}/lol/match/v5/matches/${matchId}`, {
+            headers: {
+              "X-Riot-Token": API_KEY,
+            },
+          })
+          .then((response) => response.data),
+      )
+    );
+
+    return matches;
+  } catch (error) {
+    console.error('Erro ao buscar histórico de partidas por fila:', error);
+    throw new Error('Falha ao buscar histórico de partidas por fila');
+  }
+}
+
 export async function getQueueTypes() {
   try {
     const response = await axios.get(

@@ -2,9 +2,9 @@ import { Suspense, useEffect } from "react";
 import { MatchHistory } from "@/app/components/match/MatchHistory";
 import { SummonerProfile } from "@/app/components/summoner/SummonerProfile";
 import { SummonerSearch } from "@/app/components/summoner/SummonerSearch";
-import { getChampionMasteries, getMatchHistory, getQueueTypes, getSummonerByRiotId } from "@/app/actions/summoner";
+import { getChampionMasteries, getMatchHistory, getQueueTypes, getSummonerByRiotId, getMatchHistoryByQueue } from "@/app/actions/summoner";
 import { MatchFilter } from "@/app/components/match/MatchFilter";
-
+import { MatchHistoryFiltred } from "@/app/components/match/MatchHistoryFiltred";
 
 interface ChampionMastery {
   championId: number;
@@ -18,11 +18,13 @@ interface SummonerPageProps {
     region: string;
     gameName: string;
     tagLine: string;
+    queueType: string;
   };
 }
 
 export default async function SummonerPage({ params }: SummonerPageProps) {
-  const { region, gameName, tagLine } = params;
+  const { region, gameName, tagLine, queueType } = params;
+  const queueId = queueType.replace('soloDuo', '420').replace('flex', '440').replace('aram', '450').replace('normal', '400').replace('quickplay', '490');
 
   try {
     // Buscar dados do invocador
@@ -33,10 +35,10 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
     const decodedTagLine = decodeURIComponent(tagLine);
 
     // Buscar dados em paralelo
-    const [queueTypes, masteries, matches, rankedData] = await Promise.all([
+    const [queueTypes, masteries, matchesByQueue, rankedData] = await Promise.all([
       getQueueTypes(),
       getChampionMasteries(region, summoner.puuid),
-      getMatchHistory(region, summoner.puuid),
+      getMatchHistoryByQueue(region, summoner.puuid, queueId),
       fetch(`https://${region}.api.riotgames.com/lol/league/v4/entries/by-summoner/${summoner.id}`, {
         headers: {
           'X-Riot-Token': process.env.RIOT_API_KEY as string
@@ -107,8 +109,8 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
               </div>
             }
           >
-            <MatchHistory
-              matches={(matches as any[])}
+            <MatchHistoryFiltred
+              matchesByQueue={(matchesByQueue as any[])}
               puuid={summoner.puuid}
               queueTypes={(queueTypes as any)}
             />

@@ -83,10 +83,15 @@ export interface MatchInfo {
 }
 
 export interface Match {
+  info: {
+    gameId: string;
+    champion: number;
+    // Adicione outras propriedades conforme necessário
+  };
   metadata: {
     matchId: string;
+    // Adicione outras propriedades conforme necessário
   };
-  info: MatchInfo;
 }
 
 export interface QueueType {
