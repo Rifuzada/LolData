@@ -88,7 +88,7 @@ const Home: React.FC = () => {
               <option className='cursor-pointer'  value="KR">🇰🇷 - Coreia</option>
               <option className='cursor-pointer'  value="JP1">🇯🇵 - Japão</option>
             </optgroup>
-            <optgroup label="Asia do sul">
+            <optgroup label="Asia do Sul">
               <option className='cursor-pointer'  value="OC1">🇦🇺 - Oceania</option>
               <option className='cursor-pointer'  value="TW2">🇹🇼 - Taiwan, Hong Kong e Macau</option>
               <option className='cursor-pointer'  value="VN2">🇻🇳 - Vietnã</option>

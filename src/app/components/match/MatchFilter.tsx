@@ -46,7 +46,7 @@ export function MatchFilter() {
             <option className="cursor-pointer" value="450">ARAM</option>
             <option className="cursor-pointer" value="400">Normal Game</option>
             <option className="cursor-pointer" value="490">Quickplay</option>
-            <option className="cursor-pointer" value="1710">Arena</option>
+            <option className="cursor-pointer" value="1700">Arena</option>
         </select>
     </div>
   )
