@@ -71,7 +71,7 @@ export function MatchHistoryFiltred({ matchesByQueue, puuid, queueTypes, isLoadi
     } finally {
       setIsLoadingVersion(false)
     }
-    console.log('1')
+    // console.log('1')
   }
 
   useEffect(() => {

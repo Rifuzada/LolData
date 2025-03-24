@@ -12,11 +12,11 @@ export function MatchFilter() {
   const tagLine = params.tagLine as string;
 
   useEffect(() => {
-    console.log(queueId);
+    // console.log(queueId);
   }, []); // Adicionando useEffect para evitar múltiplas execuções
 
   function handleQueueChange(queueId: string) {
-    console.log(queueId);
+    // console.log(queueId);
     if (queueId !== "All" && queueId !== "") {
       const queueIdTranslated = queueId.replace('420', 'soloDuo')
                                         .replace('440', 'flex')
