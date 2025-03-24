@@ -91,7 +91,7 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
           <div className="mb-6">
             <h2 className="text-2xl font-semibold">Match History</h2>
             <p className="text-sm text-muted-foreground">
-              Recent games played by {summoner.name}
+              Recent games played by {decodedGameName}
             </p>
             <MatchFilter />
           </div>
