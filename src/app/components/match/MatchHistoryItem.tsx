@@ -10,6 +10,8 @@ interface MatchHistoryItemProps {
   champion: {
     name: string
     imageUrl: string
+    spell1Url: string
+    spell2Url: string
   }
   gameMode: string
   gameType: string
@@ -43,6 +45,8 @@ interface MatchHistoryItemProps {
       id: number
       imageUrl: string
     }>
+    spell1Url?: string
+    spell2Url?: string
   }>
 }
 
@@ -133,6 +137,20 @@ export function MatchHistoryItem({
           </div>
 
           <div className="flex items-center ml-auto gap-2">
+          <div className="flex items-center gap-1 flex-wrap px-2">
+              <Image
+                src={champion.spell1Url}
+                alt="Spell 1"
+                width={25}
+                height={25}
+              />
+              <Image
+                src={champion.spell2Url}
+                alt="Spell 2"
+                width={25}
+                height={25}
+              />
+            </div>
             <div className="flex items-center gap-1 flex-wrap">
               {items.map((item) => (
                 <div
@@ -227,6 +245,20 @@ export function MatchHistoryItem({
                         </span>
                       </div>
                       <div className="flex items-center gap-1 ml-auto">
+                      <div className="flex items-center gap-1 flex-wrap px-2">
+                        <Image
+                          src={participant.spell1Url || ''}
+                          alt="Spell 1"
+                          width={15}
+                          height={15}
+                        />
+                        <Image
+                          src={participant.spell2Url || ''}
+                          alt="Spell 2"
+                          width={15}
+                          height={15}
+                        />
+                      </div>
                         {participant.items.slice(0, 6).map((item) => (
                           item.imageUrl && (
                             <div
@@ -289,6 +321,20 @@ export function MatchHistoryItem({
                         </span>
                       </div>
                       <div className="flex items-center gap-1 ml-auto">
+                      <div className="flex items-center gap-1 flex-wrap px-2">
+                        <Image
+                          src={participant.spell1Url || ''}
+                          alt="Spell 1"
+                          width={15}
+                          height={15}
+                        />
+                        <Image
+                          src={participant.spell2Url || ''}
+                          alt="Spell 2"
+                          width={15}
+                          height={15}
+                        />
+                      </div>
                         {participant.items.slice(0, 6).map((item) => (
                           item.imageUrl && (
                             <div

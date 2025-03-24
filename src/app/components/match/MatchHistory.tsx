@@ -29,6 +29,8 @@ interface Participant {
   teamId: number
   riotIdGameName: string
   riotIdTagline: string
+  summoner1Id: string
+  summoner2Id: string
 }
 
 interface MatchInfo {
@@ -57,7 +59,17 @@ interface MatchHistoryProps {
   isLoading?: boolean
 }
 
-export function MatchHistory({ matches, puuid, queueTypes, isLoading = false }: MatchHistoryProps) {
+interface Spell {
+  id: string;
+  name: string;
+  key: string;
+  image: {
+    full: string;
+    // Adicione outras propriedades conforme necessário
+  };
+}
+
+export async function MatchHistory({ matches, puuid, queueTypes, isLoading = false }: MatchHistoryProps) {
   const [leagueVersion, setLeagueVersion] = useState<string>("15.6.1") // Versão padrão
   const [isLoadingVersion, setIsLoadingVersion] = useState<boolean>(true)
 
@@ -103,6 +115,50 @@ export function MatchHistory({ matches, puuid, queueTypes, isLoading = false }: 
     return `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${championId}.png`;
   }
 
+  async function getSummonerSpellImageUrl(summonerId: string) {
+    const url = `https://ddragon.leagueoflegends.com/cdn/${leagueVersion}/data/en_US/summoner.json`;
+  
+    try {
+      const response = await fetch(url);
+      const data: { data: Record<string, Spell> } = await response.json();
+  
+      for (const spell of Object.values(data.data)) {
+        if (spell.key == summonerId) {
+          // console.log(`https://ddragon.leagueoflegends.com/cdn/${leagueVersion}/img/spell/${spell.image.full}`)
+          return `https://ddragon.leagueoflegends.com/cdn/${leagueVersion}/img/spell/${spell.image.full}`;
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao buscar imagem do feitiço de invocador:", error);
+    } 
+  
+    console.warn(`Feitiço com ID ${summonerId} não encontrado.`); // Log quando o feitiço não é encontrado
+    return ""; // Retorna uma string vazia se não encontrar o feitiço
+  }
+  
+  
+  // No JSX, você precisa garantir que a função assíncrona seja esperada corretamente.
+  // Uma abordagem é usar um estado para armazenar as URLs das imagens dos feitiços.
+  
+  // const [spellUrls, setSpellUrls] = useState<{ [key: string]: string }>({});
+
+  // useEffect(() => {
+  //   const fetchSpellUrls = async () => {
+  //     const urls: { [key: string]: string } = {};
+  //     for (const match of matches) {
+  //       for (const participant of match.info.participants) {
+  //         if (participant.puuid === puuid) {
+  //           urls[participant.summoner1Id] = await getSummonerSpellImageUrl(participant.summoner1Id);
+  //           urls[participant.summoner2Id] = await getSummonerSpellImageUrl(participant.summoner2Id);
+  //         }
+  //       }
+  //     }
+  //     setSpellUrls(urls);
+  //   };
+
+  //   fetchSpellUrls();
+  // }, [matches, puuid, leagueVersion]);
+
   if (isLoading || isLoadingVersion) {
     return (
       <div className="space-y-4">
@@ -128,14 +184,19 @@ export function MatchHistory({ matches, puuid, queueTypes, isLoading = false }: 
 
   return (
     <div className="space-y-4">
-      {matches.map((match, index) => {
-        const participant = match.info.participants.find(p => p.puuid === puuid)
-        if (!participant) return null
+      {await Promise.all(matches.map(async (match, index) => {
+        const participant = match.info.participants.find(p => p.puuid === puuid);
+        if (!participant) return null;
+
+        const spell1Url = await getSummonerSpellImageUrl(participant.summoner1Id);
+        const spell2Url = await getSummonerSpellImageUrl(participant.summoner2Id);
 
         const matchData = {
           champion: {
             name: participant.championName,
             imageUrl: getChampionImageUrl(participant.championId),
+            spell1Url: spell1Url,
+            spell2Url: spell2Url,
           },
           gameMode: match.info.gameMode,
           gameType: getTranslatedQueueName(match.info.queueId),
@@ -163,7 +224,7 @@ export function MatchHistory({ matches, puuid, queueTypes, isLoading = false }: 
           totalDamageDealt: participant.totalDamageDealtToChampions,
           totalDamageTaken: participant.totalDamageTaken,
           summonerName: participant.riotIdGameName,
-          participants: match.info.participants.map(p => ({
+          participants: await Promise.all(match.info.participants.map(async p => ({
             championName: p.championName,
             championId: p.championId,
             summonerName: p.riotIdGameName,
@@ -173,6 +234,8 @@ export function MatchHistory({ matches, puuid, queueTypes, isLoading = false }: 
             assists: p.assists,
             riotIdGameName: p.riotIdGameName,
             riotIdTagline: p.riotIdTagline,
+            spell1Url: await getSummonerSpellImageUrl(p.summoner1Id),
+            spell2Url: await getSummonerSpellImageUrl(p.summoner2Id),
             items: [
               p.item0,
               p.item1,
@@ -185,8 +248,8 @@ export function MatchHistory({ matches, puuid, queueTypes, isLoading = false }: 
               id: itemId,
               imageUrl: getItemImageUrl(itemId),
             }))
-          }))
-        }
+          })))
+        };
 
         return (
           <div
@@ -197,16 +260,16 @@ export function MatchHistory({ matches, puuid, queueTypes, isLoading = false }: 
           >
             <MatchHistoryItem {...matchData} />
           </div>
-        )
-      })}
-          <div className="flex justify-center">
-          <button
+        );
+      }))}
+      <div className="flex justify-center">
+        <button
           type="submit"
           className="h-10 px-4 py-2 rounded-md text-sm bg-accent border border-input hover:bg-accent/80 font-medium"
-          >
+        >
           Carregar mais
         </button>
-        </div>
+      </div>
     </div>
   )
 }
