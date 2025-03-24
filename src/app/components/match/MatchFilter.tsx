@@ -12,18 +12,18 @@ export function MatchFilter() {
   const tagLine = params.tagLine as string;
 
   useEffect(() => {
-    //console.log('MatchFilter');
+    console.log(queueId);
   }, []); // Adicionando useEffect para evitar múltiplas execuções
 
   function handleQueueChange(queueId: string) {
-    //console.log(queueId);
+    console.log(queueId);
     if (queueId !== "All" && queueId !== "") {
       const queueIdTranslated = queueId.replace('420', 'soloDuo')
                                         .replace('440', 'flex')
                                         .replace('450', 'aram')
                                         .replace('400', 'normal')
                                         .replace('490', 'quickplay')
-                                        .replace('1710', 'arena');
+                                        .replace('1700', 'arena');
       router.push(`/summoner/${region}/${gameName}/${tagLine}/${queueIdTranslated}`);
     } else if (queueId === "All") {
       //console.log('Selecionado: All');

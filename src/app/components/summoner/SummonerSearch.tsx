@@ -20,7 +20,7 @@ export function SummonerSearch({ defaultRegion = 'br1' }: SummonerSearchProps) {
     const parts = summonerName.split('#');
     const gameName = encodeURIComponent(parts[0].trim());
     const tagLine = parts.length > 1 ? encodeURIComponent(parts[1].trim()) : 'BR1';
-    console.log(gameName, tagLine, region);
+    //console.log(gameName, tagLine, region);
     const regionLower = region.toLowerCase();
     router.push(`/summoner/${regionLower}/${gameName}/${tagLine}`);
   };

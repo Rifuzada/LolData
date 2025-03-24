@@ -166,6 +166,7 @@ export async function GET(request: NextRequest) {
           }
 
           const matchIds = await matchIdsResponse.json();
+          console.log(matchIds);
 
           // Busca os detalhes de cada partida
           const matchDetailsPromises = matchIds.map((matchId: string) =>
@@ -177,6 +178,7 @@ export async function GET(request: NextRequest) {
           );
 
           const matchDetails = await Promise.all(matchDetailsPromises);
+          console.log(matchDetails);
           return NextResponse.json({ data: matchDetails });
         }
     }

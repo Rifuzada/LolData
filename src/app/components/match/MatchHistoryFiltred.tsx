@@ -130,6 +130,7 @@ export function MatchHistoryFiltred({ matchesByQueue, puuid, queueTypes, isLoadi
   return (
     <div className="space-y-4">
       {matchesByQueue.map((match, index) => {
+        console.log(match);
         const participant = match.info.participants.find(p => p.puuid === puuid)
         if (!participant) return null
 
