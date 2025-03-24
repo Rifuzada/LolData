@@ -69,31 +69,31 @@ const Home: React.FC = () => {
           id="region"
           value={region}
           onChange={(e) => setRegion(e.target.value)}
-        >
-                <option className='cursor-pointer'  value="">🌎 Região</option>
-                <optgroup label="Americas">
-                <option className='cursor-pointer' value="BR1">🇧🇷 - Brasil</option>
-                <option className='cursor-pointer'  value="NA1">🇺🇸 - América do Norte</option>
-                <option className='cursor-pointer'  value="LA1">🇲🇽 - América Latina Norte</option>
-                <option className='cursor-pointer'  value="LA2">🇦🇷 - América Latina Sul</option>
-              </optgroup>
-              <optgroup label="Europa">
-                <option className='cursor-pointer'  value="EUW1">🇪🇸 - Europa Oeste</option>
-                <option className='cursor-pointer'  value="EUN1">🇸🇪 - Europa Nórdica e Leste</option>
-                <option className='cursor-pointer'  value="RU">🇷🇺 - Rússia</option>
-              </optgroup>
-              <optgroup label="Ásia">
-                <option className='cursor-pointer'  value="KR">🇰🇷 - Coreia</option>
-                <option className='cursor-pointer'  value="JP1">🇯🇵 - Japão</option>
-                <option className='cursor-pointer'  value="TW2">🇹🇼 - Taiwan, Hong Kong e Macau</option>
-                <option className='cursor-pointer'  value="TH2">🇹🇭 - Tailândia</option>
-                <option className='cursor-pointer'  value="VN2">🇻🇳 - Vietnã</option>
-                <option className='cursor-pointer'  value="TR1">🇹🇷 - Turquia</option>
-                <option className='cursor-pointer'  value="SG2">🇸🇬 - Singapura</option>
-              </optgroup>
-              <optgroup label="Oceania">
-                <option className='cursor-pointer'  value="OC1">🇦🇺 - Oceania</option>
-          </optgroup>
+          >
+          <option className='cursor-pointer'  value="">🌎 Região</option>
+          <optgroup label="Americas">
+              <option className='cursor-pointer' value="BR1">🇧🇷 - Brasil</option>
+              <option className='cursor-pointer'  value="NA1">🇺🇸 - América do Norte</option>
+              <option className='cursor-pointer'  value="LA1">🇲🇽 - América Latina Norte</option>
+              <option className='cursor-pointer'  value="LA2">🇦🇷 - América Latina Sul</option>
+            </optgroup>
+            <optgroup label="Europa">
+              <option className='cursor-pointer'  value="EUW1">🇪🇸 - Europa Oeste</option>
+              <option className='cursor-pointer'  value="EUN1">🇸🇪 - Europa Nórdica e Leste</option>
+              <option className='cursor-pointer'  value="RU">🇷🇺 - Rússia</option>
+              <option className='cursor-pointer'  value="ME1">🇪🇬 - Oriente Médio</option>
+              <option className='cursor-pointer'  value="TR1">🇹🇷 - Turquia</option>
+            </optgroup>
+            <optgroup label="Ásia">
+              <option className='cursor-pointer'  value="KR">🇰🇷 - Coreia</option>
+              <option className='cursor-pointer'  value="JP1">🇯🇵 - Japão</option>
+            </optgroup>
+            <optgroup label="Asia do sul">
+              <option className='cursor-pointer'  value="OC1">🇦🇺 - Oceania</option>
+              <option className='cursor-pointer'  value="TW2">🇹🇼 - Taiwan, Hong Kong e Macau</option>
+              <option className='cursor-pointer'  value="VN2">🇻🇳 - Vietnã</option>
+              <option className='cursor-pointer'  value="SG2">🇸🇬 - Singapura</option>
+            </optgroup>
         </select>
 
         <button

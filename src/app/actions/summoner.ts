@@ -241,7 +241,7 @@ export async function getMatchHistoryByQueue(region: string, puuid: string, queu
             .then((response) => response.data)
         )
       );
-      console.log(matches);
+      // console.log(matches);
       return matches;
     }else if(region === 'kr' || region === 'jp1'){
       const matchIdsResponse = await axios.get<string[]>(
