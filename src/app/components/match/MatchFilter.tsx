@@ -38,7 +38,7 @@ export function MatchFilter() {
         <select
             value={queueId}
             onChange={(e) => handleQueueChange(e.target.value)}
-            className="cursor-pointer w-1/5 p-2 rounded-md border border-input bg-background">
+            className="cursor-pointer w-1/5 p-2 mt-4 rounded-md border border-input bg-background">
             <option className='cursor-pointer' value="">Filtro de Partidas</option>
             <option className="cursor-pointer" value="All">Todos</option>
             <option className="cursor-pointer" value="420">Solo/Duo</option>

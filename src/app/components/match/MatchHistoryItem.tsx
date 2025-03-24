@@ -111,7 +111,22 @@ export function MatchHistoryItem({
               }}
             />
           </div>
-
+          <div className="flexbox items-center gap-1 flex-wrap">
+              <Image
+                src={champion.spell1Url}
+                alt="Spell 1"
+                width={25}
+                height={25}
+                className="rounded-md mb-1 object-cover"
+              />
+              <Image
+                src={champion.spell2Url}
+                alt="Spell 2"
+                width={25}
+                height={25}
+                className="rounded-md object-cover"
+              />
+            </div>
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-1">
               <h3 className="text-sm font-semibold">{champion.name}</h3>
@@ -135,40 +150,26 @@ export function MatchHistoryItem({
               </span>
             </div>
           </div>
-
-          <div className="flex items-center ml-auto gap-2">
-          <div className="flex items-center gap-1 flex-wrap px-2">
-              <Image
-                src={champion.spell1Url}
-                alt="Spell 1"
-                width={25}
-                height={25}
-              />
-              <Image
-                src={champion.spell2Url}
-                alt="Spell 2"
-                width={25}
-                height={25}
-              />
-            </div>
-            <div className="flex items-center gap-1 flex-wrap">
+          <div className="flex items-center ml-auto mr-auto gap-2">
+          <div className="flex items-center gap-1 flex-wrap">
               {items.map((item) => (
                 <div
                   key={item.id}
-                  className="relative h-8 w-8 rounded-md bg-background/50"
+                  className="relative h-9 w-9 rounded-md bg-background/50"
                 >
                   {item.imageUrl && (
                     <Image
                       src={item.imageUrl}
                       alt={`Item ${item.id}`}
                       fill
-                      className="rounded-md object-cover"
+                      className="rounded-md object-cover "
                     />
                   )}
                 </div>
               ))}
             </div>
-
+          </div>
+          <div className="flex items-center ml-auto gap-2">
             <div className="flex flex-col items-end ml-2">
               <span className="text-xs font-medium">
                 {gameDuration}
@@ -223,7 +224,23 @@ export function MatchHistoryItem({
                           className="rounded-full"
                         />
                       </div>
-                      <div className="flex-1 min-w-0">
+                      <div className="flexbox items-center gap-1 flex-wrap">
+                        <Image
+                          src={participant.spell1Url || ''}
+                          alt="Spell 1"
+                          width={15}
+                          height={15}
+                          className="rounded object-cover"
+                        />
+                        <Image
+                          src={participant.spell2Url || ''}
+                          alt="Spell 2"
+                          width={15}
+                          height={15}
+                          className="rounded object-cover"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0 flex flex-col">
                         <span
                           className="hidden sm:inline text-sm truncate cursor-pointer hover:underline max-w-[120px] inline-block"
                           onClick={(e) => {
@@ -241,25 +258,14 @@ export function MatchHistoryItem({
                             window.location.href = `/summoner/${region}/${participant.riotIdGameName}/${participant.riotIdTagline}`
                           }}
                         >
-                          {participant.summonerName.charAt(0)}.
+                          {participant.summonerName.slice(0, 6)}
+                        </span>
+                        <span className="text-xs sm:text-sm text-muted-foreground text-left">
+                          {participant.kills}/{participant.deaths}/{participant.assists}
                         </span>
                       </div>
                       <div className="flex items-center gap-1 ml-auto">
-                      <div className="flex items-center gap-1 flex-wrap px-2">
-                        <Image
-                          src={participant.spell1Url || ''}
-                          alt="Spell 1"
-                          width={15}
-                          height={15}
-                        />
-                        <Image
-                          src={participant.spell2Url || ''}
-                          alt="Spell 2"
-                          width={15}
-                          height={15}
-                        />
-                      </div>
-                        {participant.items.slice(0, 6).map((item) => (
+                        {participant.items.slice(0, 7).map((item) => (
                           item.imageUrl && (
                             <div
                               key={item.id}
@@ -275,14 +281,10 @@ export function MatchHistoryItem({
                           )
                         ))}
                       </div>
-                      <span className="text-sm text-muted-foreground min-w-[50px] text-right flex-shrink-0">
-                        {participant.kills}/{participant.deaths}/{participant.assists}
-                      </span>
                     </div>
                   ))}
               </div>
-
-              <div className="space-y-2">
+              <div className="md:border-l md:border-border/50 md:pl-4 space-y-2">
                 <h4 className="text-xs sm:text-sm font-medium text-muted-foreground mb-2">Team 2</h4>
                 {participants
                   .filter(p => p.team === 200)
@@ -299,7 +301,23 @@ export function MatchHistoryItem({
                           className="rounded-full"
                         />
                       </div>
-                      <div className="flex-1 min-w-0">
+                      <div className="flexbox items-center gap-1 flex-wrap">
+                        <Image
+                          src={participant.spell1Url || ''}
+                          alt="Spell 1"
+                          width={15}
+                          height={15}
+                          className="rounded object-cover"
+                        />
+                        <Image
+                          src={participant.spell2Url || ''}
+                          alt="Spell 2"
+                          width={15}
+                          height={15}
+                          className="rounded object-cover"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0 flex flex-col">
                         <span
                           className="hidden sm:inline text-sm truncate cursor-pointer hover:underline max-w-[120px] inline-block"
                           onClick={(e) => {
@@ -317,25 +335,14 @@ export function MatchHistoryItem({
                             window.location.href = `/summoner/${region}/${participant.riotIdGameName}/${participant.riotIdTagline}`
                           }}
                         >
-                          {participant.summonerName.charAt(0)}.
+                          {participant.summonerName.slice(0, 6)}
+                        </span>
+                        <span className="text-xs sm:text-sm text-muted-foreground text-left">
+                          {participant.kills}/{participant.deaths}/{participant.assists}
                         </span>
                       </div>
                       <div className="flex items-center gap-1 ml-auto">
-                      <div className="flex items-center gap-1 flex-wrap px-2">
-                        <Image
-                          src={participant.spell1Url || ''}
-                          alt="Spell 1"
-                          width={15}
-                          height={15}
-                        />
-                        <Image
-                          src={participant.spell2Url || ''}
-                          alt="Spell 2"
-                          width={15}
-                          height={15}
-                        />
-                      </div>
-                        {participant.items.slice(0, 6).map((item) => (
+                        {participant.items.slice(0, 7).map((item) => (
                           item.imageUrl && (
                             <div
                               key={item.id}
@@ -351,9 +358,6 @@ export function MatchHistoryItem({
                           )
                         ))}
                       </div>
-                      <span className="text-sm text-muted-foreground min-w-[50px] text-right flex-shrink-0">
-                        {participant.kills}/{participant.deaths}/{participant.assists}
-                      </span>
                     </div>
                   ))}
               </div>
