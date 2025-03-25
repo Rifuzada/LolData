@@ -31,6 +31,9 @@ interface Participant {
   riotIdTagline: string
   summoner1Id: string
   summoner2Id: string
+  perks: {
+    styles: Perk[]
+  }
 }
 
 interface MatchInfo {
@@ -67,6 +70,20 @@ interface Spell {
     full: string;
     // Adicione outras propriedades conforme necessário
   };
+}
+
+interface Perk {
+  selections: any;
+  slots: {
+    runes: {
+      id: number;
+      icon: string;
+    }[]
+  }[]
+  id: number;
+  style: number;
+  icon: string;
+  // Adicione outras propriedades conforme necessário
 }
 
 export async function MatchHistory({ matches, puuid, queueTypes, isLoading = false }: MatchHistoryProps) {
@@ -114,7 +131,26 @@ export async function MatchHistory({ matches, puuid, queueTypes, isLoading = fal
     // console.log(`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${championId}.png`)
     return `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${championId}.png`;
   }
-
+  async function getSummonerPerkImageUrl(id: number) {
+    const url = `https://ddragon.leagueoflegends.com/cdn/${leagueVersion}/data/en_US/runesReforged.json`;
+    const response = await fetch(url);
+    
+    const data: Perk[] = await response.json(); // Agora data é um array de Perk
+    for (const perk of data) {
+      if (perk.slots && perk.slots.length > 0) {
+        const firstSlot = perk.slots[0];
+        if (perk.id === id) {
+          return `https://ddragon.leagueoflegends.com/cdn/img/${perk.icon}`;
+        }
+        for (const rune of firstSlot.runes) {
+          if (rune.id === id) {
+            return `https://ddragon.leagueoflegends.com/cdn/img/${rune.icon}`;
+          }
+        }
+      }
+    }
+    return ""; // Retorna uma string vazia se não encontrar o ídolo
+  }
   async function getSummonerSpellImageUrl(summonerId: string) {
     const url = `https://ddragon.leagueoflegends.com/cdn/${leagueVersion}/data/en_US/summoner.json`;
   
@@ -186,10 +222,11 @@ export async function MatchHistory({ matches, puuid, queueTypes, isLoading = fal
     <div className="space-y-4">
       {await Promise.all(matches.map(async (match, index) => {
         const participant = match.info.participants.find(p => p.puuid === puuid);
-        if (!participant) return null;
-
-        const spell1Url = await getSummonerSpellImageUrl(participant.summoner1Id);
-        const spell2Url = await getSummonerSpellImageUrl(participant.summoner2Id);
+        if (!participant || !participant.perks || !participant.perks.styles) return null;
+        const perk1Url = await getSummonerPerkImageUrl(participant.perks.styles[0].selections[0].perk) || "";
+        const perk2Url = await getSummonerPerkImageUrl(participant.perks.styles[1].style) || "";
+        const spell1Url = await getSummonerSpellImageUrl(participant.summoner1Id) || "";
+        const spell2Url = await getSummonerSpellImageUrl(participant.summoner2Id) || "";
 
         const matchData = {
           champion: {
@@ -197,6 +234,8 @@ export async function MatchHistory({ matches, puuid, queueTypes, isLoading = fal
             imageUrl: getChampionImageUrl(participant.championId),
             spell1Url: spell1Url,
             spell2Url: spell2Url,
+            mainStyle: perk1Url,
+            subStyle: perk2Url
           },
           gameMode: match.info.gameMode,
           gameType: getTranslatedQueueName(match.info.queueId),
@@ -236,6 +275,8 @@ export async function MatchHistory({ matches, puuid, queueTypes, isLoading = fal
             riotIdTagline: p.riotIdTagline,
             spell1Url: await getSummonerSpellImageUrl(p.summoner1Id),
             spell2Url: await getSummonerSpellImageUrl(p.summoner2Id),
+            mainStyle: await getSummonerPerkImageUrl(p.perks.styles[0].selections[0].perk),
+            subStyle: await getSummonerPerkImageUrl(p.perks.styles[1].style),
             items: [
               p.item0,
               p.item1,
