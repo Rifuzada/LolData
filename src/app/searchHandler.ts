@@ -46,30 +46,32 @@ export function useSearchHandler(): SearchHandlerHook {
       setIsLoading(true);
       setError(null);
 
-      // Validação de entrada
-      if (riotid === '' || region === '') {
-        setError('Antes de clicar no botão, escreva um Riot ID ou selecione uma Região!');
-        return;
-      }
-
-      // Remover todos os espaços antes de dividir o Riot ID
-      const sanitizedRiotId = riotid.replace(/\s+/g, ' ');
-
-      // Separar o nome e a tag, garantindo que ambos existam
+      const cleanText = (text: string) => {
+        return text
+          .normalize("NFC") // Normaliza a string
+          .replace(/[\u2066-\u2069]/g, '') // Remove caracteres invisíveis
+          .replace(/\s+/g, ' ') // Substitui múltiplos espaços por um único
+          .trim(); // Remove espaços extras nas extremidades
+      };
+      
+      const sanitizedRiotId = cleanText(riotid);
+      
+      // Separar nome e tag corretamente
       const parts = sanitizedRiotId.split('#');
-
       if (parts.length !== 2 || !parts[0] || !parts[1]) {
         setError('Por favor, insira um Riot ID válido no formato Nome#Tag');
         return;
       }
-
-      const [gameName, tagLine] = parts;
+      
+      const [gameName, tagLine] = parts.map(cleanText);
+      const encodedGameName = decodeURIComponent(gameName.trim());
+      const encodedTagLine = decodeURIComponent(tagLine.trim());
 
       // Converter a região para lowercase
       const sanitizedRegion = region.toLowerCase();
 
       // Navega para a rota dinâmica
-      router.push(`/summoner/${sanitizedRegion}/${gameName}/${tagLine}`);
+      router.push(`/summoner/${sanitizedRegion}/${encodedGameName}/${encodedTagLine}`);
     } catch (error) {
       console.error('Erro ao processar a pesquisa:', error);
       setError('Ocorreu um erro ao processar sua pesquisa. Tente novamente.');
