@@ -113,6 +113,8 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
               matchesByQueue={(matchesByQueue as any[])}
               puuid={summoner.puuid}
               queueTypes={(queueTypes as any)}
+              region={region}
+              queueId={Number(queueId)}
             />
           </Suspense>
         </div>

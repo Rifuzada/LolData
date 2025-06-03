@@ -1,7 +1,7 @@
 'use client';
 
 import { MatchHistoryItem } from "./MatchHistoryItem"
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import apiService from "@/app/services/apiService"
 
 interface Participant {
@@ -86,25 +86,104 @@ interface Perk {
   // Adicione outras propriedades conforme necessário
 }
 
-export async function MatchHistory({ matches, puuid, queueTypes, isLoading = false }: MatchHistoryProps) {
-  const [leagueVersion, setLeagueVersion] = useState<string>("15.6.1") // Versão padrão
-  const [isLoadingVersion, setIsLoadingVersion] = useState<boolean>(true)
+export function MatchHistory({ puuid, queueTypes, isLoading = false, region }: MatchHistoryProps & { region: string }) {
+  const [leagueVersion, setLeagueVersion] = useState<string>("15.6.1");
+  const [isLoadingVersion, setIsLoadingVersion] = useState<boolean>(true);
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [start, setStart] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
 
-  const fetchLeagueVersion = async () => {
-    try {
-      setIsLoadingVersion(true)
-      const version = await apiService.getLatestVersion()
-      setLeagueVersion(version)
-    } catch (error) {
-      console.error("Erro ao buscar versão da liga:", error)
-    } finally {
-      setIsLoadingVersion(false)
-    }
+  // Cache runes and spells data
+  const [runesData, setRunesData] = useState<any[]>([]);
+  const [spellsData, setSpellsData] = useState<Record<string, Spell>>({});
+
+  // Fetch league version
+  useEffect(() => {
+    const fetchLeagueVersion = async () => {
+      try {
+        setIsLoadingVersion(true);
+        const version = await apiService.getLatestVersion();
+        setLeagueVersion(version);
+      } catch (error) {
+        console.error("Erro ao buscar versão da liga:", error);
+      } finally {
+        setIsLoadingVersion(false);
+      }
+    };
+    fetchLeagueVersion();
+  }, []);
+
+  // Fetch runes and spells data once per version
+  useEffect(() => {
+    const fetchStaticData = async () => {
+      try {
+        const runesRes = await fetch(`https://ddragon.leagueoflegends.com/cdn/${leagueVersion}/data/en_US/runesReforged.json`);
+        const runes = await runesRes.json();
+        setRunesData(runes);
+
+        const spellsRes = await fetch(`https://ddragon.leagueoflegends.com/cdn/${leagueVersion}/data/en_US/summoner.json`);
+        const spellsJson = await spellsRes.json();
+        setSpellsData(spellsJson.data);
+      } catch (error) {
+        setRunesData([]);
+        setSpellsData({});
+      }
+    };
+    if (leagueVersion) fetchStaticData();
+  }, [leagueVersion]);
+
+  // Fetch initial matches when puuid or region changes
+  useEffect(() => {
+    setMatches([]);
+    setStart(0);
+    setHasMore(true);
+    fetchMoreMatches(0, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [puuid, region]);
+
+  const fetchMoreMatches = async (nextStart: number, reset = false) => {
+    setLoadingMore(true);
+    const params = new URLSearchParams({
+      puuid,
+      region,
+      start: nextStart.toString(),
+      count: "10",
+    });
+    const res = await fetch(`/api/summoner/matches?${params}`);
+    const data = await res.json();
+    const newMatches = data.data || [];
+    setMatches(prev => reset ? newMatches : [...prev, ...newMatches]);
+    setStart(nextStart + 10);
+    setHasMore(newMatches.length === 10);
+    setLoadingMore(false);
+  };
+
+  // Helpers para buscar imagens localmente
+  function getSummonerSpellImageUrl(summonerId: string | number) {
+    const spell = Object.values(spellsData).find(
+      (s: any) => String(s.key) === String(summonerId)
+    );
+    return spell
+      ? `https://ddragon.leagueoflegends.com/cdn/${leagueVersion}/img/spell/${spell.image.full}`
+      : "";
   }
 
-  useEffect(() => {
-    fetchLeagueVersion()
-  }, [])
+  function getSummonerPerkImageUrl(id: number) {
+    for (const perk of runesData) {
+      if (perk.id === id) {
+        return `https://ddragon.leagueoflegends.com/cdn/img/${perk.icon}`;
+      }
+      for (const slot of perk.slots) {
+        for (const rune of slot.runes) {
+          if (rune.id === id) {
+            return `https://ddragon.leagueoflegends.com/cdn/img/${rune.icon}`;
+          }
+        }
+      }
+    }
+    return "";
+  }
 
   function getTranslatedQueueName(queueId: number) {
     const queue = queueTypes.find(q => q.queueId === queueId)
@@ -128,72 +207,8 @@ export async function MatchHistory({ matches, puuid, queueTypes, isLoading = fal
   }
 
   function getChampionImageUrl(championId: number) {
-    // console.log(`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${championId}.png`)
     return `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${championId}.png`;
   }
-  async function getSummonerPerkImageUrl(id: number) {
-    const url = `https://ddragon.leagueoflegends.com/cdn/${leagueVersion}/data/en_US/runesReforged.json`;
-    const response = await fetch(url);
-    
-    const data: Perk[] = await response.json(); // Agora data é um array de Perk
-    for (const perk of data) {
-      if (perk.slots && perk.slots.length > 0) {
-        const firstSlot = perk.slots[0];
-        if (perk.id === id) {
-          return `https://ddragon.leagueoflegends.com/cdn/img/${perk.icon}`;
-        }
-        for (const rune of firstSlot.runes) {
-          if (rune.id === id) {
-            return `https://ddragon.leagueoflegends.com/cdn/img/${rune.icon}`;
-          }
-        }
-      }
-    }
-    return ""; // Retorna uma string vazia se não encontrar o ídolo
-  }
-  async function getSummonerSpellImageUrl(summonerId: string) {
-    const url = `https://ddragon.leagueoflegends.com/cdn/${leagueVersion}/data/en_US/summoner.json`;
-  
-    try {
-      const response = await fetch(url);
-      const data: { data: Record<string, Spell> } = await response.json();
-  
-      for (const spell of Object.values(data.data)) {
-        if (spell.key == summonerId) {
-          // console.log(`https://ddragon.leagueoflegends.com/cdn/${leagueVersion}/img/spell/${spell.image.full}`)
-          return `https://ddragon.leagueoflegends.com/cdn/${leagueVersion}/img/spell/${spell.image.full}`;
-        }
-      }
-    } catch (error) {
-      console.error("Erro ao buscar imagem do feitiço de invocador:", error);
-    } 
-  
-    console.warn(`Feitiço com ID ${summonerId} não encontrado.`); // Log quando o feitiço não é encontrado
-    return ""; // Retorna uma string vazia se não encontrar o feitiço
-  }
-  
-  
-  // No JSX, você precisa garantir que a função assíncrona seja esperada corretamente.
-  // Uma abordagem é usar um estado para armazenar as URLs das imagens dos feitiços.
-  
-  // const [spellUrls, setSpellUrls] = useState<{ [key: string]: string }>({});
-
-  // useEffect(() => {
-  //   const fetchSpellUrls = async () => {
-  //     const urls: { [key: string]: string } = {};
-  //     for (const match of matches) {
-  //       for (const participant of match.info.participants) {
-  //         if (participant.puuid === puuid) {
-  //           urls[participant.summoner1Id] = await getSummonerSpellImageUrl(participant.summoner1Id);
-  //           urls[participant.summoner2Id] = await getSummonerSpellImageUrl(participant.summoner2Id);
-  //         }
-  //       }
-  //     }
-  //     setSpellUrls(urls);
-  //   };
-
-  //   fetchSpellUrls();
-  // }, [matches, puuid, leagueVersion]);
 
   if (isLoading || isLoadingVersion) {
     return (
@@ -208,25 +223,28 @@ export async function MatchHistory({ matches, puuid, queueTypes, isLoading = fal
     )
   }
 
-  if (!matches?.length) {
-    return (
-      <div className="flex min-h-[200px] items-center justify-center rounded-lg border bg-card text-card-foreground">
-        <p className="text-sm text-muted-foreground">
-          No matches found
-        </p>
-      </div>
-    )
-  }
+  // if (!matches?.length) {
+  //   return (
+  //     <div className="flex min-h-[200px] items-center justify-center rounded-lg border bg-card text-card-foreground">
+  //       <p className="text-sm text-muted-foreground">
+  //         No matches found
+  //       </p>
+  //     </div>
+  //   )
+  // }
 
   return (
     <div className="space-y-4">
-      {await Promise.all(matches.map(async (match, index) => {
+      {matches.map((match, index) => {
+        if (!match || !match.info || !match.info.participants) return null;
+
         const participant = match.info.participants.find(p => p.puuid === puuid);
         if (!participant || !participant.perks || !participant.perks.styles) return null;
-        const perk1Url = await getSummonerPerkImageUrl(participant.perks.styles[0].selections[0].perk) || "";
-        const perk2Url = await getSummonerPerkImageUrl(participant.perks.styles[1].style) || "";
-        const spell1Url = await getSummonerSpellImageUrl(participant.summoner1Id) || "";
-        const spell2Url = await getSummonerSpellImageUrl(participant.summoner2Id) || "";
+
+        const perk1Url = getSummonerPerkImageUrl(participant.perks.styles[0].selections[0].perk) || "";
+        const perk2Url = getSummonerPerkImageUrl(participant.perks.styles[1].style) || "";
+        const spell1Url = getSummonerSpellImageUrl(participant.summoner1Id) || "";
+        const spell2Url = getSummonerSpellImageUrl(participant.summoner2Id) || "";
 
         const matchData = {
           champion: {
@@ -263,7 +281,7 @@ export async function MatchHistory({ matches, puuid, queueTypes, isLoading = fal
           totalDamageDealt: participant.totalDamageDealtToChampions,
           totalDamageTaken: participant.totalDamageTaken,
           summonerName: participant.riotIdGameName,
-          participants: await Promise.all(match.info.participants.map(async p => ({
+          participants: match.info.participants.map(p => ({
             championName: p.championName,
             championId: p.championId,
             summonerName: p.riotIdGameName,
@@ -273,10 +291,10 @@ export async function MatchHistory({ matches, puuid, queueTypes, isLoading = fal
             assists: p.assists,
             riotIdGameName: p.riotIdGameName,
             riotIdTagline: p.riotIdTagline,
-            spell1Url: await getSummonerSpellImageUrl(p.summoner1Id),
-            spell2Url: await getSummonerSpellImageUrl(p.summoner2Id),
-            mainStyle: await getSummonerPerkImageUrl(p.perks.styles[0].selections[0].perk),
-            subStyle: await getSummonerPerkImageUrl(p.perks.styles[1].style),
+            spell1Url: getSummonerSpellImageUrl(p.summoner1Id),
+            spell2Url: getSummonerSpellImageUrl(p.summoner2Id),
+            mainStyle: getSummonerPerkImageUrl(p.perks.styles[0].selections[0].perk),
+            subStyle: getSummonerPerkImageUrl(p.perks.styles[1].style),
             items: [
               p.item0,
               p.item1,
@@ -289,27 +307,37 @@ export async function MatchHistory({ matches, puuid, queueTypes, isLoading = fal
               id: itemId,
               imageUrl: getItemImageUrl(itemId),
             }))
-          })))
+          }))
         };
 
         return (
           <div
             key={`${match.metadata.matchId}-${index}`}
             style={{
-              animationDelay: `${index * 100}ms`,
+              animationDelay: `${index * 50}ms`,
             }}
           >
             <MatchHistoryItem {...matchData} />
           </div>
         );
-      }))}
+      })}
       <div className="flex justify-center">
-        <button
-          type="submit"
-          className="h-10 px-4 py-2 rounded-md text-sm bg-accent border border-input hover:bg-accent/80 font-medium"
-        >
-          Carregar mais
-        </button>
+        {hasMore && (
+          loadingMore ? (
+            <div className="h-10 flex px-4 py-2 rounded-md text-sm items-center">
+              <span className="animate-pulse px-4 font-medium">Carregando...</span>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="h-10 px-4 py-2 rounded-md text-sm bg-accent border border-input hover:bg-accent/80 font-medium"
+              onClick={() => fetchMoreMatches(start)}
+              disabled={loadingMore}
+            >
+              Carregar mais
+            </button>
+          )
+        )}
       </div>
     </div>
   )

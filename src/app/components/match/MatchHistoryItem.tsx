@@ -105,20 +105,24 @@ export function MatchHistoryItem({
 
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-1 relative">
-            <Image
-              src={champion.mainStyle}
-              alt="Main Style"
-              width={25}
-              height={25}
-              className="rounded-md object-cover"
-            />
-            <Image
-              src={champion.subStyle}
-              alt="Sub Style"
-              width={15}
-              height={15}
-              className="rounded-md object-cover"
-            />
+            {champion.mainStyle && (
+              <Image
+                src={champion.mainStyle}
+                alt=""
+                width={25}
+                height={25}
+                className="rounded-md object-cover"
+              />
+            )}
+            {champion.subStyle && (
+              <Image
+                src={champion.subStyle}
+                alt=""
+                width={15}
+                height={15}
+                className="rounded-md object-cover"
+              />
+            )}
           </div>
           <div className="relative h-16 w-16 flex-shrink-0">
             <Image
@@ -234,20 +238,24 @@ export function MatchHistoryItem({
                   .map(participant => (
                     <div key={participant.summonerName} className="flex items-center gap-2 mb-2">
                       <div className="flex items-center gap-1 relative">
-                        <Image
-                          src={participant.mainStyle}
-                          alt="Main Style"
-                          width={25}
-                          height={25}
-                          className="rounded-md object-cover"
-                        />
-                        <Image
-                          src={participant.subStyle}
-                          alt="Sub Style"
-                          width={15}
-                          height={15}
-                          className="hidden sm:inline rounded-md object-cover"
-                        />
+                        {participant.mainStyle && (
+                          <Image
+                            src={participant.mainStyle}
+                            alt="Main Style"
+                            width={25}
+                            height={25}
+                            className="rounded-md object-cover"
+                          />
+                        )}
+                        {participant.subStyle && (
+                          <Image
+                            src={participant.subStyle}
+                            alt="Sub Style"
+                            width={15}
+                            height={15}
+                            className="hidden sm:inline rounded-md object-cover"
+                          />
+                        )}
                       </div>
                       <div className="relative h-8 w-8 cursor-pointer flex-shrink-0" onClick={(e) => {
                         e.stopPropagation()
@@ -327,20 +335,24 @@ export function MatchHistoryItem({
                   .map(participant => (
                     <div key={participant.summonerName} className="flex items-center gap-2 mb-2">
                       <div className="flex items-center gap-1 relative">
-                        <Image
-                          src={participant.mainStyle}
-                          alt="Main Style"
-                          width={25}
-                          height={25}
-                          className="rounded-md object-cover"
-                        />
-                        <Image
-                          src={participant.subStyle}
-                          alt="Sub Style"
-                          width={15}
-                          height={15}
-                          className="hidden sm:inline rounded-md object-cover"
-                        />
+                        {participant.mainStyle && (
+                          <Image
+                            src={participant.mainStyle}
+                            alt="Main Style"
+                            width={25}
+                            height={25}
+                            className="rounded-md object-cover"
+                          />
+                        )}
+                        {participant.subStyle && (
+                          <Image
+                            src={participant.subStyle}
+                            alt="Sub Style"
+                            width={15}
+                            height={15}
+                            className="hidden sm:inline rounded-md object-cover"
+                          />
+                        )}
                       </div>
                       <div className="relative h-8 w-8 cursor-pointer flex-shrink-0" onClick={(e) => {
                         e.stopPropagation()
