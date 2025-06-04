@@ -38,7 +38,9 @@ export async function GET(request: NextRequest) {
         { status: 500 }
       );
     }
-    let matchIdsResponse, apiUrl;
+    let matchIdsResponse: Response;
+    let apiUrl: string = ""; // ou AMERICAS_API_URL
+
     if (queueId === '') {
       apiUrl = AMERICAS_API_URL;
       matchIdsResponse = await fetch(
@@ -70,21 +72,45 @@ export async function GET(request: NextRequest) {
     } else {
       if (validatedData.region.includes('euw1') || validatedData.region.includes('eun1') || validatedData.region.includes('ru') || validatedData.region.includes('tr1') || validatedData.region.includes('me1')) {
         apiUrl = EUROPE_API_URL;
+        matchIdsResponse = await fetch(
+          `${apiUrl}/lol/match/v5/matches/by-puuid/${validatedData.puuid}/ids?queue=${queueId}&start=${validatedData.start}&count=${validatedData.count}`,
+          {
+            headers: {
+              'X-Riot-Token': RIOT_API_KEY
+            }
+          }
+        );
       } else if (validatedData.region.includes('jp1') || validatedData.region.includes('kr')) {
         apiUrl = ASIA_API_URL;
+        matchIdsResponse = await fetch(
+          `${apiUrl}/lol/match/v5/matches/by-puuid/${validatedData.puuid}/ids?queue=${queueId}&start=${validatedData.start}&count=${validatedData.count}`,
+          {
+            headers: {
+              'X-Riot-Token': RIOT_API_KEY
+            }
+          }
+        );
       } else if (validatedData.region.includes('oc1') || validatedData.region.includes('tw2') || validatedData.region.includes('vn2')) {
         apiUrl = SEA_API_URL;
+        matchIdsResponse = await fetch(
+          `${apiUrl}/lol/match/v5/matches/by-puuid/${validatedData.puuid}/ids?queue=${queueId}&start=${validatedData.start}&count=${validatedData.count}`,
+          {
+            headers: {
+              'X-Riot-Token': RIOT_API_KEY
+            }
+          }
+        );
       } else {
         apiUrl = AMERICAS_API_URL;
-      }
-      const matchIdsResponse = await fetch(
-        `${apiUrl}/lol/match/v5/matches/by-puuid/${validatedData.puuid}/ids?queue=${queueId}&start=${validatedData.start}&count=${validatedData.count}`,
-        {
-          headers: {
-            'X-Riot-Token': RIOT_API_KEY
+        matchIdsResponse = await fetch(
+          `${apiUrl}/lol/match/v5/matches/by-puuid/${validatedData.puuid}/ids?queue=${queueId}&start=${validatedData.start}&count=${validatedData.count}`,
+          {
+            headers: {
+              'X-Riot-Token': RIOT_API_KEY
+            }
           }
-        }
-      );
+        );
+      }
       if (!matchIdsResponse.ok) {
         const error = await matchIdsResponse.json();
         return NextResponse.json(

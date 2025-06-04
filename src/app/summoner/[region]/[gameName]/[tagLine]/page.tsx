@@ -111,6 +111,7 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
               matches={(matches as any[])}
               puuid={puuid}
               queueTypes={(queueTypes as any)}
+              region={region}
             />
           </Suspense>
         </div>
