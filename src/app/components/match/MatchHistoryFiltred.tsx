@@ -336,8 +336,8 @@ export function MatchHistoryFiltred({
       <div className="flex justify-center">
         {hasMore && (
           loadingMore ? (
-            <div className="h-10 flex items-center">
-              <span className="animate-pulse px-4">Carregando...</span>
+              <div className="h-10 flex px-4 py-2 rounded-md text-sm items-center">
+                <span className="animate-pulse px-4 font-medium">Carregando...</span>
             </div>
           ) : (
             <button
