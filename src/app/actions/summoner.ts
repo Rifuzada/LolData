@@ -24,31 +24,45 @@ interface Summoner {
   summonerLevel: number;
 }
 
+// Função utilitária para tratar 429 com retry
+async function safeAxios<T = any>(config: any, retries = 3): Promise<T> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const res = await axios(config);
+      return res.data as T;
+    } catch (error: any) {
+      if (error.response && error.response.status === 429) {
+        const retryAfter = Number(error.response.headers['retry-after']) || 1;
+        await new Promise(r => setTimeout(r, retryAfter * 1000));
+        continue;
+      }
+      throw error;
+    }
+  }
+  // Última tentativa, se ainda falhar, lança o erro
+  const res = await axios(config);
+  return res.data as T;
+}
+
 export async function getSummonerByRiotId(region: string, gameName: string, tagLine: string) {
   try {
     // Primeiro, obter o PUUID da conta
-    const accountResponse = await axios.get<RiotAccount>(
-      `${BASE_URL}/riot/account/v1/accounts/by-riot-id/${gameName}/${tagLine}`,
-      {
-        headers: {
-          "X-Riot-Token": API_KEY,
-        },
-      }
-    );
+    const accountData = await safeAxios<RiotAccount>({
+      method: 'get',
+      url: `${BASE_URL}/riot/account/v1/accounts/by-riot-id/${gameName}/${tagLine}`,
+      headers: { "X-Riot-Token": API_KEY }
+    });
 
-    const { puuid } = accountResponse.data;
+    const { puuid } = accountData;
 
     // Depois, obter os dados do invocador usando o PUUID
-    const summonerResponse = await axios.get<Summoner>(
-      `https://${region}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`,
-      {
-        headers: {
-          "X-Riot-Token": API_KEY,
-        },
-      }
-    );
+    const summonerData = await safeAxios<Summoner>({
+      method: 'get',
+      url: `https://${region}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`,
+      headers: { "X-Riot-Token": API_KEY }
+    });
 
-    return summonerResponse.data;
+    return summonerData;
   } catch (error) {
     console.error('Erro ao buscar dados do invocador:', error);
     throw new Error('Falha ao buscar dados do invocador');
@@ -57,15 +71,11 @@ export async function getSummonerByRiotId(region: string, gameName: string, tagL
 
 export async function getChampionMasteries(region: string, puuid: string) {
   try {
-    const response = await axios.get(
-      `https://${region}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/${puuid}`,
-      {
-        headers: {
-          "X-Riot-Token": API_KEY,
-        },
-      }
-    );
-    return response.data;
+    return await safeAxios({
+      method: 'get',
+      url: `https://${region}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/${puuid}`,
+      headers: { "X-Riot-Token": API_KEY }
+    });
   } catch (error) {
     console.error('Erro ao buscar maestrias:', error);
     throw new Error('Falha ao buscar maestrias');
@@ -74,113 +84,29 @@ export async function getChampionMasteries(region: string, puuid: string) {
 
 export async function getMatchHistory(region: string, puuid: string) {
   try {
-    // Primeiro, obter os IDs das partidas
-    if(region === 'na1' || region === 'br1' || region === 'la1' || region === 'la2'){
-    const matchIdsResponse = await axios.get<string[]>(
-      `${BASE_URL}/lol/match/v5/matches/by-puuid/${puuid}/ids`,
-      {
-        headers: {
-          "X-Riot-Token": API_KEY,
-        },
-        params: {
-          start: 0,
-          count: 10,
-        },
-      }
-    );
+    let matchIds: string[] = [];
+    let apiUrl = BASE_URL;
+    if (region === 'euw1' || region === 'eun1' || region === 'ru' || region === 'tr1' || region === 'me1') apiUrl = EUROPE_URL;
+    else if (region === 'kr' || region === 'jp1') apiUrl = ASIA_URL;
+    else if (region === 'oc1' || region === 'sg2' || region === 'tw2' || region === 'vn2') apiUrl = SEA_URL;
+
+    matchIds = await safeAxios<string[]>({
+      method: 'get',
+      url: `${apiUrl}/lol/match/v5/matches/by-puuid/${puuid}/ids`,
+      headers: { "X-Riot-Token": API_KEY },
+      params: { start: 0, count: 10 }
+    });
+
     const matches = await Promise.all(
-      matchIdsResponse.data.map((matchId: string) =>
-        axios
-          .get(`${BASE_URL}/lol/match/v5/matches/${matchId}`, {
-            headers: {
-              "X-Riot-Token": API_KEY,
-            },
-          })
-          .then((response) => response.data)
+      matchIds.map((matchId: string) =>
+        safeAxios({
+          method: 'get',
+          url: `${apiUrl}/lol/match/v5/matches/${matchId}`,
+          headers: { "X-Riot-Token": API_KEY }
+        })
       )
     );
     return matches;
-    }else if(region === 'euw1' || region === 'eun1' || region === 'ru'|| region === 'tr1'|| region === 'me1'){
-      const matchIdsResponse = await axios.get<string[]>(
-        `${EUROPE_URL}/lol/match/v5/matches/by-puuid/${puuid}/ids`,
-        {
-          headers: {
-            "X-Riot-Token": API_KEY,
-          },
-          params: {
-            start: 0,
-            count: 10,
-          },
-        }
-      );
-      const matches = await Promise.all(
-        matchIdsResponse.data.map((matchId: string) =>
-          axios
-            .get(`${EUROPE_URL}/lol/match/v5/matches/${matchId}`, {
-              headers: {
-                "X-Riot-Token": API_KEY,
-              },
-            })
-            .then((response) => response.data)
-        )
-      );
-      return matches;
-    }else if(region === 'kr' || region === 'jp1'){
-      const matchIdsResponse = await axios.get<string[]>(
-        `${ASIA_URL}/lol/match/v5/matches/by-puuid/${puuid}/ids`,
-        {
-          headers: {
-            "X-Riot-Token": API_KEY,
-          },          
-          params: {
-            start: 0,
-            count: 10,
-          },
-        }
-      );
-      const matches = await Promise.all(
-        matchIdsResponse.data.map((matchId: string) =>
-          axios
-            .get(`${ASIA_URL}/lol/match/v5/matches/${matchId}`, {
-              headers: {
-                "X-Riot-Token": API_KEY,
-              },
-            })
-            .then((response) => response.data)
-        )
-      );
-      return matches;
-    }else if(region === 'oc1' || region === 'sg2' || region === 'tw2' || region === 'vn2'){
-        const matchIdsResponse = await axios.get<string[]>(
-        `${SEA_URL}/lol/match/v5/matches/by-puuid/${puuid}/ids`,
-        {
-          headers: {
-            "X-Riot-Token": API_KEY,
-          },
-          params: {
-            start: 0,
-            count: 10,
-          },
-        }
-      );
-      const matches = await Promise.all(
-        matchIdsResponse.data.map((matchId: string) =>
-          axios
-            .get(`${SEA_URL}/lol/match/v5/matches/${matchId}`, {
-              headers: {
-                "X-Riot-Token": API_KEY,
-              },
-              params: {
-                start: 0,
-                count: 10,
-              },
-            })
-            .then((response) => response.data)
-        )
-      );
-  
-      return matches;
-    }
   } catch (error) {
     console.error('Erro ao buscar histórico de partidas:', error);
     throw new Error('Falha ao buscar histórico de partidas');
@@ -189,114 +115,29 @@ export async function getMatchHistory(region: string, puuid: string) {
 
 export async function getMatchHistoryByQueue(region: string, puuid: string, queueId: string) {
   try {
-    // Primeiro, obter os IDs das partidas
-    if(region === 'na1' || region === 'br1' || region === 'la1' || region === 'la2'){
-    const matchIdsResponse = await axios.get<string[]>(
-      `${BASE_URL}/lol/match/v5/matches/by-puuid/${puuid}/ids`,
-      {
-        headers: {
-          "X-Riot-Token": API_KEY,
-        },
-        params: {
-          start: 0, 
-          count: 10,
-          queue: queueId,
-        },
-      }
-    );
+    let matchIds: string[] = [];
+    let apiUrl = BASE_URL;
+    if (region === 'euw1' || region === 'eun1' || region === 'ru' || region === 'tr1' || region === 'me1') apiUrl = EUROPE_URL;
+    else if (region === 'kr' || region === 'jp1') apiUrl = ASIA_URL;
+    else if (region === 'oc1' || region === 'sg2' || region === 'tw2' || region === 'vn2') apiUrl = SEA_URL;
+
+    matchIds = await safeAxios<string[]>({
+      method: 'get',
+      url: `${apiUrl}/lol/match/v5/matches/by-puuid/${puuid}/ids`,
+      headers: { "X-Riot-Token": API_KEY },
+      params: { start: 0, count: 10, queue: queueId }
+    });
+
     const matches = await Promise.all(
-      matchIdsResponse.data.map((matchId: string) =>
-        axios
-          .get(`${BASE_URL}/lol/match/v5/matches/${matchId}`, {
-            headers: {
-              "X-Riot-Token": API_KEY,
-            },
-          })
-          .then((response) => response.data)
+      matchIds.map((matchId: string) =>
+        safeAxios({
+          method: 'get',
+          url: `${apiUrl}/lol/match/v5/matches/${matchId}`,
+          headers: { "X-Riot-Token": API_KEY }
+        })
       )
     );
     return matches;
-    }else if(region === 'euw1' || region === 'eun1' || region === 'ru'|| region === 'tr1'|| region === 'me1'){
-      const matchIdsResponse = await axios.get<string[]>(
-        `${EUROPE_URL}/lol/match/v5/matches/by-puuid/${puuid}/ids`,
-        {
-          headers: {
-            "X-Riot-Token": API_KEY,
-          },
-          params: {
-            start: 0,
-            count: 10,
-            queue: queueId,
-          },
-        }
-      );
-      const matches = await Promise.all(
-        matchIdsResponse.data.map((matchId: string) =>
-          axios
-            .get(`${EUROPE_URL}/lol/match/v5/matches/${matchId}`, {
-              headers: {
-                "X-Riot-Token": API_KEY,
-              },
-            })
-            .then((response) => response.data)
-        )
-      );
-      // console.log(matches);
-      return matches;
-    }else if(region === 'kr' || region === 'jp1'){
-      const matchIdsResponse = await axios.get<string[]>(
-        `${ASIA_URL}/lol/match/v5/matches/by-puuid/${puuid}/ids`,
-        {
-          headers: {
-            "X-Riot-Token": API_KEY,
-          },          
-          params: {
-            start: 0,
-            count: 10,
-            queue: queueId,
-          },
-        }
-      );
-      const matches = await Promise.all(
-        matchIdsResponse.data.map((matchId: string) =>
-          axios
-            .get(`${ASIA_URL}/lol/match/v5/matches/${matchId}`, {
-              headers: {
-                "X-Riot-Token": API_KEY,
-              },
-            })
-            .then((response) => response.data)
-        )
-      );
-      return matches;
-    }else if(region === 'oc1' || region === 'sg2' || region === 'tw2' || region === 'vn2'){
-        const matchIdsResponse = await axios.get<string[]>(
-        `${SEA_URL}/lol/match/v5/matches/by-puuid/${puuid}/ids`,
-        {
-          headers: {
-            "X-Riot-Token": API_KEY,
-          },
-          params: {
-            start: 0,
-            count: 10,
-            queue: queueId,
-          },
-        }
-      );
-      const matches = await Promise.all(
-        matchIdsResponse.data.map((matchId: string) =>
-          axios
-            .get(`${SEA_URL}/lol/match/v5/matches/${matchId}`, {
-              headers: {
-                "X-Riot-Token": API_KEY,
-              }
-            })
-            .then((response) => response.data)
-        )
-      );
-  
-      return matches;
-    }
   } catch (error) {
     console.error('Erro ao buscar histórico de partidas:', error);
     throw new Error('Falha ao buscar histórico de partidas');
@@ -305,10 +146,10 @@ export async function getMatchHistoryByQueue(region: string, puuid: string, queu
 
 export async function getQueueTypes() {
   try {
-    const response = await axios.get(
-      'https://static.developer.riotgames.com/docs/lol/queues.json'
-    );
-    return response.data;
+    return await safeAxios({
+      method: 'get',
+      url: 'https://static.developer.riotgames.com/docs/lol/queues.json'
+    });
   } catch (error) {
     console.error('Erro ao buscar tipos de fila:', error);
     throw new Error('Falha ao buscar tipos de fila');

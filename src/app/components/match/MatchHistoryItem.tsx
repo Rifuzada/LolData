@@ -92,7 +92,7 @@ export function MatchHistoryItem({
     >
       <div className="flex flex-col space-y-3">
         <div className="flex items-center justify-between">
-          <span className="text-xs sm:text-sm font-medium text-muted-foreground">
+          <span className="text-xs font-medium sm:text-sm text-muted-foreground">
             {gameMode} • {gameType}
           </span>
           <span className={cn(
@@ -103,15 +103,15 @@ export function MatchHistoryItem({
           </span>
         </div>
 
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-1 relative">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative flex items-center gap-1">
             {champion.mainStyle && (
               <Image
                 src={champion.mainStyle}
                 alt=""
                 width={25}
                 height={25}
-                className="rounded-md object-cover"
+                className="object-cover rounded-md"
               />
             )}
             {champion.subStyle && (
@@ -120,42 +120,40 @@ export function MatchHistoryItem({
                 alt=""
                 width={15}
                 height={15}
-                className="rounded-md object-cover"
+                className="object-cover rounded-md"
               />
             )}
           </div>
-          <div className="relative h-16 w-16 flex-shrink-0">
+          <div className="relative flex-shrink-0 w-16 h-16">
             <Image
               src={champion.imageUrl}
               alt={champion.name}
               fill
-              className="rounded-full border-4 object-cover"
+              className="object-cover border-4 rounded-full"
               style={{
                 clipPath: "inset(10% 10% round 50%)"
               }}
             />
           </div>
-          <div className="flexbox items-center gap-1 flex-wrap">
+          <div className="flex-wrap items-center gap-1 flexbox">
               <Image
                 src={champion.spell1Url}
                 alt="Spell 1"
                 width={25}
                 height={25}
-                className="rounded-md mb-1 object-cover"
+                className="object-cover mb-1 rounded-md"
               />
               <Image
                 src={champion.spell2Url}
                 alt="Spell 2"
                 width={25}
                 height={25}
-                className="rounded-md object-cover"
+                className="object-cover rounded-md"
               />
             </div>
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-1">
               <h3 className="text-sm font-semibold">{champion.name}</h3>
-              <span className="text-xs text-muted-foreground">•</span>
-              <span className="text-xs font-medium">{summonerName}</span>
             </div>
 
             <div className="flex items-center gap-2">
@@ -174,26 +172,26 @@ export function MatchHistoryItem({
               </span>
             </div>
           </div>
-          <div className="flex items-center ml-auto mr-auto gap-2">
-          <div className="flex items-center gap-1 flex-wrap">
+          <div className="flex items-center gap-2 ml-auto mr-auto">
+          <div className="flex flex-wrap items-center gap-1">
               {items.map((item) => (
                 <div
                   key={item.id}
-                  className="relative h-9 w-9 rounded-md bg-background/50"
+                  className="relative rounded-md h-9 w-9 bg-background/50"
                 >
                   {item.imageUrl && (
                     <Image
                       src={item.imageUrl}
                       alt={`Item ${item.id}`}
                       fill
-                      className="rounded-md object-cover "
+                      className="object-cover rounded-md "
                     />
                   )}
                 </div>
               ))}
             </div>
           </div>
-          <div className="flex items-center ml-auto gap-2">
+          <div className="flex items-center gap-2 ml-auto">
             <div className="flex flex-col items-end ml-2">
               <span className="text-xs font-medium">
                 {gameDuration}
@@ -207,8 +205,8 @@ export function MatchHistoryItem({
       </div>
 
       {isExpanded && (
-        <div className="mt-4 pt-4 border-t border-border/50 animate-fadeIn">
-          <div className="flex flex-wrap justify-between items-center w-full mb-4">
+        <div className="pt-4 mt-4 border-t border-border/50 animate-fadeIn">
+          <div className="flex flex-wrap items-center justify-between w-full mb-4">
             <div className="text-left">
               <p className="text-xs sm:text-sm text-muted-foreground">Damage Dealt</p>
               <p className="text-xl font-bold">{totalDamageDealt?.toLocaleString() || 0}</p>
@@ -227,24 +225,24 @@ export function MatchHistoryItem({
             </div>
           </div>
 
-          <div className="w-full h-px bg-border mb-4"></div>
+          <div className="w-full h-px mb-4 bg-border"></div>
 
           {participants && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <h4 className="text-xs sm:text-sm font-medium text-muted-foreground mb-2">Team 1</h4>
+                <h4 className="mb-2 text-xs font-medium sm:text-sm text-muted-foreground">Team 1</h4>
                 {participants
                   .filter(p => p.team === 100)
                   .map(participant => (
                     <div key={participant.summonerName} className="flex items-center gap-2 mb-2">
-                      <div className="flex items-center gap-1 relative">
+                      <div className="relative flex items-center gap-1">
                         {participant.mainStyle && (
                           <Image
                             src={participant.mainStyle}
                             alt="Main Style"
                             width={25}
                             height={25}
-                            className="rounded-md object-cover"
+                            className="object-cover rounded-md"
                           />
                         )}
                         {participant.subStyle && (
@@ -253,13 +251,13 @@ export function MatchHistoryItem({
                             alt="Sub Style"
                             width={15}
                             height={15}
-                            className="hidden sm:inline rounded-md object-cover"
+                            className="hidden object-cover rounded-md sm:inline"
                           />
                         )}
                       </div>
-                      <div className="relative h-8 w-8 cursor-pointer flex-shrink-0" onClick={(e) => {
+                      <div className="relative flex-shrink-0 w-8 h-8 cursor-pointer" onClick={(e) => {
                         e.stopPropagation()
-                        window.location.href = `/summoner/br1/${participant.riotIdGameName}/${participant.riotIdTagline}`
+                        window.location.href = `/summoner/${region}/${participant.riotIdGameName}/${participant.riotIdTagline}/all`
                       }}>
                         <Image
                           src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${participant.championId}.png`}
@@ -268,43 +266,43 @@ export function MatchHistoryItem({
                           className="rounded-full"
                         />
                       </div>
-                      <div className="flexbox items-center gap-1 flex-wrap">
+                      <div className="flex-wrap items-center gap-1 flexbox">
                         <Image
                           src={participant.spell1Url || ''}
                           alt="Spell 1"
                           width={15}
                           height={15}
-                          className="rounded mb-1 object-cover"
+                          className="object-cover mb-1 rounded"
                         />
                         <Image
                           src={participant.spell2Url || ''}
                           alt="Spell 2"
                           width={15}
                           height={15}
-                          className="rounded object-cover"
+                          className="object-cover rounded"
                         />
                       </div>
-                      <div className="flex-1 min-w-0 flex flex-col">
+                      <div className="flex flex-col flex-1 min-w-0">
                         <span
                           className="hidden sm:inline text-sm truncate cursor-pointer hover:underline max-w-[120px] inline-block"
                           onClick={(e) => {
                             e.stopPropagation()
-                            window.location.href = `/summoner/${region}/${participant.riotIdGameName}/${participant.riotIdTagline}`
+                            window.location.href = `/summoner/${region}/${participant.riotIdGameName}/${participant.riotIdTagline}/all`
                           }}
                           title={participant.summonerName}
                         >
                           {participant.summonerName}
                         </span>
                         <span
-                          className="sm:hidden text-sm cursor-pointer hover:underline font-medium"
+                          className="text-sm font-medium cursor-pointer sm:hidden hover:underline"
                           onClick={(e) => {
                             e.stopPropagation()
-                            window.location.href = `/summoner/${region}/${participant.riotIdGameName}/${participant.riotIdTagline}`
+                            window.location.href = `/summoner/${region}/${participant.riotIdGameName}/${participant.riotIdTagline}/all`
                           }}
                         >
                           {participant.summonerName.slice(0, 3)}
                         </span>
-                        <span className="text-xs sm:text-sm text-muted-foreground text-left">
+                        <span className="text-xs text-left sm:text-sm text-muted-foreground">
                           {participant.kills}/{participant.deaths}/{participant.assists}
                         </span>
                       </div>
@@ -312,14 +310,14 @@ export function MatchHistoryItem({
                         {participant.items.slice(0, 7).map((item) => (
                         <div
                           key={item.id}
-                          className="relative h-5 w-5 rounded-md bg-background/50"
+                          className="relative w-5 h-5 rounded-md bg-background/50"
                         >
                           {item.imageUrl && (
                             <Image
                               src={item.imageUrl}
                               alt={`Item ${item.id}`}
                               fill
-                              className="rounded-md object-cover "
+                              className="object-cover rounded-md "
                             />
                           )}
                         </div>
@@ -328,20 +326,20 @@ export function MatchHistoryItem({
                     </div>
                   ))}
               </div>
-              <div className="md:border-l md:border-border/50 md:pl-4 space-y-2">
-                <h4 className="text-xs sm:text-sm font-medium text-muted-foreground mb-2">Team 2</h4>
+              <div className="space-y-2 md:border-l md:border-border/50 md:pl-4">
+                <h4 className="mb-2 text-xs font-medium sm:text-sm text-muted-foreground">Team 2</h4>
                 {participants
                   .filter(p => p.team === 200)
                   .map(participant => (
                     <div key={participant.summonerName} className="flex items-center gap-2 mb-2">
-                      <div className="flex items-center gap-1 relative">
+                      <div className="relative flex items-center gap-1">
                         {participant.mainStyle && (
                           <Image
                             src={participant.mainStyle}
                             alt="Main Style"
                             width={25}
                             height={25}
-                            className="rounded-md object-cover"
+                            className="object-cover rounded-md"
                           />
                         )}
                         {participant.subStyle && (
@@ -350,13 +348,13 @@ export function MatchHistoryItem({
                             alt="Sub Style"
                             width={15}
                             height={15}
-                            className="hidden sm:inline rounded-md object-cover"
+                            className="hidden object-cover rounded-md sm:inline"
                           />
                         )}
                       </div>
-                      <div className="relative h-8 w-8 cursor-pointer flex-shrink-0" onClick={(e) => {
+                      <div className="relative flex-shrink-0 w-8 h-8 cursor-pointer" onClick={(e) => {
                         e.stopPropagation()
-                        window.location.href = `/summoner/br1/${participant.riotIdGameName}/${participant.riotIdTagline}`
+                        window.location.href = `/summoner/${region}/${participant.riotIdGameName}/${participant.riotIdTagline}/all`
                       }}>
                         <Image
                           src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${participant.championId}.png`}
@@ -365,43 +363,43 @@ export function MatchHistoryItem({
                           className="rounded-full"
                         />
                       </div>
-                      <div className="flexbox items-center gap-1 flex-wrap">
+                      <div className="flex-wrap items-center gap-1 flexbox">
                         <Image
                           src={participant.spell1Url || ''}
                           alt="Spell 1"
                           width={15}
                           height={15}
-                          className="rounded mb-1 object-cover"
+                          className="object-cover mb-1 rounded"
                         />
                         <Image
                           src={participant.spell2Url || ''}
                           alt="Spell 2"
                           width={15}
                           height={15}
-                          className="rounded object-cover"
+                          className="object-cover rounded"
                         />
                       </div>
-                      <div className="flex-1 min-w-0 flex flex-col">
+                      <div className="flex flex-col flex-1 min-w-0">
                         <span
                           className="hidden sm:inline text-sm truncate cursor-pointer hover:underline max-w-[120px] inline-block"
                           onClick={(e) => {
                             e.stopPropagation()
-                            window.location.href = `/summoner/${region}/${participant.riotIdGameName}/${participant.riotIdTagline}`
+                            window.location.href = `/summoner/${region}/${participant.riotIdGameName}/${participant.riotIdTagline}/all`
                           }}
                           title={participant.summonerName}
                         >
                           {participant.summonerName}
                         </span>
                         <span
-                          className="sm:hidden text-sm cursor-pointer hover:underline font-medium"
+                          className="text-sm font-medium cursor-pointer sm:hidden hover:underline"
                           onClick={(e) => {
                             e.stopPropagation()
-                            window.location.href = `/summoner/${region}/${participant.riotIdGameName}/${participant.riotIdTagline}`
+                            window.location.href = `/summoner/${region}/${participant.riotIdGameName}/${participant.riotIdTagline}/all`
                           }}
                         >
                           {participant.summonerName.slice(0, 3)}
                         </span>
-                        <span className="text-xs sm:text-sm text-muted-foreground text-left">
+                        <span className="text-xs text-left sm:text-sm text-muted-foreground">
                           {participant.kills}/{participant.deaths}/{participant.assists}
                         </span>
                       </div>
@@ -409,14 +407,14 @@ export function MatchHistoryItem({
                         {participant.items.slice(0, 7).map((item) => (
                           <div
                             key={item.id}
-                            className="relative h-5 w-5 rounded-md bg-background/50"
+                            className="relative w-5 h-5 rounded-md bg-background/50"
                           >
                             {item.imageUrl && (
                               <Image
                                 src={item.imageUrl}
                                 alt={`Item ${item.id}`}
                                 fill
-                                className="rounded-md object-cover "
+                                className="object-cover rounded-md "
                               />
                             )}
                           </div>

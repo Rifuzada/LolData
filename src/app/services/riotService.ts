@@ -95,7 +95,7 @@ export async function getMatchHistory(region: string, puuid: string): Promise<Ma
       },
       params: {
         start: 0,
-        count: 10,
+        count: 20,
       },
     }
   );

@@ -71,7 +71,7 @@ export function useSearchHandler(): SearchHandlerHook {
       const sanitizedRegion = region.toLowerCase();
 
       // Navega para a rota dinâmica
-      router.push(`/summoner/${sanitizedRegion}/${encodedGameName}/${encodedTagLine}`);
+      router.push(`/summoner/${sanitizedRegion}/${encodedGameName}/${encodedTagLine}/all`);
     } catch (error) {
       console.error('Erro ao processar a pesquisa:', error);
       setError('Ocorreu um erro ao processar sua pesquisa. Tente novamente.');

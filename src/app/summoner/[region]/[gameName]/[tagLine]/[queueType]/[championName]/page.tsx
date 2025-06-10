@@ -1,10 +1,9 @@
-import { Suspense, useEffect } from "react";
-import { MatchHistory } from "@/app/components/match/MatchHistory";
+import { Suspense } from "react";
 import { SummonerProfile } from "@/app/components/summoner/SummonerProfile";
 import { SummonerSearch } from "@/app/components/summoner/SummonerSearch";
-import { getChampionMasteries, getMatchHistory, getQueueTypes, getSummonerByRiotId } from "@/app/actions/summoner";
+import { getChampionMasteries, getQueueTypes, getSummonerByRiotId } from "@/app/actions/summoner";
 import { MatchFilter } from "@/app/components/match/MatchFilter";
-
+import { MatchHistoryFiltred } from "@/app/components/match/MatchHistoryFiltred";
 
 interface ChampionMastery {
   championId: number;
@@ -18,31 +17,100 @@ interface SummonerPageProps {
     region: string;
     gameName: string;
     tagLine: string;
+    queueType: string;
+    championName: string;
+  };
+}
+
+// Função para traduzir region para sigla "bonita"
+function getRegionDisplay(region: string) {
+  return region
+    .replace(/^br1$/i, 'BR')
+    .replace(/^la1$/i, 'LAN')
+    .replace(/^la2$/i, 'LAS')
+    .replace(/^na1$/i, 'NA')
+    .replace(/^euw1$/i, 'EUW')
+    .replace(/^eun1$/i, 'EUNE')
+    .replace(/^kr$/i, 'KR')
+    .replace(/^jp1$/i, 'JP')
+    .replace(/^ru$/i, 'RU')
+    .replace(/^tr1$/i, 'TR')
+    .replace(/^oc1$/i, 'OCE')
+    .replace(/^tw2$/i, 'TW')
+    .replace(/^vn2$/i, 'VN')
+    .replace(/^sg2$/i, 'SG')
+    .replace(/^me1$/i, 'ME');
+}
+
+export async function generateMetadata({ params }: SummonerPageProps) {
+  const { gameName, tagLine, region } = params;
+  const regionDisplay = getRegionDisplay(region);
+  return {
+    icons: {
+      icon: '/favicon.ico',
+    },
+    title: `${gameName}#${tagLine}(${regionDisplay}) - LolData `,
+    description: `${gameName}#${tagLine}(${regionDisplay}) - LolData\n` + 'Visualize suas estatísticas do League of Legends',
   };
 }
 
 export default async function SummonerPage({ params }: SummonerPageProps) {
-  const { region, gameName, tagLine } = params;
+  const { region, gameName, tagLine, queueType, championName } = params;
+  const queueIdFromUrl = queueType
+    .replace('soloDuo', '420')
+    .replace('flex', '440')
+    .replace('aram', '450')
+    .replace('normal', '400')
+    .replace('quickplay', '490')
+    .replace('arena', '1700');
+  const queueId = queueIdFromUrl;
 
   try {
     // Buscar dados do invocador
     const summoner = await getSummonerByRiotId(region, gameName, tagLine);
-    const puuid = summoner.puuid;
+
     // Decodificar o tagLine
     const decodedGameName = decodeURIComponent(gameName);
     const decodedTagLine = decodeURIComponent(tagLine);
 
     // Buscar dados em paralelo
-    const [queueTypes, masteries, matches, rankedData] = await Promise.all([
+    const [queueTypes, masteries, rankedData] = await Promise.all([
       getQueueTypes(),
       getChampionMasteries(region, summoner.puuid),
-      getMatchHistory(region, summoner.puuid),
       fetch(`https://${region}.api.riotgames.com/lol/league/v4/entries/by-summoner/${summoner.id}`, {
         headers: {
           'X-Riot-Token': process.env.RIOT_API_KEY as string
         }
       }).then(res => res.json())
     ]);
+
+    // Defina a base da URL do seu site
+    const baseUrl =
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      (process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`) ||
+      "http://localhost:3000";
+
+    // Buscar histórico de partidas já filtrado via API interna
+    const matchesRes = await fetch(
+      queueId === "all"
+        ? `${baseUrl}/api/summoner/matches?region=${region}&puuid=${summoner.puuid}&count=10`
+        : `${baseUrl}/api/summoner/matchesByQueue?region=${region}&puuid=${summoner.puuid}&queueId=${queueId}&count=10`,
+      { cache: "no-store" }
+    );
+    const matchesJson = await matchesRes.json();
+    let filteredMatches = matchesJson.data || [];
+
+    // Agora filtre manualmente pelo championName, se necessário
+    if (championName && championName.toLowerCase() !== "all") {
+      filteredMatches = filteredMatches.filter(
+        (match: any) =>
+          match.info?.participants?.some(
+            (p: any) =>
+              p.puuid === summoner.puuid &&
+              String(p.championName).toLowerCase() === championName.toLowerCase()
+          )
+      );
+    }
 
     // Processa dados de ranqueadas
     const soloQData = rankedData.find((queue: any) => queue.queueType === "RANKED_SOLO_5x5");
@@ -56,17 +124,17 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
     // Garante que os pontos de liga sejam números válidos
     const lpSoloq = soloQData && typeof soloQData.leaguePoints === 'number' ? soloQData.leaguePoints : null;
     const lpFlex = flexData && typeof flexData.leaguePoints === 'number' ? flexData.leaguePoints : null;
-    const regionTranslated = region.slice(0, 2).toUpperCase();
-    
+    const regionTranslated = getRegionDisplay(region);
+
     return (
-      <main className="container mx-auto min-h-screen space-y-8 py-8">
+      <main className="container min-h-screen py-8 mx-auto space-y-8">
         <SummonerSearch defaultRegion={region} />
         <div className="relative">
           <div className="absolute inset-0 -z-10 bg-gradient-to-b from-background/80 to-background" />
           <SummonerProfile
             name={summoner.name}
             gameName={decodedGameName}
-            tagLine={decodedTagLine} // Use o tagLine decodificado
+            tagLine={decodedTagLine}
             level={summoner.summonerLevel}
             profileIconId={summoner.profileIconId}
             region={regionTranslated}
@@ -87,11 +155,11 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
           />
         </div>
 
-        <div className="rounded-lg border bg-card p-6">
+        <div className="p-6 border rounded-lg bg-card">
           <div className="mb-6">
             <h2 className="text-2xl font-semibold">Match History</h2>
             <p className="text-sm text-muted-foreground">
-              Recent games played by {decodedGameName}
+              Recent games played by {decodedGameName} on {queueType} with {championName}
             </p>
             <MatchFilter />
           </div>
@@ -101,17 +169,18 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
                 {Array.from({ length: 5 }).map((_, i) => (
                   <div
                     key={i}
-                    className="h-32 animate-pulse rounded-lg bg-muted/50"
+                    className="h-32 rounded-lg animate-pulse bg-muted/50"
                   />
                 ))}
               </div>
             }
           >
-            <MatchHistory
-              matches={(matches as any[])}
-              puuid={puuid}
-              queueTypes={(queueTypes as any)}
+            <MatchHistoryFiltred
+              matchesByQueue={filteredMatches as any[]}
+              puuid={summoner.puuid}
+              queueTypes={queueTypes as any}
               region={region}
+              queueId={queueId}
             />
           </Suspense>
         </div>
@@ -120,8 +189,8 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
   } catch (error) {
     console.error('Erro ao carregar dados:', error);
     return (
-      <main className="container mx-auto min-h-screen py-8">
-        <div className="rounded-lg border border-destructive bg-destructive/10 p-6 text-destructive">
+      <main className="container min-h-screen py-8 mx-auto">
+        <div className="p-6 border rounded-lg border-destructive bg-destructive/10 text-destructive">
           <h2 className="text-lg font-semibold">Erro ao carregar dados</h2>
           <p>Não foi possível carregar os dados do invocador. Por favor, tente novamente mais tarde.</p>
         </div>

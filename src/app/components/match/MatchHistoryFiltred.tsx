@@ -92,13 +92,18 @@ export function MatchHistoryFiltred({
   isLoading = false,
   region,
   queueId,
-}: MatchHistoryProps & { region: string; queueId: number }) {
+}: MatchHistoryProps & { region: string; queueId: number | string }) {
   const [leagueVersion, setLeagueVersion] = useState<string>("15.6.1");
   const [isLoadingVersion, setIsLoadingVersion] = useState<boolean>(true);
 
+  // Filtra as partidas só se queueId não for "all"
+  const filteredMatches = queueId === "all"
+    ? matchesByQueue
+    : matchesByQueue.filter(m => m.info.queueId === Number(queueId));
+
   // Estados para paginação e carregamento incremental
-  const [matches, setMatches] = useState<Match[]>(matchesByQueue || []);
-  const [start, setStart] = useState(matchesByQueue?.length || 0);
+  const [matches, setMatches] = useState<Match[]>(filteredMatches || []);
+  const [start, setStart] = useState(filteredMatches?.length || 0);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
 
@@ -143,31 +148,99 @@ export function MatchHistoryFiltred({
 
   // Atualiza matches ao trocar o filtro
   useEffect(() => {
-    setMatches(matchesByQueue || []);
-    setStart(matchesByQueue?.length || 0);
+    setMatches(filteredMatches || []);
+    setStart(filteredMatches?.length || 0);
     setHasMore(true);
-  }, [matchesByQueue]);
+  }, [filteredMatches]);
 
   // Função para carregar mais partidas filtradas
   const fetchMoreMatches = async () => {
-    if (!region || queueId === undefined || queueId === null) {
+    setLoadingMore(true);
+
+    let collectedMatches: Match[] = [];
+    let localStart = start;
+    let keepFetching = true;
+    let championName = "";
+
+    if (typeof window !== "undefined") {
+      const urlParts = window.location.pathname.split("/");
+      championName = urlParts[urlParts.length - 1];
+    }
+
+    // Se não está filtrando por campeão, busca normalmente
+    if (!championName || championName === "all") {
+      const params = new URLSearchParams({
+        puuid,
+        region,
+        start: localStart.toString(),
+        count: "10",
+      });
+
+      if (queueId !== "all") {
+        params.append("queueId", String(queueId));
+      }
+
+      const endpoint =
+        queueId === "all"
+          ? `/api/summoner/matches?${params.toString()}`
+          : `/api/summoner/matchesByQueue?${params.toString()}`;
+
+      const res = await fetch(endpoint);
+      const data = await res.json();
+      const newMatches = data.data || [];
+
+      setMatches(prev => [...prev, ...newMatches]);
+      setStart(prev => prev + 10);
+      setHasMore(newMatches.length === 10);
       setLoadingMore(false);
       return;
     }
-    setLoadingMore(true);
-    const params = new URLSearchParams({
-      puuid,
-      region,
-      queueId: String(queueId),
-      start: start.toString(),
-      count: "10",
-    });
-    const res = await fetch(`/api/summoner/matchesByQueue?${params}`);
-    const data = await res.json();
-    const newMatches = data.data || [];
-    setMatches(prev => [...prev, ...newMatches]);
-    setStart(prev => prev + 10);
-    setHasMore(newMatches.length === 10);
+
+    // Se está filtrando por campeão, busca até preencher 10 partidas do campeão
+    while (collectedMatches.length < 10 && keepFetching) {
+      const params = new URLSearchParams({
+        puuid,
+        region,
+        start: localStart.toString(),
+        count: "10",
+      });
+
+      if (queueId !== "all") {
+        params.append("queueId", String(queueId));
+      }
+
+      const endpoint =
+        queueId === "all"
+          ? `/api/summoner/matches?${params.toString()}`
+          : `/api/summoner/matchesByQueue?${params.toString()}`;
+
+      const res = await fetch(endpoint);
+      const data = await res.json();
+      let newMatches: Match[] = data.data || [];
+
+      // Filtra pelo campeão no client
+      newMatches = newMatches.filter(
+        (match) =>
+          match.info?.participants?.some(
+            (p) =>
+              p.puuid === puuid &&
+              String(p.championName).toLowerCase() === championName.toLowerCase()
+          )
+      );
+
+      collectedMatches = [...collectedMatches, ...newMatches];
+
+      // Se retornou menos de 10 do endpoint, acabou as partidas
+      if ((data.data?.length ?? 0) < 10) {
+        keepFetching = false;
+      } else {
+        localStart += 10;
+      }
+    }
+
+    setMatches(prev => [...prev, ...collectedMatches]);
+    setStart(localStart);
+    setHasMore(collectedMatches.length === 10);
     setLoadingMore(false);
   };
 
@@ -228,7 +301,7 @@ export function MatchHistoryFiltred({
         {Array.from({ length: 5 }).map((_, i) => (
           <div
             key={i}
-            className="h-32 animate-pulse rounded-lg bg-muted/50"
+            className="h-32 rounded-lg animate-pulse bg-muted/50"
           />
         ))}
       </div>
@@ -336,13 +409,13 @@ export function MatchHistoryFiltred({
       <div className="flex justify-center">
         {hasMore && (
           loadingMore ? (
-              <div className="h-10 flex px-4 py-2 rounded-md text-sm items-center">
-                <span className="animate-pulse px-4 font-medium">Carregando...</span>
+              <div className="flex items-center h-10 px-4 py-2 text-sm rounded-md">
+                <span className="px-4 font-medium animate-pulse">Carregando...</span>
             </div>
           ) : (
             <button
               type="button"
-              className="h-10 px-4 py-2 rounded-md text-sm bg-accent border border-input hover:bg-accent/80 font-medium"
+              className="h-10 px-4 py-2 text-sm font-medium border rounded-md bg-accent border-input hover:bg-accent/80"
               onClick={fetchMoreMatches}
               disabled={loadingMore}
             >

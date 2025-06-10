@@ -268,7 +268,7 @@ class ApiService {
     region: string,
     platform: string,
     start: number = 0,
-    count: number = 10
+    count: number = 20
   ): Promise<Match[]> {
     try {
       const response = await this.client.get<Match[]>('/api/summoner/matchHistory', {

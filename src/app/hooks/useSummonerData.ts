@@ -187,7 +187,7 @@ export function useSummonerData() {
   /**
    * Função para carregar o histórico de partidas
    */
-  const loadMatchHistory = useCallback(async (puuid: string, platform: string, start = 0, count = 10) => {
+  const loadMatchHistory = useCallback(async (puuid: string, platform: string, start = 0, count = 20) => {
     try {
       // Busca IDs de partidas
       const matchIds = await apiService.getMatchIds(puuid, platform, start, count);

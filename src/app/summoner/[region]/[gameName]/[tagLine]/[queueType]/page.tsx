@@ -1,5 +1,4 @@
 import { Suspense, useEffect } from "react";
-import { MatchHistory } from "@/app/components/match/MatchHistory";
 import { SummonerProfile } from "@/app/components/summoner/SummonerProfile";
 import { SummonerSearch } from "@/app/components/summoner/SummonerSearch";
 import { getChampionMasteries, getMatchHistory, getQueueTypes, getSummonerByRiotId, getMatchHistoryByQueue } from "@/app/actions/summoner";
@@ -22,9 +21,34 @@ interface SummonerPageProps {
   };
 }
 
+function getRegionDisplay(region: string) {
+  return region
+    .replace(/^br1$/i, 'BR')
+    .replace(/^la1$/i, 'LAN')
+    .replace(/^la2$/i, 'LAS')
+    .replace(/^na1$/i, 'NA')
+    .replace(/^euw1$/i, 'EUW')
+    .replace(/^eun1$/i, 'EUNE')
+    .replace(/^kr$/i, 'KR')
+    .replace(/^jp1$/i, 'JP')
+    .replace(/^ru$/i, 'RU')
+    .replace(/^tr1$/i, 'TR')
+    .replace(/^oc1$/i, 'OCE')
+    .replace(/^tw2$/i, 'TW')
+    .replace(/^vn2$/i, 'VN')
+    .replace(/^sg2$/i, 'SG')
+    .replace(/^me1$/i, 'ME');
+}
+
 export default async function SummonerPage({ params }: SummonerPageProps) {
   const { region, gameName, tagLine, queueType } = params;
-  const queueId = queueType.replace('soloDuo', '420').replace('flex', '440').replace('aram', '450').replace('normal', '400').replace('quickplay', '490').replace('arena', '1700');
+  const queueId = queueType
+    .replace('soloDuo', '420')
+    .replace('flex', '440')
+    .replace('aram', '450')
+    .replace('normal', '400')
+    .replace('quickplay', '490')
+    .replace('arena', '1700');
 
   try {
     // Buscar dados do invocador
@@ -38,7 +62,9 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
     const [queueTypes, masteries, matchesByQueue, rankedData] = await Promise.all([
       getQueueTypes(),
       getChampionMasteries(region, summoner.puuid),
-      getMatchHistoryByQueue(region, summoner.puuid, queueId),
+      queueId === "all"
+        ? getMatchHistory(region, summoner.puuid) // Busca todas as partidas
+        : getMatchHistoryByQueue(region, summoner.puuid, queueId), // Busca filtrado por queue
       fetch(`https://${region}.api.riotgames.com/lol/league/v4/entries/by-summoner/${summoner.id}`, {
         headers: {
           'X-Riot-Token': process.env.RIOT_API_KEY as string
@@ -58,10 +84,10 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
     // Garante que os pontos de liga sejam números válidos
     const lpSoloq = soloQData && typeof soloQData.leaguePoints === 'number' ? soloQData.leaguePoints : null;
     const lpFlex = flexData && typeof flexData.leaguePoints === 'number' ? flexData.leaguePoints : null;
-    const regionTranslated = region.slice(0, 2).toUpperCase();
+    const regionTranslated = getRegionDisplay(region);
     
     return (
-      <main className="container mx-auto min-h-screen space-y-8 py-8">
+      <main className="container min-h-screen py-8 mx-auto space-y-8">
         <SummonerSearch defaultRegion={region} />
         <div className="relative">
           <div className="absolute inset-0 -z-10 bg-gradient-to-b from-background/80 to-background" />
@@ -89,11 +115,11 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
           />
         </div>
 
-        <div className="rounded-lg border bg-card p-6">
+        <div className="p-6 border rounded-lg bg-card">
           <div className="mb-6">
             <h2 className="text-2xl font-semibold">Match History</h2>
             <p className="text-sm text-muted-foreground">
-              Recent games played by {decodedGameName} on {queueType}
+              Recent games played by {decodedGameName} on {queueType} with all champions
             </p>
             <MatchFilter />
           </div>
@@ -103,7 +129,7 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
                 {Array.from({ length: 5 }).map((_, i) => (
                   <div
                     key={i}
-                    className="h-32 animate-pulse rounded-lg bg-muted/50"
+                    className="h-32 rounded-lg animate-pulse bg-muted/50"
                   />
                 ))}
               </div>
@@ -114,7 +140,7 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
               puuid={summoner.puuid}
               queueTypes={(queueTypes as any)}
               region={region}
-              queueId={Number(queueId)}
+              queueId={queueId} // <-- string, pode ser "all" ou um número em string
             />
           </Suspense>
         </div>
@@ -123,8 +149,8 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
   } catch (error) {
     console.error('Erro ao carregar dados:', error);
     return (
-      <main className="container mx-auto min-h-screen py-8">
-        <div className="rounded-lg border border-destructive bg-destructive/10 p-6 text-destructive">
+      <main className="container min-h-screen py-8 mx-auto">
+        <div className="p-6 border rounded-lg border-destructive bg-destructive/10 text-destructive">
           <h2 className="text-lg font-semibold">Erro ao carregar dados</h2>
           <p>Não foi possível carregar os dados do invocador. Por favor, tente novamente mais tarde.</p>
         </div>
