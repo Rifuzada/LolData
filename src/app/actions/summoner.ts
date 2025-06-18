@@ -61,10 +61,11 @@ export async function getSummonerByRiotId(region: string, gameName: string, tagL
       url: `https://${region}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`,
       headers: { "X-Riot-Token": API_KEY }
     });
+    // console.log(summonerData)
 
     return summonerData;
   } catch (error) {
-    console.error('Erro ao buscar dados do invocador:', error);
+    // console.error('Erro ao buscar dados do invocador:', error);
     throw new Error('Falha ao buscar dados do invocador');
   }
 }
@@ -77,7 +78,7 @@ export async function getChampionMasteries(region: string, puuid: string) {
       headers: { "X-Riot-Token": API_KEY }
     });
   } catch (error) {
-    console.error('Erro ao buscar maestrias:', error);
+    // console.error('Erro ao buscar maestrias:', error);
     throw new Error('Falha ao buscar maestrias');
   }
 }
@@ -108,7 +109,7 @@ export async function getMatchHistory(region: string, puuid: string) {
     );
     return matches;
   } catch (error) {
-    console.error('Erro ao buscar histórico de partidas:', error);
+    // console.error('Erro ao buscar histórico de partidas:', error);
     throw new Error('Falha ao buscar histórico de partidas');
   }
 }
@@ -139,7 +140,7 @@ export async function getMatchHistoryByQueue(region: string, puuid: string, queu
     );
     return matches;
   } catch (error) {
-    console.error('Erro ao buscar histórico de partidas:', error);
+    // console.error('Erro ao buscar histórico de partidas:', error);
     throw new Error('Falha ao buscar histórico de partidas');
   }
 }
@@ -151,7 +152,23 @@ export async function getQueueTypes() {
       url: 'https://static.developer.riotgames.com/docs/lol/queues.json'
     });
   } catch (error) {
-    console.error('Erro ao buscar tipos de fila:', error);
+    // console.error('Erro ao buscar tipos de fila:', error);
     throw new Error('Falha ao buscar tipos de fila');
   }
+}
+
+export async function getRankedBySummonerId(region: string, summonerId: string) {
+  try {
+    const res = await safeAxios({
+      method: 'get',
+      url: `https://${region}.api.riotgames.com/lol/league/v4/entries/by-summoner/${summonerId}`,
+      headers: { "X-Riot-Token": API_KEY }
+    });
+    // console.log('ranked data', res);
+    return res;
+  } catch (error) {
+    // console.error('Erro ao buscar dados de ranked:', error);
+    throw new Error('Falha ao buscar dados de ranked');
+  }
+  
 }

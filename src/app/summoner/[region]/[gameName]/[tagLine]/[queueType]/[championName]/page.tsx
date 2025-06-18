@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { SummonerProfile } from "@/app/components/summoner/SummonerProfile";
 import { SummonerSearch } from "@/app/components/summoner/SummonerSearch";
-import { getChampionMasteries, getQueueTypes, getSummonerByRiotId } from "@/app/actions/summoner";
+import { getChampionMasteries, getQueueTypes, getSummonerByRiotId, getRankedBySummonerId } from "@/app/actions/summoner";
 import { MatchFilter } from "@/app/components/match/MatchFilter";
 import { MatchHistoryFiltred } from "@/app/components/match/MatchHistoryFiltred";
 
@@ -77,11 +77,7 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
     const [queueTypes, masteries, rankedData] = await Promise.all([
       getQueueTypes(),
       getChampionMasteries(region, summoner.puuid),
-      fetch(`https://${region}.api.riotgames.com/lol/league/v4/entries/by-summoner/${summoner.id}`, {
-        headers: {
-          'X-Riot-Token': process.env.RIOT_API_KEY as string
-        }
-      }).then(res => res.json())
+      getRankedBySummonerId(region, summoner.id)
     ]);
 
     // Defina a base da URL do seu site

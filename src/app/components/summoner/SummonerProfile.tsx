@@ -63,12 +63,12 @@ export function SummonerProfile({
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-6 p-6">
-        <div className="relative h-24 w-24">
+        <div className="relative w-24 h-24">
           <Image
             src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/${profileIconId}.jpg`}
             alt={`${displayName}'s profile icon`}
             fill
-            className="rounded-full border-4 border-accent object-cover"
+            className="object-cover border-4 rounded-full border-accent"
           />
           <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-accent px-2 py-0.5 text-xs font-medium">
             {level}
@@ -76,7 +76,7 @@ export function SummonerProfile({
         </div>
 
         <div className="flex-1">
-          <h1 className="text-3xl font-bold mb-2 text-primary">
+          <h1 className="mb-2 text-3xl font-bold text-primary">
             {displayName}
           </h1>
           <div className="flex flex-col gap-1">
@@ -84,7 +84,7 @@ export function SummonerProfile({
               Region: {region}
             </p>
             {eloSoloq && (
-              <p className="text-sm flex items-center gap-1">
+              <p className="flex items-center gap-1 text-sm">
                 <span className="font-medium">Solo/Duo:</span>
                 {getTierIconUrl(eloSoloq) && (
                   <Image
@@ -99,7 +99,7 @@ export function SummonerProfile({
               </p>
             )}
             {eloFlex && (
-              <p className="text-sm flex items-center gap-1">
+              <p className="flex items-center gap-1 text-sm">
                 <span className="font-medium">Flex:</span>
                 {getTierIconUrl(eloFlex) && (
                   <Image
@@ -121,18 +121,18 @@ export function SummonerProfile({
         {masteries.map((champion) => (
           <Card key={champion.championId} className="overflow-hidden">
             <div className="flex flex-col items-center gap-2 p-4">
-              <div className="relative h-16 w-16">
+              <div className="relative w-16 h-16">
               <Image
                   src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${champion.championId}.png`}
                   alt={champion.championName}
                   fill
-                  className="rounded-full border-4 border-accent/50 object-cover object-top"
+                  className="object-cover object-top border-4 rounded-full border-accent/50"
                   style={{
                     clipPath: "inset(10% 10% round 50%)", // Adjust this if needed
                   }}
                 />
 
-                <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border border-accent/50 bg-background text-xs font-medium">
+                <div className="absolute flex items-center justify-center w-6 h-6 text-xs font-medium border rounded-full -bottom-1 -right-1 border-accent/50 bg-background">
                   {champion.level}
                 </div>
               </div>

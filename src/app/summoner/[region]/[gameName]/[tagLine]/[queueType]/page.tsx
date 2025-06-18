@@ -1,7 +1,7 @@
 import { Suspense, useEffect } from "react";
 import { SummonerProfile } from "@/app/components/summoner/SummonerProfile";
 import { SummonerSearch } from "@/app/components/summoner/SummonerSearch";
-import { getChampionMasteries, getMatchHistory, getQueueTypes, getSummonerByRiotId, getMatchHistoryByQueue } from "@/app/actions/summoner";
+import { getChampionMasteries, getMatchHistory, getQueueTypes, getSummonerByRiotId, getMatchHistoryByQueue, getRankedBySummonerId } from "@/app/actions/summoner";
 import { MatchFilter } from "@/app/components/match/MatchFilter";
 import { MatchHistoryFiltred } from "@/app/components/match/MatchHistoryFiltred";
 
@@ -63,13 +63,9 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
       getQueueTypes(),
       getChampionMasteries(region, summoner.puuid),
       queueId === "all"
-        ? getMatchHistory(region, summoner.puuid) // Busca todas as partidas
-        : getMatchHistoryByQueue(region, summoner.puuid, queueId), // Busca filtrado por queue
-      fetch(`https://${region}.api.riotgames.com/lol/league/v4/entries/by-summoner/${summoner.id}`, {
-        headers: {
-          'X-Riot-Token': process.env.RIOT_API_KEY as string
-        }
-      }).then(res => res.json())
+        ? getMatchHistory(region, summoner.puuid)
+        : getMatchHistoryByQueue(region, summoner.puuid, queueId),
+      getRankedBySummonerId(region, summoner.id)
     ]);
 
     // Processa dados de ranqueadas

@@ -1,48 +1,70 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getRegionalApiUrl } from '@/app/utils/helpers';
+import { OptimisticCache } from '@/app/utils/optimisticCacheApi';
 
 const rankedSchema = z.object({
   summonerId: z.string().min(10),
   region: z.string().min(2).max(4)
 });
 
+export const rankedCache = new OptimisticCache<any>(60_000);
+
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const summonerId = searchParams.get('summonerId');
-    const region = searchParams.get('region');
+    // Padroniza a chave do cache para ser apenas path + search (sem domínio)
+    const urlObj = new URL(request.url);
+    const refresh = urlObj.searchParams.get('refresh') === '1';
+    const cacheKey = urlObj.pathname + urlObj.search;
 
-    const validatedData = rankedSchema.parse({ summonerId, region });
-    const { RIOT_API_KEY } = process.env;
+    const cached = await rankedCache.getOrFetch(
+      cacheKey,
+      async () => {
+        const { searchParams } = urlObj;
+        const summonerId = searchParams.get('summonerId');
+        const region = searchParams.get('region');
 
-    if (!RIOT_API_KEY) {
-      return NextResponse.json(
-        { error: 'API key not configured' },
-        { status: 500 }
-      );
-    }
+        const validatedData = rankedSchema.parse({ summonerId, region });
+        const { RIOT_API_KEY } = process.env;
 
-    const regionalUrl = getRegionalApiUrl(validatedData.region);
-    const response = await fetch(
-      `${regionalUrl}/lol/league/v4/entries/by-summoner/${validatedData.summonerId}`,
-      {
-        headers: {
-          'X-Riot-Token': RIOT_API_KEY
+        if (!RIOT_API_KEY) {
+          throw new Error('API key not configured');
         }
-      }
+
+        const regionalUrl = getRegionalApiUrl(validatedData.region);
+        const response = await fetch(
+          `${regionalUrl}/lol/league/v4/entries/by-summoner/${validatedData.summonerId}`,
+          {
+            headers: {
+              'X-Riot-Token': RIOT_API_KEY
+            }
+          }
+        );
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.status.message || 'Failed to fetch ranked data');
+        }
+
+        const data = await response.json();
+        // console.log('[API] /api/summoner/ranked request:', {
+        //   method: request.method,
+        //   url: request.url,
+        //   pathname: urlObj.pathname,
+        //   search: urlObj.search,
+        //   searchParams: Object.fromEntries(urlObj.searchParams.entries())
+        // });
+        // console.log("[API] Ranked Data for SummonerId:", validatedData.summonerId, JSON.stringify(data));
+        // Força o log a aparecer imediatamente
+        // if (typeof process !== 'undefined' && process.stdout && process.stdout.write) {
+        //   process.stdout.write('');
+        // }
+        return data;
+      },
+      { forceRefresh: refresh }
     );
 
-    if (!response.ok) {
-      const error = await response.json();
-      return NextResponse.json(
-        { error: error.status.message || 'Failed to fetch ranked data' },
-        { status: response.status }
-      );
-    }
-
-    const data = await response.json();
-    return NextResponse.json({ data });
+    return NextResponse.json({ data: cached });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
