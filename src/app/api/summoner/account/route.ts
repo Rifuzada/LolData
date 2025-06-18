@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getRegionalApiUrl } from '@/app/utils/helpers';
 import { OptimisticCache } from '@/app/utils/optimisticCacheApi';
-import { rankedCache } from '../ranked/route';
 
 const accountSchema = z.object({
   summonerName: z.string().min(3).max(16),
@@ -45,11 +44,6 @@ export async function GET(request: NextRequest) {
       return data;
     });
 
-    // Após buscar e retornar os dados da conta, limpe o cache da ranked desse summoner
-    if (cached && cached.id && cached.region) {
-      const rankedCacheKey = `/api/summoner/ranked?summonerId=${cached.id}&region=${cached.region}`;
-      rankedCache.clear(rankedCacheKey);
-    }
     return NextResponse.json({ data: cached });
   } catch (error) {
     if (error instanceof z.ZodError) {
