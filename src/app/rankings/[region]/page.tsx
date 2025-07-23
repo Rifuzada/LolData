@@ -278,8 +278,7 @@ export default function RankingsPage({ params }: { params: { region: string } })
                   <th className="p-2 text-left">Rank</th>
                   <th className="p-2 text-left">Summoner</th>
                   <th className="p-2 text-left">LP</th>
-                  <th className="p-2 text-left">Wins</th>
-                  <th className="p-2 text-left">Losses</th>
+                  <th className="p-2 text-left">Wins/Losses</th>
                   <th className="p-2 text-left">Win Rate</th>
                 </tr>
               </thead>
@@ -317,8 +316,7 @@ export default function RankingsPage({ params }: { params: { region: string } })
                         </div>
                       </td>
                       <td className="p-2">{entry.leaguePoints} LP</td>
-                      <td className="p-2">{entry.wins}</td>
-                      <td className="p-2">{entry.losses}</td>
+                      <td className="p-2">{entry.wins}/{entry.losses}</td>
                       <td className="p-2">{winRate}%</td>
                     </tr>
                   );
