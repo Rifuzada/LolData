@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { SummonerProfile } from "@/app/components/summoner/SummonerProfile";
 import { SummonerSearch } from "@/app/components/summoner/SummonerSearch";
-import { getChampionMasteries, getQueueTypes, getSummonerByRiotId, getRankedBySummonerId } from "@/app/actions/summoner";
+import { getChampionMasteries, getQueueTypes, getSummonerByRiotId, getRankedByPuuid } from "@/app/actions/summoner";
 import { MatchFilter } from "@/app/components/match/MatchFilter";
 import { MatchHistoryFiltred } from "@/app/components/match/MatchHistoryFiltred";
 
@@ -77,7 +77,7 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
     const [queueTypes, masteries, rankedData] = await Promise.all([
       getQueueTypes(),
       getChampionMasteries(region, summoner.puuid),
-      getRankedBySummonerId(region, summoner.id)
+      getRankedByPuuid(region, summoner.puuid)
     ]);
 
     // Defina a base da URL do seu site
