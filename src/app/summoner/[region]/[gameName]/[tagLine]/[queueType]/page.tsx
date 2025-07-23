@@ -1,7 +1,7 @@
 import { Suspense, useEffect } from "react";
 import { SummonerProfile } from "@/app/components/summoner/SummonerProfile";
 import { SummonerSearch } from "@/app/components/summoner/SummonerSearch";
-import { getChampionMasteries, getMatchHistory, getQueueTypes, getSummonerByRiotId, getMatchHistoryByQueue, getRankedBySummonerId } from "@/app/actions/summoner";
+import { getChampionMasteries, getMatchHistory, getQueueTypes, getSummonerByRiotId, getMatchHistoryByQueue, getRankedByPuuid } from "@/app/actions/summoner";
 import { MatchFilter } from "@/app/components/match/MatchFilter";
 import { MatchHistoryFiltred } from "@/app/components/match/MatchHistoryFiltred";
 
@@ -53,6 +53,16 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
   try {
     // Buscar dados do invocador
     const summoner = await getSummonerByRiotId(region, gameName, tagLine);
+    
+    if (!summoner || !summoner.puuid) {
+      throw new Error('Não foi possível encontrar o invocador');
+    }
+
+    //console.log('Summoner encontrado:', {
+      //name: summoner.name,
+      //puuid: summoner.puuid,
+      //tagLine: summoner.tagLine
+    //});
 
     // Decodificar o tagLine
     const decodedGameName = decodeURIComponent(gameName);
@@ -65,7 +75,7 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
       queueId === "all"
         ? getMatchHistory(region, summoner.puuid)
         : getMatchHistoryByQueue(region, summoner.puuid, queueId),
-      getRankedBySummonerId(region, summoner.id)
+      getRankedByPuuid(region, summoner.puuid)
     ]);
 
     // Processa dados de ranqueadas

@@ -93,6 +93,11 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
         : `${baseUrl}/api/summoner/matchesByQueue?region=${region}&puuid=${summoner.puuid}&queueId=${queueId}&count=10`,
       { cache: "no-store" }
     );
+    const contentType = matchesRes.headers.get('content-type');
+    if (!matchesRes.ok || !contentType?.includes('application/json')) {
+      const text = await matchesRes.text();
+      throw new Error(`Erro na API de partidas: ${matchesRes.status} - ${text}`);
+    }
     const matchesJson = await matchesRes.json();
     let filteredMatches = matchesJson.data || [];
 
@@ -100,11 +105,13 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
     if (championName && championName.toLowerCase() !== "all") {
       filteredMatches = filteredMatches.filter(
         (match: any) =>
-          match.info?.participants?.some(
-            (p: any) =>
-              p.puuid === summoner.puuid &&
-              String(p.championName).toLowerCase() === championName.toLowerCase()
-          )
+          match.info?.participants?.some((p: any) => {
+            if (!p.puuid || !p.championName) return false;
+            // Normaliza para evitar problemas de case/acentuação
+            const champA = String(p.championName).normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+            const champB = championName.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+            return p.puuid === summoner.puuid && champA === champB;
+          })
       );
     }
 

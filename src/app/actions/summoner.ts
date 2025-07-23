@@ -1,6 +1,7 @@
 'use server';
 
 import axios from 'axios';
+import { getRegionalApiUrl } from '../utils/helpers';
 
 const API_KEY = process.env.RIOT_API_KEY;
 const BASE_URL = "https://americas.api.riotgames.com";
@@ -9,19 +10,23 @@ const ASIA_URL = "https://asia.api.riotgames.com";
 const SEA_URL = "https://sea.api.riotgames.com";
 
 interface RiotAccount {
+  summonerLevel: any;
   puuid: string;
-  gameName: string;
+  gameName?: string;
+  name?: string;
   tagLine: string;
+  profileIconId: number;
+  revisionDate: number;
 }
 
 interface Summoner {
-  id: string;
-  accountId: string;
   puuid: string;
   name: string;
+  tagLine: string;
   profileIconId: number;
   revisionDate: number;
   summonerLevel: number;
+  
 }
 
 // Função utilitária para tratar 429 com retry
@@ -44,8 +49,55 @@ async function safeAxios<T = any>(config: any, retries = 3): Promise<T> {
   return res.data as T;
 }
 
-export async function getSummonerByRiotId(region: string, gameName: string, tagLine: string) {
+export async function getSummonerNameByPuuid(region: string, puuid: string): Promise<Summoner | null> {
+  if (!puuid) {
+    throw new Error('PUUID is required to fetch summoner data');
+  }
   try {
+    // Primeiro buscar dados do summoner usando a API regional
+    const summonerResponse = await safeAxios<RiotAccount>({
+      method: 'get',
+      url: `https://${region}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`,
+      headers: { "X-Riot-Token": API_KEY }
+    });
+
+    if (!summonerResponse) {
+      return null;
+    }
+
+    // Depois buscar dados da conta para obter o Riot ID (gameName + tagLine)
+    const accountResponse = await safeAxios<RiotAccount>({
+      method: 'get',
+      url: `${BASE_URL}/riot/account/v1/accounts/by-puuid/${puuid}`,
+      headers: { "X-Riot-Token": API_KEY }
+    });
+
+    if (!accountResponse) {
+      return null;
+    }
+
+    const name = accountResponse.gameName || summonerResponse.name;
+    if (!name) {
+      console.error('No valid name found in response:', { summonerResponse, accountResponse });
+      return null;
+    }
+
+    return {
+      puuid: summonerResponse.puuid,
+      name: name,
+      tagLine: accountResponse.tagLine || 'unknown',
+      profileIconId: summonerResponse.profileIconId,
+      revisionDate: summonerResponse.revisionDate,
+      summonerLevel: summonerResponse.summonerLevel
+    };
+  } catch (error) {
+    console.error('Error fetching summoner data:', error);
+    return null;
+  }
+}
+export async function getSummonerByRiotId(region: string, gameName: string, tagLine: string) {
+    //console.log(`Buscando invocador: região=${region}, gameName=${gameName}, tagLine=${tagLine}`);
+    
     // Primeiro, obter o PUUID da conta
     const accountData = await safeAxios<RiotAccount>({
       method: 'get',
@@ -53,21 +105,37 @@ export async function getSummonerByRiotId(region: string, gameName: string, tagL
       headers: { "X-Riot-Token": API_KEY }
     });
 
+    if (!accountData?.puuid) {
+      //console.error('PUUID não encontrado na resposta:', accountData);
+      throw new Error('PUUID não encontrado');
+    }
+
     const { puuid } = accountData;
+    //console.log('PUUID encontrado:', puuid);
 
     // Depois, obter os dados do invocador usando o PUUID
-    const summonerData = await safeAxios<Summoner>({
+    // Com o PUUID em mãos, buscamos os dados do perfil
+    const profileData = await safeAxios<RiotAccount>({
       method: 'get',
       url: `https://${region}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`,
       headers: { "X-Riot-Token": API_KEY }
     });
-    // console.log(summonerData)
+
+    //console.log('Dados brutos do perfil:', profileData);
+    
+    // Montamos o objeto com os dados que temos
+    const summonerData = {
+      puuid,
+      name: profileData.gameName,
+      tagLine: profileData.tagLine,
+      profileIconId: profileData.profileIconId,
+      summonerLevel: profileData.summonerLevel,
+      revisionDate: Date.now()
+    };
+
+    //console.log('Dados processados do invocador:', summonerData);
 
     return summonerData;
-  } catch (error) {
-    // console.error('Erro ao buscar dados do invocador:', error);
-    throw new Error('Falha ao buscar dados do invocador');
-  }
 }
 
 export async function getChampionMasteries(region: string, puuid: string) {
@@ -157,18 +225,36 @@ export async function getQueueTypes() {
   }
 }
 
-export async function getRankedBySummonerId(region: string, summonerId: string) {
-  try {
-    const res = await safeAxios({
-      method: 'get',
-      url: `https://${region}.api.riotgames.com/lol/league/v4/entries/by-summoner/${summonerId}`,
-      headers: { "X-Riot-Token": API_KEY }
-    });
-    // console.log('ranked data', res);
-    return res;
-  } catch (error) {
-    // console.error('Erro ao buscar dados de ranked:', error);
-    throw new Error('Falha ao buscar dados de ranked');
+export async function getRankedByPuuid(region: string, puuid: string) {
+  if (!puuid) {
+    //console.error('PUUID é obrigatório para buscar dados ranked');
+    throw new Error('PUUID do invocador não fornecido');
   }
+
+  //console.log(`Buscando ranked para região ${region} e PUUID ${puuid}`);
   
+  // Buscar dados de ranked direto pelo PUUID
+  const data = await safeAxios<any[]>({
+    method: 'get',
+    url: `https://${region}.api.riotgames.com/lol/league/v4/entries/by-puuid/${puuid}`,
+    headers: { 
+      "X-Riot-Token": API_KEY
+    }
+  });
+
+  //console.log('Dados ranked recebidos:', JSON.stringify(data, null, 2));
+
+  // Garante que o retorno é sempre um array
+  if (!data) {
+    //console.error('Nenhum dado ranked retornado');
+    return [];
+  }
+
+  if (!Array.isArray(data)) {
+    //console.error('Dados ranked não estão em formato de array:', typeof data, data);
+    return [];
+  }
+
+  //console.log(`Encontrados ${data.length} ranked entries`);
+  return data;
 }

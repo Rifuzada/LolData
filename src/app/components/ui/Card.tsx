@@ -16,7 +16,7 @@ export function Card({ children, className, isWin }: CardProps) {
           ? isWin
             ? "bg-emerald-950/40 hover:bg-emerald-950/50"
             : "bg-red-950/40 hover:bg-red-950/50"
-          : "bg-zinc-900/60 hover:bg-zinc-900/70",
+          : "bg-zinc-900/60",
         "hover:shadow-lg",
         "border border-zinc-800/50",
         className

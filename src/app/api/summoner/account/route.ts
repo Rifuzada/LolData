@@ -4,8 +4,9 @@ import { getRegionalApiUrl } from '@/app/utils/helpers';
 import { OptimisticCache } from '@/app/utils/optimisticCacheApi';
 
 const accountSchema = z.object({
-  summonerName: z.string().min(3).max(16),
-  region: z.string().min(2).max(4)
+  summonerName: z.string().min(3).max(16).optional(),
+  region: z.string().min(2).max(4),
+  puuid: z.string().optional(),
 });
 
 const accountCache = new OptimisticCache<any>(60_000);
@@ -18,7 +19,8 @@ export async function GET(request: NextRequest) {
       const summonerName = searchParams.get('summonerName');
       const region = searchParams.get('region');
 
-      const validatedData = accountSchema.parse({ summonerName, region });
+      const puuid = searchParams.get('puuid');
+      const validatedData = accountSchema.parse({ summonerName, region, puuid });
       const { RIOT_API_KEY } = process.env;
 
       if (!RIOT_API_KEY) {
@@ -26,8 +28,19 @@ export async function GET(request: NextRequest) {
       }
 
       const regionalUrl = getRegionalApiUrl(validatedData.region);
+      let endpoint = '';
+      
+      // Determina qual endpoint usar baseado nos parâmetros fornecidos
+      if (validatedData.puuid) {
+        endpoint = `/lol/summoner/v4/summoners/by-puuid/${validatedData.puuid}`;
+      } else if (validatedData.summonerName) {
+        endpoint = `/lol/summoner/v4/summoners/by-name/${encodeURIComponent(validatedData.summonerName)}`;
+      } else {
+        throw new Error('Either summonerName or puuid must be provided');
+      }
+
       const response = await fetch(
-        `${regionalUrl}/lol/summoner/v4/summoners/by-name/${encodeURIComponent(validatedData.summonerName)}`,
+        `${regionalUrl}${endpoint}`,
         {
           headers: {
             'X-Riot-Token': RIOT_API_KEY

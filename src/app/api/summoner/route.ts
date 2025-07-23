@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSummonerByRiotId, getChampionMasteries, getMatchHistory, getQueueTypes, getMatchHistoryByQueue, getRankedBySummonerId } from '@/app/actions/summoner';
+import { getSummonerByRiotId, getChampionMasteries, getMatchHistory, getQueueTypes, getMatchHistoryByQueue } from '@/app/actions/summoner';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -9,7 +9,6 @@ export async function GET(request: NextRequest) {
   const tagLine = searchParams.get('tagLine');
   const puuid = searchParams.get('puuid');
   const queueId = searchParams.get('queueId');
-  const summonerId = searchParams.get('summonerId');
 
   if (!action) {
     return NextResponse.json({ error: 'Missing action parameter' }, { status: 400 });
@@ -60,16 +59,6 @@ export async function GET(request: NextRequest) {
       case 'queueTypes':
         const queueTypes = await getQueueTypes();
         return NextResponse.json(queueTypes);
-
-      case 'ranked':
-        if (!region || !summonerId) {
-          return NextResponse.json(
-            { error: 'Missing required parameters' },
-            { status: 400 }
-          );
-        }
-        const ranked = await getRankedBySummonerId(region, summonerId);
-        return NextResponse.json(ranked);
 
       default:
         return NextResponse.json(
