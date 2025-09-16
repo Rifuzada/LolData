@@ -36,7 +36,7 @@ export function SummonerSearch({ defaultRegion = 'br1' }: SummonerSearchProps) {
           </svg>
           Back
         </a>
-        <a href="/rankings" className="inline-flex px-3 py-2 text-sm transition-colors border rounded-md bg-background border-input hover:bg-accent/50">
+        <a href={`/rankings/soloDuo/${region.toLowerCase()}/1`} className="inline-flex px-3 py-2 text-sm transition-colors border rounded-md bg-background border-input hover:bg-accent/50">
           Rankings
         </a>
       </div>
