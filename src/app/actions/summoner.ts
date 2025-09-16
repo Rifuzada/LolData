@@ -26,7 +26,6 @@ interface Summoner {
   profileIconId: number;
   revisionDate: number;
   summonerLevel: number;
-  
 }
 
 // Função utilitária para tratar 429 com retry
@@ -44,47 +43,34 @@ async function safeAxios<T = any>(config: any, retries = 3): Promise<T> {
       throw error;
     }
   }
-  // Última tentativa, se ainda falhar, lança o erro
   const res = await axios(config);
   return res.data as T;
 }
 
 export async function getSummonerNameByPuuid(region: string, puuid: string): Promise<Summoner | null> {
-  if (!puuid) {
-    throw new Error('PUUID is required to fetch summoner data');
-  }
+  if (!puuid) throw new Error('PUUID is required to fetch summoner data');
   try {
-    // Primeiro buscar dados do summoner usando a API regional
     const summonerResponse = await safeAxios<RiotAccount>({
       method: 'get',
       url: `https://${region}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`,
       headers: { "X-Riot-Token": API_KEY }
     });
 
-    if (!summonerResponse) {
-      return null;
-    }
+    if (!summonerResponse) return null;
 
-    // Depois buscar dados da conta para obter o Riot ID (gameName + tagLine)
     const accountResponse = await safeAxios<RiotAccount>({
       method: 'get',
       url: `${BASE_URL}/riot/account/v1/accounts/by-puuid/${puuid}`,
       headers: { "X-Riot-Token": API_KEY }
     });
 
-    if (!accountResponse) {
-      return null;
-    }
+    if (!accountResponse) return null;
 
-    const name = accountResponse.gameName || summonerResponse.name;
-    if (!name) {
-      console.error('No valid name found in response:', { summonerResponse, accountResponse });
-      return null;
-    }
+    const name = accountResponse.gameName || summonerResponse.name || 'unknown';
 
     return {
       puuid: summonerResponse.puuid,
-      name: name,
+      name,
       tagLine: accountResponse.tagLine || 'unknown',
       profileIconId: summonerResponse.profileIconId,
       revisionDate: summonerResponse.revisionDate,
@@ -95,47 +81,30 @@ export async function getSummonerNameByPuuid(region: string, puuid: string): Pro
     return null;
   }
 }
+
 export async function getSummonerByRiotId(region: string, gameName: string, tagLine: string) {
-    //console.log(`Buscando invocador: região=${region}, gameName=${gameName}, tagLine=${tagLine}`);
-    
-    // Primeiro, obter o PUUID da conta
-    const accountData = await safeAxios<RiotAccount>({
-      method: 'get',
-      url: `${BASE_URL}/riot/account/v1/accounts/by-riot-id/${gameName}/${tagLine}`,
-      headers: { "X-Riot-Token": API_KEY }
-    });
+  const accountData = await safeAxios<RiotAccount>({
+    method: 'get',
+    url: `${BASE_URL}/riot/account/v1/accounts/by-riot-id/${gameName}/${tagLine}`,
+    headers: { "X-Riot-Token": API_KEY }
+  });
 
-    if (!accountData?.puuid) {
-      //console.error('PUUID não encontrado na resposta:', accountData);
-      throw new Error('PUUID não encontrado');
-    }
+  if (!accountData?.puuid) throw new Error('PUUID não encontrado');
 
-    const { puuid } = accountData;
-    //console.log('PUUID encontrado:', puuid);
+  const profileData = await safeAxios<RiotAccount>({
+    method: 'get',
+    url: `https://${region}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${accountData.puuid}`,
+    headers: { "X-Riot-Token": API_KEY }
+  });
 
-    // Depois, obter os dados do invocador usando o PUUID
-    // Com o PUUID em mãos, buscamos os dados do perfil
-    const profileData = await safeAxios<RiotAccount>({
-      method: 'get',
-      url: `https://${region}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`,
-      headers: { "X-Riot-Token": API_KEY }
-    });
-
-    //console.log('Dados brutos do perfil:', profileData);
-    
-    // Montamos o objeto com os dados que temos
-    const summonerData = {
-      puuid,
-      name: profileData.gameName,
-      tagLine: profileData.tagLine,
-      profileIconId: profileData.profileIconId,
-      summonerLevel: profileData.summonerLevel,
-      revisionDate: Date.now()
-    };
-
-    //console.log('Dados processados do invocador:', summonerData);
-
-    return summonerData;
+  return {
+    puuid: accountData.puuid,
+    name: profileData.name || profileData.gameName,
+    tagLine: accountData.tagLine,
+    profileIconId: profileData.profileIconId,
+    summonerLevel: profileData.summonerLevel,
+    revisionDate: Date.now()
+  };
 }
 
 export async function getChampionMasteries(region: string, puuid: string) {
@@ -145,116 +114,72 @@ export async function getChampionMasteries(region: string, puuid: string) {
       url: `https://${region}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/${puuid}`,
       headers: { "X-Riot-Token": API_KEY }
     });
-  } catch (error) {
-    // console.error('Erro ao buscar maestrias:', error);
+  } catch {
     throw new Error('Falha ao buscar maestrias');
   }
 }
 
 export async function getMatchHistory(region: string, puuid: string) {
   try {
-    let matchIds: string[] = [];
     let apiUrl = BASE_URL;
-    if (region === 'euw1' || region === 'eun1' || region === 'ru' || region === 'tr1' || region === 'me1') apiUrl = EUROPE_URL;
-    else if (region === 'kr' || region === 'jp1') apiUrl = ASIA_URL;
-    else if (region === 'oc1' || region === 'sg2' || region === 'tw2' || region === 'vn2') apiUrl = SEA_URL;
+    if (['euw1','eun1','ru','tr1','me1'].includes(region)) apiUrl = EUROPE_URL;
+    else if (['kr','jp1'].includes(region)) apiUrl = ASIA_URL;
+    else if (['oc1','sg2','tw2','vn2'].includes(region)) apiUrl = SEA_URL;
 
-    matchIds = await safeAxios<string[]>({
+    const matchIds = await safeAxios<string[]>({
       method: 'get',
       url: `${apiUrl}/lol/match/v5/matches/by-puuid/${puuid}/ids`,
       headers: { "X-Riot-Token": API_KEY },
       params: { start: 0, count: 10 }
     });
 
-    const matches = await Promise.all(
-      matchIds.map((matchId: string) =>
-        safeAxios({
-          method: 'get',
-          url: `${apiUrl}/lol/match/v5/matches/${matchId}`,
-          headers: { "X-Riot-Token": API_KEY }
-        })
-      )
-    );
-    return matches;
-  } catch (error) {
-    // console.error('Erro ao buscar histórico de partidas:', error);
+    return await Promise.all(matchIds.map(id =>
+      safeAxios({ method: 'get', url: `${apiUrl}/lol/match/v5/matches/${id}`, headers: { "X-Riot-Token": API_KEY } })
+    ));
+  } catch {
     throw new Error('Falha ao buscar histórico de partidas');
   }
 }
 
 export async function getMatchHistoryByQueue(region: string, puuid: string, queueId: string) {
   try {
-    let matchIds: string[] = [];
     let apiUrl = BASE_URL;
-    if (region === 'euw1' || region === 'eun1' || region === 'ru' || region === 'tr1' || region === 'me1') apiUrl = EUROPE_URL;
-    else if (region === 'kr' || region === 'jp1') apiUrl = ASIA_URL;
-    else if (region === 'oc1' || region === 'sg2' || region === 'tw2' || region === 'vn2') apiUrl = SEA_URL;
+    if (['euw1','eun1','ru','tr1','me1'].includes(region)) apiUrl = EUROPE_URL;
+    else if (['kr','jp1'].includes(region)) apiUrl = ASIA_URL;
+    else if (['oc1','sg2','tw2','vn2'].includes(region)) apiUrl = SEA_URL;
 
-    matchIds = await safeAxios<string[]>({
+    const matchIds = await safeAxios<string[]>({
       method: 'get',
       url: `${apiUrl}/lol/match/v5/matches/by-puuid/${puuid}/ids`,
       headers: { "X-Riot-Token": API_KEY },
       params: { start: 0, count: 10, queue: queueId }
     });
 
-    const matches = await Promise.all(
-      matchIds.map((matchId: string) =>
-        safeAxios({
-          method: 'get',
-          url: `${apiUrl}/lol/match/v5/matches/${matchId}`,
-          headers: { "X-Riot-Token": API_KEY }
-        })
-      )
-    );
-    return matches;
-  } catch (error) {
-    // console.error('Erro ao buscar histórico de partidas:', error);
+    return await Promise.all(matchIds.map(id =>
+      safeAxios({ method: 'get', url: `${apiUrl}/lol/match/v5/matches/${id}`, headers: { "X-Riot-Token": API_KEY } })
+    ));
+  } catch {
     throw new Error('Falha ao buscar histórico de partidas');
   }
 }
 
 export async function getQueueTypes() {
   try {
-    return await safeAxios({
-      method: 'get',
-      url: 'https://static.developer.riotgames.com/docs/lol/queues.json'
-    });
-  } catch (error) {
-    // console.error('Erro ao buscar tipos de fila:', error);
+    return await safeAxios({ method: 'get', url: 'https://static.developer.riotgames.com/docs/lol/queues.json' });
+  } catch {
     throw new Error('Falha ao buscar tipos de fila');
   }
 }
 
+// AQUI: substituímos getRankedBySummonerId por getRankedByPuuid
 export async function getRankedByPuuid(region: string, puuid: string) {
-  if (!puuid) {
-    //console.error('PUUID é obrigatório para buscar dados ranked');
-    throw new Error('PUUID do invocador não fornecido');
-  }
+  if (!puuid) throw new Error('PUUID do invocador não fornecido');
 
-  //console.log(`Buscando ranked para região ${region} e PUUID ${puuid}`);
-  
-  // Buscar dados de ranked direto pelo PUUID
   const data = await safeAxios<any[]>({
     method: 'get',
     url: `https://${region}.api.riotgames.com/lol/league/v4/entries/by-puuid/${puuid}`,
-    headers: { 
-      "X-Riot-Token": API_KEY
-    }
+    headers: { "X-Riot-Token": API_KEY }
   });
 
-  //console.log('Dados ranked recebidos:', JSON.stringify(data, null, 2));
-
-  // Garante que o retorno é sempre um array
-  if (!data) {
-    //console.error('Nenhum dado ranked retornado');
-    return [];
-  }
-
-  if (!Array.isArray(data)) {
-    //console.error('Dados ranked não estão em formato de array:', typeof data, data);
-    return [];
-  }
-
-  //console.log(`Encontrados ${data.length} ranked entries`);
-  return data;
+  return Array.isArray(data) ? data : [];
 }

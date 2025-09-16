@@ -1,10 +1,11 @@
 # Lista de melhoras para o futuro:
 
-* Otimizar tempo de resposta.
-* Arrumar filtro de champ.
-* Adicionar sobre tft(futuro um pouco distante).
+- Otimizar tempo de resposta.
+- Arrumar filtro de champ.
+- Maior parte dos erros é causado por demora de carregar(que o vercel bloqueia apos 40 segundos).
+- Adicionar sobre tft(futuro um pouco distante).
 
-_______________
+---
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
