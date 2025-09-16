@@ -45,7 +45,7 @@ const Home: React.FC = () => {
     <main className="flex flex-col items-center justify-center min-h-screen p-4">
       <nav className='top-bar'>Links</nav>
       <div id="title" className="mb-8 text-center">
-        <h1 className="mb-2 text-4xl font-bold">LoLData</h1>
+        <h1 className="mb-2 font-mono text-4xl">LoLData</h1>
         <p className="mb-2 text-lg text-gray-600">
           Search for League of Legends player information
         </p>
@@ -96,7 +96,14 @@ const Home: React.FC = () => {
             <option className='cursor-pointer' value="SG2">🇸🇬 - Singapore</option>
           </optgroup>
         </select>
-
+        <button>
+          <a
+            href="/rankings/soloDuo/BR1/1"
+            className="w-full p-3 transition border-2 border-gray-300 rounded input focus:outline-none focus:border-blue-500"
+          >
+            View Challenger Rankings (BR)
+          </a>
+        </button>
         <button
           className="w-full p-3 font-medium text-white transition bg-blue-600 rounded input hover:bg-blue-700 disabled:bg-blue-400"
           id="search_button"

@@ -22,7 +22,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <body className={`${fontSans.variable} font-sans antialiased`}>
+      <body className={`${fontSans.variable} font-mono antialiased`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

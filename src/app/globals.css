@@ -37,11 +37,13 @@
   }
 
   body {
-    @apply bg-background text-foreground min-h-screen overflow-x-hidden;
+    @apply min-h-screen overflow-x-hidden bg-background text-foreground;
     background-image: url('https://lolstatic-a.akamaihd.net/frontpage/apps/prod/preseason-2017/en_US/ff1afb37a0138886dad4826b7d1b75cd0d30c96a/assets/downloads/2017_assassins_wallpaper_1920x1080.jpg');
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
+    font-family: theme('fontFamily.mono');
+    @apply font-mono;
   }
 
   body::before {
@@ -62,7 +64,7 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-zinc-700/50 rounded-full;
+    @apply rounded-full bg-zinc-700/50;
   }
 
   ::-webkit-scrollbar-thumb:hover {
@@ -72,23 +74,19 @@
 
 @layer components {
   .container {
-    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+    @apply px-4 mx-auto max-w-7xl sm:px-6 lg:px-8;
   }
 
   .search-input {
-    @apply w-full md:w-64 px-4 py-2 rounded-md bg-zinc-900/60 border border-zinc-800
-           focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all;
+    @apply w-full px-4 py-2 transition-all border rounded-md md:w-64 bg-zinc-900/60 border-zinc-800 focus:outline-none focus:ring-2 focus:ring-primary/50;
   }
 
   .search-button {
-    @apply px-6 py-2 bg-primary text-primary-foreground rounded-md
-           hover:bg-primary/90 transition-colors
-           disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply px-6 py-2 transition-colors rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .region-select {
-    @apply px-4 py-2 rounded-md bg-zinc-900/60 border border-zinc-800
-           focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all;
+    @apply px-4 py-2 transition-all border rounded-md bg-zinc-900/60 border-zinc-800 focus:outline-none focus:ring-2 focus:ring-primary/50;
   }
 
   .match-history {

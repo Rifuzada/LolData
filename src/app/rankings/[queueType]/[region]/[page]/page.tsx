@@ -24,6 +24,14 @@ interface RankingData {
   queue: string;
   name: string;
   tier: string;
+  pagination?: {
+    currentPage: number;
+    totalPages: number;
+    totalEntries: number;
+    entriesPerPage: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
 }
 
 interface SummonerInfo {
@@ -32,45 +40,80 @@ interface SummonerInfo {
   profileIconId?: number;
 }
 
-export default function RankingsPage({ params }: { params: { region: string } }) {
+export default function RankingsPage({ params }: { params: { queueType: string; region: string; page: string } }) {
   const router = useRouter();
 
   // Estados
   const [rankings, setRankings] = useState<RankingData | null>(null);
-  const [queueType, setQueueType] = useState('RANKED_SOLO_5x5');
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingNames, setIsLoadingNames] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [summonerNames, setSummonerNames] = useState<Record<string, SummonerInfo>>({});
-  const [currentPage, setCurrentPage] = useState(1);
+  
+  // Parse page from URL params
+  const currentPage = parseInt(params.page) || 1;
+  const region = params.region;
+  
+  // Convert friendly URL names to API queue types
+  const queueTypeMap: Record<string, string> = {
+    'soloduo': 'RANKED_SOLO_5x5',
+    'flex': 'RANKED_FLEX_SR'
+  };
+  
+  const reverseQueueTypeMap: Record<string, string> = {
+    'RANKED_SOLO_5x5': 'soloduo',
+    'RANKED_FLEX_SR': 'flex'
+  };
+  
+  const queueType = queueTypeMap[params.queueType] || 'RANKED_SOLO_5x5';
+  const friendlyQueueType = params.queueType;
   
   // Configurações
-  const itemsPerPage = 50;
+  const itemsPerPage = 100;
+  // Mapa para exibição no título
+  const displayRegionMap: Record<string, string> = {
+    BR1: "BR",
+    NA1: "NA",
+    LA1: "LAN",
+    LA2: "LAS",
+    EUW1: "EUW",
+    EUN1: "EUNE",
+    KR: "KR",
+    JP1: "JP",
+    OC1: "OCE",
+    TR1: "TR",
+    RU: "RU",
+    TW2: "TW",
+    VN2: "VN",
+    SG2: "SG",
+    ME1: "ME",
+  };
+
+  // Queue type display names
+  const queueDisplayNames: Record<string, string> = {
+    'soloDuo': 'Solo/Duo',
+    'flex': 'Flex'
+  };
 
   // Fetch rankings data
   const fetchRankings = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
-      const response = await fetch(`/api/rankings?region=${params.region}&queueType=${queueType}`);
+      const response = await fetch(`/api/rankings?region=${region}&queueType=${queueType}&page=${currentPage}&limit=${itemsPerPage}`);
       if (!response.ok) {
         throw new Error('Failed to fetch rankings');
       }
       const data = await response.json();
       
-      // Sort by LP
-      const sortedEntries = [...data.entries].sort((a, b) => b.leaguePoints - a.leaguePoints);
-      setRankings({
-        ...data,
-        entries: sortedEntries
-      });
+      setRankings(data);
     } catch (err) {
       setError('Failed to load rankings');
       console.error('Error fetching rankings:', err);
     } finally {
       setIsLoading(false);
     }
-  }, [params.region, queueType]);
+  }, [region, queueType, currentPage, itemsPerPage]);
 
   // Fetch rankings on mount and when region/queue changes
   useEffect(() => {
@@ -82,21 +125,21 @@ export default function RankingsPage({ params }: { params: { region: string } })
   
   // Load cache from localStorage on mount
   useEffect(() => {
-    const savedCache = localStorage.getItem(`summonerCache_${params.region}`);
+    const savedCache = localStorage.getItem(`summonerCache_${region}`);
     if (savedCache) {
       const parsed = JSON.parse(savedCache);
       summonerNamesCache.current = parsed;
       setSummonerNames(parsed);
     }
-  }, [params.region]);
+  }, [region]);
 
   // Function to update cache both in memory and localStorage
   const updateCache = useCallback((newData: Record<string, SummonerInfo>) => {
     const updatedCache = { ...summonerNamesCache.current, ...newData };
     summonerNamesCache.current = updatedCache;
-    localStorage.setItem(`summonerCache_${params.region}`, JSON.stringify(updatedCache));
+    localStorage.setItem(`summonerCache_${region}`, JSON.stringify(updatedCache));
     setSummonerNames(prev => ({ ...prev, ...newData }));
-  }, [params.region]);
+  }, [region]);
 
   // Function to fetch summoner names in batches
   const fetchSummonerNames = useCallback(async (puuids: string[], isPreFetch = false) => {
@@ -126,9 +169,8 @@ export default function RankingsPage({ params }: { params: { region: string } })
         const batch = uncachedPuuids.slice(i, i + 20);
         const batchPromises = batch.map(async (puuid) => {
           try {
-            const summonerData = await getSummonerNameByPuuid(params.region, puuid);
+            const summonerData = await getSummonerNameByPuuid(region, puuid);
             if (!summonerData?.name || !summonerData?.tagLine) return null;
-
             return {
               puuid,
               gameName: summonerData.name,
@@ -164,37 +206,81 @@ export default function RankingsPage({ params }: { params: { region: string } })
     } finally {
       setIsLoadingNames(false);
     }
-  }, [params.region]);
+  }, [region]);
 
   // Effect to load names when page changes or rankings update
   useEffect(() => {
     if (!rankings || isLoading) return;
-
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const currentPagePuuids = rankings.entries
-      .slice(startIndex, endIndex)
-      .map(entry => entry.puuid);
+    
+    const currentPagePuuids = rankings.entries.map(entry => entry.puuid);
     
     // Fetch current page data
     fetchSummonerNames(currentPagePuuids);
-
-    // Pre-fetch next page data
-    const nextPageStartIndex = currentPage * itemsPerPage;
-    const nextPageEndIndex = nextPageStartIndex + itemsPerPage;
-    if (nextPageEndIndex <= rankings.entries.length) {
-      const nextPagePuuids = rankings.entries
-        .slice(nextPageStartIndex, nextPageEndIndex)
-        .map(entry => entry.puuid);
-      
-      // Use setTimeout to not compete with current page fetch
-      setTimeout(() => {
-        fetchSummonerNames(nextPagePuuids, true);
-      }, 1000);
-    }
   }, [currentPage, rankings, isLoading, fetchSummonerNames]);
 
+  // Function to get tier icon URL
+  const getTierIconUrl = (tier: string) => {
+    const tierLower = tier.toLowerCase();
+    return `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${tierLower}.svg`;
+  };
 
+  // Function to navigate to page
+  const navigateToPage = (page: number) => {
+    router.push(`/rankings/${friendlyQueueType}/${region}/${page}`);
+  };
+
+  // Function to change queue type
+  const changeQueueType = (newQueueType: string) => {
+    router.push(`/rankings/${newQueueType}/${region}/1`);
+  };
+
+  // Function to change region
+  const changeRegion = (newRegion: string) => {
+    router.push(`/rankings/${friendlyQueueType}/${newRegion}/1`);
+  };
+
+  // Function to generate page numbers for pagination
+  const generatePageNumbers = (currentPage: number, totalPages: number) => {
+    const pages = [];
+    const maxVisiblePages = 7;
+    
+    if (totalPages <= maxVisiblePages) {
+      // Show all pages if total is less than max visible
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Always show first page
+      pages.push(1);
+      
+      if (currentPage > 4) {
+        pages.push('...');
+      }
+      
+      // Show pages around current page
+      const start = Math.max(2, currentPage - 2);
+      const end = Math.min(totalPages - 1, currentPage + 2);
+      
+      for (let i = start; i <= end; i++) {
+        if (!pages.includes(i)) {
+          pages.push(i);
+        }
+      }
+      
+      if (currentPage < totalPages - 3) {
+        pages.push('...');
+      }
+      
+      // Always show last page
+      if (!pages.includes(totalPages)) {
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
+  };
+
+  const totalPages = rankings?.pagination?.totalPages || 0;
 
   return (
     <div className="container p-4 mx-auto">
@@ -209,12 +295,12 @@ export default function RankingsPage({ params }: { params: { region: string } })
           Back
         </a>
         <h1 className="text-2xl font-bold">
-        Challenger Rankings - {params.region.replace(/[0-9]/g, '').toUpperCase()}
+          High Elo Rankings - {displayRegionMap[region.toUpperCase()] || region.toUpperCase()} - {queueDisplayNames[friendlyQueueType] || friendlyQueueType}
         </h1>
         <div className="flex items-center gap-2">
           <select
-            value={params.region}
-            onChange={(e) => router.push(`/rankings/${e.target.value.toLowerCase()}`)}
+            value={region}
+            onChange={(e) => changeRegion(e.target.value)}
             className="px-3 py-2 text-sm border rounded-md cursor-pointer border-input bg-background"
           >
             <optgroup label="Americas">
@@ -243,16 +329,14 @@ export default function RankingsPage({ params }: { params: { region: string } })
           </select>
           <select
             value={queueType}
-            onChange={(e) => setQueueType(e.target.value)}
+            onChange={(e) => changeQueueType(e.target.value)}
             className="px-3 py-2 text-sm border rounded-md bg-background"
           >
-            <option value="RANKED_SOLO_5x5">Solo/Duo</option>
-            <option value="RANKED_FLEX_SR">Flex</option>
+            <option value="soloDuo">Solo/Duo</option>
+            <option value="flex">Flex</option>
           </select>
         </div>
       </div>
-
-
 
       {(isLoading || isLoadingNames) && (
         <div className="py-8 text-center">
@@ -269,7 +353,7 @@ export default function RankingsPage({ params }: { params: { region: string } })
         </Card>
       )}
 
-      {!isLoading && !isLoadingNames && rankings && Object.keys(summonerNames).length > 0 && (
+      {!isLoading && !isLoadingNames && rankings && rankings.entries.length > 0 && (
         <div className="grid gap-4">
           <Card className="p-4">
             <table className="w-full">
@@ -277,24 +361,46 @@ export default function RankingsPage({ params }: { params: { region: string } })
                 <tr className="border-b">
                   <th className="p-2 text-left">Rank</th>
                   <th className="p-2 text-left">Summoner</th>
+                  <th className="p-2 text-left">Tier</th>
                   <th className="p-2 text-left">LP</th>
-                  <th className="p-2 text-left">Wins/Losses</th>
+                  <th className="p-2 text-left">Wins</th>
+                  <th className="p-2 text-left">Losses</th>
                   <th className="p-2 text-left">Win Rate</th>
                 </tr>
               </thead>
               <tbody>
-                {rankings.entries
-                  .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-                  .map((entry, index) => {
+                {rankings.entries.map((entry, index) => {
                   const winRate = ((entry.wins / (entry.wins + entry.losses)) * 100).toFixed(1);
                   const summonerInfo = summonerNames[entry.puuid];
                   const displayName = summonerInfo && summonerInfo.gameName && summonerInfo.tagLine
                     ? `${summonerInfo.gameName} #${summonerInfo.tagLine}`
                     : 'Carregando...';
 
+                  // Determinar tier baseado na posição no ranking
+                  const getTier = (globalRank: number) => {
+                    // Challenger são apenas os top 200
+                    if (globalRank <= 200) return 'Challenger';
+                    // Grandmaster são do 201 ao 700
+                    if (globalRank <= 700) return 'Grandmaster';
+                    // Resto é Master
+                    return 'Master';
+                  };
+
+                  const globalRank = ((currentPage - 1) * itemsPerPage) + index + 1;
+                  const tier = getTier(globalRank);
+                  
+                  const getTierColor = (tier: string) => {
+                    switch (tier) {
+                      case 'Challenger': return 'text-yellow-400 font-bold';
+                      case 'Grandmaster': return 'text-red-400 font-semibold';
+                      case 'Master': return 'text-purple-400 font-medium';
+                      default: return 'text-gray-400';
+                    }
+                  };
+
                   return (
                     <tr key={entry.puuid} className="border-b last:border-0">
-                      <td className="p-2">{((currentPage - 1) * itemsPerPage) + index + 1}</td>
+                      <td className="p-2">{globalRank}</td>
                       <td className="p-2">
                         <div className="flex items-center gap-2">
                           {summonerInfo?.profileIconId && (
@@ -308,15 +414,29 @@ export default function RankingsPage({ params }: { params: { region: string } })
                             />
                           )}
                           <Link 
-                            href={summonerInfo ? `/summoner/${params.region}/${summonerInfo.gameName}/${summonerInfo.tagLine}/all` : '#'}
+                            href={summonerInfo ? `/summoner/${region}/${summonerInfo.gameName}/${summonerInfo.tagLine}/all` : '#'}
                             className="cursor-pointer hover:underline"
                           >
                             {displayName}
                           </Link>
                         </div>
                       </td>
+                      <td className={`p-2 ${getTierColor(tier)}`}>
+                        <div className="flex items-center gap-2">
+                          <Image
+                            src={getTierIconUrl(tier)}
+                            alt={`${tier} tier`}
+                            width={20}
+                            height={20}
+                            className="inline-block"
+                            unoptimized
+                          />
+                          {tier}
+                        </div>
+                      </td>
                       <td className="p-2">{entry.leaguePoints} LP</td>
-                      <td className="p-2">{entry.wins}/{entry.losses}</td>
+                      <td className="p-2">{entry.wins}</td>
+                      <td className="p-2">{entry.losses}</td>
                       <td className="p-2">{winRate}%</td>
                     </tr>
                   );
@@ -324,27 +444,54 @@ export default function RankingsPage({ params }: { params: { region: string } })
               </tbody>
             </table>
             
-            {/* Paginação */}
+            {/* Paginação Numérica */}
             <div className="flex items-center justify-between px-2 mt-4">
               <div className="text-sm text-muted-foreground">
-                Mostrando {((currentPage - 1) * itemsPerPage) + 1} a {Math.min(currentPage * itemsPerPage, rankings.entries.length)} de {rankings.entries.length}
+                {rankings?.pagination ? 
+                  `Mostrando ${((currentPage - 1) * itemsPerPage) + 1} a ${Math.min(currentPage * itemsPerPage, rankings.pagination.totalEntries)} de ${rankings.pagination.totalEntries}` :
+                  `Mostrando ${((currentPage - 1) * itemsPerPage) + 1} a ${Math.min(currentPage * itemsPerPage, rankings.entries?.length || 0)} de ${rankings.entries?.length || 0}`
+                }
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  className="px-3 py-1 border rounded-md bg-background hover:bg-accent disabled:opacity-50"
-                >
-                  Anterior
-                </button>
-                <button
-                  onClick={() => setCurrentPage(p => Math.min(Math.ceil(rankings.entries.length / itemsPerPage), p + 1))}
-                  disabled={currentPage >= Math.ceil(rankings.entries.length / itemsPerPage)}
-                  className="px-3 py-1 border rounded-md bg-background hover:bg-accent disabled:opacity-50"
-                >
-                  Próxima
-                </button>
-              </div>
+              
+              {totalPages > 1 && (
+                <div className="flex items-center gap-1">
+                  {/* Botão Anterior */}
+                  <button
+                    onClick={() => navigateToPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1 text-sm border rounded-md bg-background hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    ‹
+                  </button>
+                  
+                  {/* Números das páginas */}
+                  {generatePageNumbers(currentPage, totalPages).map((page, index) => (
+                    <button
+                      key={index}
+                      onClick={() => typeof page === 'number' && navigateToPage(page)}
+                      disabled={page === '...' || page === currentPage}
+                      className={`px-3 py-1 text-sm border rounded-md ${
+                        page === currentPage
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : page === '...'
+                          ? 'bg-background border-input cursor-default'
+                          : 'bg-background hover:bg-accent border-input'
+                      } ${page === '...' ? 'cursor-default' : 'cursor-pointer'}`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                  
+                  {/* Botão Próximo */}
+                  <button
+                    onClick={() => navigateToPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage >= totalPages}
+                    className="px-3 py-1 text-sm border rounded-md bg-background hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    ›
+                  </button>
+                </div>
+              )}
             </div>
           </Card>
         </div>

@@ -2,21 +2,15 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { usePathname } from 'next/navigation';
-
 
 interface SummonerSearchProps {
   defaultRegion?: string;
 }
 
 export function SummonerSearch({ defaultRegion = 'br1' }: SummonerSearchProps) {
-  const pathname = usePathname();
   const router = useRouter();
   const [region, setRegion] = useState(defaultRegion);
   const [summonerName, setSummonerName] = useState('');
-    // tenta extrair a região da URL como /summoner/br1/...
-  const match = pathname.match(/\/summoner\/([^/]+)/);
-  const regionFromUrl = match?.[1]?.toLowerCase() ?? region.toLowerCase();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,13 +36,9 @@ export function SummonerSearch({ defaultRegion = 'br1' }: SummonerSearchProps) {
           </svg>
           Back
         </a>
-<a
-  href={`/rankings/${regionFromUrl}`}
-  className="inline-flex px-3 py-2 text-sm transition-colors border rounded-md bg-background border-input hover:bg-accent/50"
->
-  Rankings
-</a>
-
+        <a href="/rankings" className="inline-flex px-3 py-2 text-sm transition-colors border rounded-md bg-background border-input hover:bg-accent/50">
+          Rankings
+        </a>
       </div>
 
       <form onSubmit={handleSubmit} className="flex items-center gap-2 flex-1 max-w-[700px]">

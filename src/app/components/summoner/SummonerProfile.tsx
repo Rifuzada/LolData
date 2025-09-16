@@ -9,7 +9,7 @@ interface ChampionMastery {
 }
 
 interface SummonerProfileProps {
-  name?: string
+  name: string
   gameName?: string
   tagLine?: string
   level: number

@@ -76,7 +76,15 @@ export function MatchHistoryItem({
   const params = useParams();
   const region = params.region as string;
   const [isExpanded, setIsExpanded] = useState(false)
-  const kda = ((kills + assists) / Math.max(1, deaths)).toFixed(2)
+  const kda = ((kills + assists) / Math.max(1, deaths)).toFixed(2)    
+  const csPerMin = (() => {
+  const [minStr, secStr] = gameDuration.split(' ');
+  const minutes = parseInt(minStr.replace('m', ''), 10) || 0;
+  const seconds = parseInt(secStr.replace('s', ''), 10) || 0;
+  const totalMinutes = minutes + seconds / 60;
+  return (creepScore / Math.max(1, totalMinutes)).toFixed(1);
+  })();
+
 
   return (
     <div
@@ -168,7 +176,7 @@ export function MatchHistoryItem({
                 ({kda} KDA)
               </span>
               <span className="text-xs text-muted-foreground">
-                CS: {creepScore}
+                CS: {creepScore} ({csPerMin}/min)
               </span>
             </div>
           </div>

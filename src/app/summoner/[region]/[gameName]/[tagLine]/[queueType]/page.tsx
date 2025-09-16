@@ -83,7 +83,15 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
     const flexData = rankedData.find((queue: any) => queue.queueType === "RANKED_FLEX_SR");
 
     // Formata informações de elo
-    const formatElo = (entry: any) => entry ? `${entry.tier.charAt(0) + entry.tier.slice(1).toLowerCase()} ${entry.rank}` : null;
+    const formatElo = (entry: any) => {
+      if (!entry) return null;
+      
+      const tier = entry.tier.charAt(0) + entry.tier.slice(1).toLowerCase();
+      const highTiers = ['CHALLENGER', 'GRANDMASTER', 'MASTER'];
+      
+      return highTiers.includes(entry.tier) ? tier : `${tier} ${entry.rank}`;
+    };
+
     const eloSoloq = formatElo(soloQData);
     const eloFlex = formatElo(flexData);
 
@@ -98,7 +106,7 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
         <div className="relative">
           <div className="absolute inset-0 -z-10 bg-gradient-to-b from-background/80 to-background" />
           <SummonerProfile
-            name={summoner.name}
+            name={summoner.name ?? decodedGameName}
             gameName={decodedGameName}
             tagLine={decodedTagLine} // Use o tagLine decodificado
             level={summoner.summonerLevel}
