@@ -120,7 +120,14 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
     const flexData = rankedData.find((queue: any) => queue.queueType === "RANKED_FLEX_SR");
 
     // Formata informações de elo
-    const formatElo = (entry: any) => entry ? `${entry.tier.charAt(0) + entry.tier.slice(1).toLowerCase()} ${entry.rank}` : null;
+    const formatElo = (entry: any) => {
+      if (!entry) return null;
+      
+      const tier = entry.tier.charAt(0) + entry.tier.slice(1).toLowerCase();
+      const highTiers = ['CHALLENGER', 'GRANDMASTER', 'MASTER'];
+      
+      return highTiers.includes(entry.tier) ? tier : `${tier} ${entry.rank}`;
+    };
     const eloSoloq = formatElo(soloQData);
     const eloFlex = formatElo(flexData);
 

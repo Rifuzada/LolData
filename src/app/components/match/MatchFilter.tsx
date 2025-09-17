@@ -162,6 +162,7 @@ const champions = [
   { id: "777", name: "Yone" },
   { id: "83", name: "Yorick" },
   { id: "350", name: "Yuumi" },
+  { id:"804", name:"Yunara" },
   { id: "154", name: "Zac" },
   { id: "238", name: "Zed" },
   { id: "221", name: "Zeri" },

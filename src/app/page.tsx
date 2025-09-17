@@ -66,7 +66,7 @@ const Home: React.FC = () => {
         />
 
         <select
-          className="w-full p-3 transition border-2 border-gray-300 rounded input focus:outline-none focus:border-blue-500"
+          className="w-full p-3 transition border-2 border-gray-300 rounded cursor-pointer input focus:outline-none focus:border-blue-500"
           id="region"
           value={region}
           onChange={(e) => setRegion(e.target.value)}
@@ -99,9 +99,9 @@ const Home: React.FC = () => {
         <button>
           <a
             href="/rankings/soloDuo/BR1/1"
-            className="w-full p-3 transition border-2 border-gray-300 rounded input focus:outline-none focus:border-blue-500"
+            className="w-full p-3 m-auto transition bg-gray-700 border-2 border-gray-300 rounded input hover:bg-gray-600 focus:outline-none focus:border-blue-500"
           >
-            View Challenger Rankings (BR)
+            View Rankings
           </a>
         </button>
         <button

@@ -6,7 +6,10 @@ const matchesSchema = z.object({
   region: z.string().min(1),
   puuid: z.string().min(10),
   start: z.string().transform(val => Number(val || 0)).default('0'),
-  count: z.string().transform(val => Number(val || 10)).default('10')
+  count: z.string().transform(val => Number(val || 10)).default('10'),
+  queueId: z.string().optional(),
+  championName: z.string().optional(),
+  champion: z.string().optional()
 });
 
 const matchCache = new Map<string, { data: any, expires: number }>();
@@ -24,7 +27,6 @@ async function fetchInBatches<T>(tasks: (() => Promise<T>)[], batchSize: number)
   return results;
 }
 
-// Adicione a função safeFetch no topo do arquivo:
 async function safeFetch(url: string, options: any, retries = 3): Promise<Response> {
   for (let i = 0; i < retries; i++) {
     const res = await fetch(url, options);
@@ -35,14 +37,83 @@ async function safeFetch(url: string, options: any, retries = 3): Promise<Respon
   return await fetch(url, options);
 }
 
+// Função para normalizar nomes de campeões
+function normalizeChampionName(name: string): string {
+  return name.toLowerCase()
+    .replace(/[^a-z0-9]/g, '') // Remove caracteres especiais
+    .replace(/\s+/g, '') // Remove espaços
+    .replace(/'/g, '') // Remove apóstrofos (para nomes como Kai'Sa)
+    .replace(/\./g, ''); // Remove pontos (para nomes como Dr. Mundo)
+}
+
+// Função para verificar se uma partida corresponde ao filtro de campeão
+function matchesChampionFilter(match: any, puuid: string, championFilter: string): boolean {
+  if (!championFilter || championFilter === "all") return true;
+  
+  // Encontra o participante correto na partida
+  const participant = match.info?.participants?.find((p: any) => p.puuid === puuid);
+  if (!participant) return false;
+
+  // Normaliza o nome do campeão do participante e o filtro
+  const championName = normalizeChampionName(participant.championName || "");
+  const championId = String(participant.championId || "");
+  const normalizedFilter = normalizeChampionName(championFilter);
+
+  // Lista de aliases comuns para alguns campeões
+  const championAliases: { [key: string]: string[] } = {
+    'wukong': ['monkeyking'],
+    'asol': ['aurelionsol'],
+    'mundo': ['drmundo'],
+    'jarvan': ['jarvaniv'],
+    'yi': ['masteryi'],
+    'mf': ['missfortune'],
+    'tf': ['twistedfate']
+  };
+
+  // Verifica correspondência direta
+  if (championName === normalizedFilter || championId === championFilter) {
+    return true;
+  }
+
+  // Verifica aliases
+  for (const [champion, aliases] of Object.entries(championAliases)) {
+    if ((normalizedFilter === champion || aliases.includes(normalizedFilter)) && 
+        (championName === champion || aliases.includes(championName))) {
+      return true;
+    }
+  }
+
+  // Verifica correspondência parcial (mais flexível)
+  return championName.includes(normalizedFilter) || normalizedFilter.includes(championName);
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    // Crie uma chave única para o cache
-    const cacheKey = request.url;
+    
+    // Parâmetros da requisição
+    const puuid = searchParams.get('puuid');
+    const start = searchParams.get('start') || '0';
+    const count = searchParams.get('count') || '10';
+    const queueId = searchParams.get('queueId') || '';
+    const region = searchParams.get('region') || '';
+    const championFilter = searchParams.get('championName') || searchParams.get('champion') || '';
+    
+    const validatedData = matchesSchema.parse({ region, puuid, start, count });
+
+    const { RIOT_API_KEY } = process.env;
+    if (!RIOT_API_KEY) {
+      return NextResponse.json(
+        { error: 'API key not configured' },
+        { status: 500 }
+      );
+    }
+
+    // Criar chave de cache considerando todos os parâmetros importantes
+    const cacheKey = `${region}-${puuid}-${queueId}-${championFilter}-${start}-${count}`;
     const now = Date.now();
 
-    // Verifica se existe cache válido
+    // Verificar cache
     if (matchCache.has(cacheKey)) {
       const cached = matchCache.get(cacheKey)!;
       if (cached.expires > now) {
@@ -52,149 +123,119 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const puuid = searchParams.get('puuid');
-    const start = searchParams.get('start') || '0';
-    const count = searchParams.get('count') || '10';
-    const queueId = searchParams.get('queueId') || '';
-    const region = searchParams.get('region') || '';
-    const championId = searchParams.get('championId'); // <- novo parâmetro
-    const validatedData = matchesSchema.parse({ region, puuid, start, count });
-    //console.log("Validated Data:", validatedData);
-    const { RIOT_API_KEY } = process.env;
-
-    if (!RIOT_API_KEY) {
-      return NextResponse.json(
-        { error: 'API key not configured' },
-        { status: 500 }
-      );
+    // Determinar API URL baseada na região
+    let apiUrl: string = AMERICAS_API_URL;
+    
+    if (region.includes('euw1') || region.includes('eun1') || region.includes('ru') || region.includes('tr1') || region.includes('me1')) {
+      apiUrl = EUROPE_API_URL;
+    } else if (region.includes('jp1') || region.includes('kr')) {
+      apiUrl = ASIA_API_URL;
+    } else if (region.includes('oc1') || region.includes('tw2') || region.includes('vn2')) {
+      apiUrl = SEA_API_URL;
     }
-    let matchIdsResponse: Response;
-    let apiUrl: string = "";
 
-    if (queueId === '') {
-      apiUrl = AMERICAS_API_URL;
-      matchIdsResponse = await safeFetch(
-        `${apiUrl}/lol/match/v5/matches/by-puuid/${validatedData.puuid}/ids?start=${validatedData.start}&count=${validatedData.count}`,
-        {
-          headers: {
-            'X-Riot-Token': RIOT_API_KEY
-          }
-        }
-      );
-      if (!matchIdsResponse.ok) {
-        const error = await matchIdsResponse.json();
-        return NextResponse.json(
-          { error: error.status.message || 'Failed to fetch match IDs' },
-          { status: matchIdsResponse.status }
-        );
-      }
-      const matchIds = await matchIdsResponse.json();
-      // Busca os detalhes de cada partida em lotes
-      const matchDetailsPromises = matchIds.map((matchId: string) => () =>
-        safeFetch(`${apiUrl}/lol/match/v5/matches/${matchId}`, {
-          headers: {
-            'X-Riot-Token': RIOT_API_KEY
-          }
-        }).then(res => res.json())
-      );
-      let matchDetails = await fetchInBatches(matchDetailsPromises, 2);
+    let collectedMatches: any[] = [];
+    let currentStart = validatedData.start;
+    let requestCount = Math.max(parseInt(count), championFilter ? 20 : 10); // Buscar mais se filtrando por campeão
+    const maxIterations = championFilter ? 10 : 1; // Máximo de iterações para evitar loop infinito
+    let iterations = 0;
 
-      // --- FILTRO PELO CAMPEÃO SE FOR PASSADO ---
-      if (championId && championId !== "all") {
-        matchDetails = matchDetails.filter((match: any) =>
-          match.info?.participants?.some(
-            (p: any) => String(p.championId) === String(championId)
-          )
-        );
-      }
+    // Loop para coletar partidas suficientes (especialmente útil para filtro de campeão)
+    while (collectedMatches.length < parseInt(count) && iterations < maxIterations) {
+      iterations++;
 
-      // Antes de retornar, salve no cache:
-      matchCache.set(cacheKey, { data: matchDetails, expires: Date.now() + CACHE_TTL });
-
-      return NextResponse.json({ data: matchDetails });
-    } else {
-      if (validatedData.region.includes('euw1') || validatedData.region.includes('eun1') || validatedData.region.includes('ru') || validatedData.region.includes('tr1') || validatedData.region.includes('me1')) {
-        apiUrl = EUROPE_API_URL;
-        matchIdsResponse = await safeFetch(
-          `${apiUrl}/lol/match/v5/matches/by-puuid/${validatedData.puuid}/ids?queue=${queueId}&start=${validatedData.start}&count=${validatedData.count}`,
-          {
-            headers: {
-              'X-Riot-Token': RIOT_API_KEY
-            }
-          }
-        );
-      } else if (validatedData.region.includes('jp1') || validatedData.region.includes('kr')) {
-        apiUrl = ASIA_API_URL;
-        matchIdsResponse = await safeFetch(
-          `${apiUrl}/lol/match/v5/matches/by-puuid/${validatedData.puuid}/ids?queue=${queueId}&start=${validatedData.start}&count=${validatedData.count}`,
-          {
-            headers: {
-              'X-Riot-Token': RIOT_API_KEY
-            }
-          }
-        );
-      } else if (validatedData.region.includes('oc1') || validatedData.region.includes('tw2') || validatedData.region.includes('vn2')) {
-        apiUrl = SEA_API_URL;
-        matchIdsResponse = await safeFetch(
-          `${apiUrl}/lol/match/v5/matches/by-puuid/${validatedData.puuid}/ids?queue=${queueId}&start=${validatedData.start}&count=${validatedData.count}`,
-          {
-            headers: {
-              'X-Riot-Token': RIOT_API_KEY
-            }
-          }
-        );
+      // Construir URL da API
+      let matchIdsUrl: string;
+      if (queueId === '' || queueId === 'all') {
+        matchIdsUrl = `${apiUrl}/lol/match/v5/matches/by-puuid/${validatedData.puuid}/ids?start=${currentStart}&count=${requestCount}`;
       } else {
-        apiUrl = AMERICAS_API_URL;
-        matchIdsResponse = await safeFetch(
-          `${apiUrl}/lol/match/v5/matches/by-puuid/${validatedData.puuid}/ids?queue=${queueId}&start=${validatedData.start}&count=${validatedData.count}`,
-          {
-            headers: {
-              'X-Riot-Token': RIOT_API_KEY
-            }
-          }
-        );
+        matchIdsUrl = `${apiUrl}/lol/match/v5/matches/by-puuid/${validatedData.puuid}/ids?queue=${queueId}&start=${currentStart}&count=${requestCount}`;
       }
+
+      // Buscar IDs das partidas
+      const matchIdsResponse = await safeFetch(matchIdsUrl, {
+        headers: { 'X-Riot-Token': RIOT_API_KEY }
+      });
+
       if (!matchIdsResponse.ok) {
         const error = await matchIdsResponse.json();
         return NextResponse.json(
-          { error: error.status.message || 'Failed to fetch match IDs' },
+          { error: error.status?.message || 'Failed to fetch match IDs' },
           { status: matchIdsResponse.status }
         );
       }
-      const matchIds = await matchIdsResponse.json();
-      // Busca os detalhes de cada partida em lotes
-      const matchDetailsPromises = matchIds.map((matchId: string) => () =>
-        safeFetch(`${apiUrl}/lol/match/v5/matches/${matchId}`, {
-          headers: {
-            'X-Riot-Token': RIOT_API_KEY
-          }
-        }).then(res => res.json())
-      );
-      let matchDetails = await fetchInBatches(matchDetailsPromises, 2);
 
-      // --- FILTRO PELO CAMPEÃO SE FOR PASSADO ---
-      if (championId && championId !== "all") {
-        matchDetails = matchDetails.filter((match: any) =>
-          match.info?.participants?.some(
-            (p: any) => String(p.championId) === String(championId)
-          )
-        );
+      const matchIds = await matchIdsResponse.json();
+      
+      // Se não há mais partidas, parar
+      if (matchIds.length === 0) {
+        break;
       }
 
-      // Antes de retornar, salve no cache:
-      matchCache.set(cacheKey, { data: matchDetails, expires: Date.now() + CACHE_TTL });
+      // Buscar detalhes das partidas em lotes
+      const matchDetailsPromises = matchIds.map((matchId: string) => () =>
+        safeFetch(`${apiUrl}/lol/match/v5/matches/${matchId}`, {
+          headers: { 'X-Riot-Token': RIOT_API_KEY }
+        }).then(res => res.json())
+      );
 
-      return NextResponse.json({ data: matchDetails });
+      let matchDetails = await fetchInBatches(matchDetailsPromises, 2);
+
+      // Aplicar filtro de campeão se especificado
+      if (championFilter && championFilter !== "all") {
+        matchDetails = matchDetails.filter((match: any) => 
+          matchesChampionFilter(match, puuid!, championFilter)
+        );
+        
+        console.log(`Filtro de campeão '${championFilter}': ${matchDetails.length} de ${matchIds.length} partidas`);
+      }
+
+      collectedMatches = [...collectedMatches, ...matchDetails];
+      currentStart += matchIds.length;
+
+      // Se não estamos filtrando por campeão ou já temos suficientes, parar
+      if (!championFilter || collectedMatches.length >= parseInt(count)) {
+        break;
+      }
+
+      // Se recebemos menos partidas que o solicitado, provavelmente acabaram
+      if (matchIds.length < requestCount) {
+        break;
+      }
     }
+
+    // Limitar ao número solicitado
+    const finalMatches = collectedMatches.slice(0, parseInt(count));
+
+    // Salvar no cache
+    matchCache.set(cacheKey, { 
+      data: finalMatches, 
+      expires: now + CACHE_TTL 
+    });
+
+    return NextResponse.json({ 
+      data: finalMatches,
+      meta: {
+        requested: parseInt(count),
+        returned: finalMatches.length,
+        championFilter: championFilter || null,
+        iterations,
+        fromCache: false
+      }
+    });
+
   } catch (error) {
+    console.error('API Error:', error);
+    
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Invalid request parameters' },
+        { error: 'Invalid request parameters', details: error.errors },
         { status: 400 }
       );
     }
+    
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

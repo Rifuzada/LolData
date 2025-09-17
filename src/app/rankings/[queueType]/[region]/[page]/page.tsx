@@ -330,7 +330,7 @@ export default function RankingsPage({ params }: { params: { queueType: string; 
           <select
             value={queueType}
             onChange={(e) => changeQueueType(e.target.value)}
-            className="px-3 py-2 text-sm border rounded-md bg-background"
+            className="px-3 py-2 text-sm border rounded-md cursor-pointer bg-background"
           >
             <option value="soloDuo">Solo/Duo</option>
             <option value="flex">Flex</option>

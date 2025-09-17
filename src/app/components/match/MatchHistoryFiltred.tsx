@@ -1,7 +1,7 @@
 'use client';
 
 import { MatchHistoryItem } from "./MatchHistoryItem";
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import apiService from "@/app/services/apiService";
 
 interface Participant {
@@ -68,9 +68,9 @@ interface Spell {
   key: string;
   image: {
     full: string;
-    // Adicione outras propriedades conforme necessário
   };
 }
+
 interface Perk {
   selections: any;
   slots: {
@@ -82,7 +82,6 @@ interface Perk {
   id: number;
   style: number;
   icon: string;
-  // Adicione outras propriedades conforme necessário
 }
 
 export function MatchHistoryFiltred({
@@ -96,165 +95,146 @@ export function MatchHistoryFiltred({
   const [leagueVersion, setLeagueVersion] = useState<string>("15.6.1");
   const [isLoadingVersion, setIsLoadingVersion] = useState<boolean>(true);
 
-  // Filtra as partidas só se queueId não for "all"
-  const filteredMatches = queueId === "all"
-    ? matchesByQueue
-    : matchesByQueue.filter(m => m.info.queueId === Number(queueId));
-
-  // Estados para paginação e carregamento incremental
-  const [matches, setMatches] = useState<Match[]>(filteredMatches || []);
-  const [start, setStart] = useState(filteredMatches?.length || 0);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-
   // Cache runes and spells data
   const [runesData, setRunesData] = useState<any[]>([]);
   const [spellsData, setSpellsData] = useState<Record<string, Spell>>({});
 
-  // Buscar versão da liga
+  // Estados para paginação e carregamento incremental
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [start, setStart] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [championFilter, setChampionFilter] = useState<string>("");
+
+  // Extrair filtro de campeão da URL
+  const getChampionFromUrl = useCallback(() => {
+    if (typeof window !== "undefined") {
+      const urlParts = window.location.pathname.split("/");
+      const lastPart = urlParts[urlParts.length - 1];
+      // Se não é "all" e não é um número (queueId), então é um nome de campeão
+      if (lastPart !== "all" && isNaN(Number(lastPart)) && lastPart.length > 2) {
+        return decodeURIComponent(lastPart).toLowerCase();
+      }
+    }
+    return "";
+  }, []);
+
+  // Atualizar filtro de campeão quando URL mudar
   useEffect(() => {
+    const champion = getChampionFromUrl();
+    setChampionFilter(champion);
+  }, [getChampionFromUrl]);
+
+  // Memoizar filteredMatches com filtro de campeão e queue
+  const filteredMatches = useMemo(() => {
+    if (!matchesByQueue) return [];
+    
+    let filtered = queueId === "all"
+      ? matchesByQueue
+      : matchesByQueue.filter(m => m.info.queueId === Number(queueId));
+
+    // Aplicar filtro de campeão se existir
+    if (championFilter && championFilter !== "all") {
+      filtered = filtered.filter(match => {
+        const participant = match.info?.participants?.find(p => p.puuid === puuid);
+        if (!participant) return false;
+        
+        const championName = participant.championName?.toLowerCase() || "";
+        const championId = String(participant.championId || "").toLowerCase();
+        
+        return championName === championFilter || 
+               championId === championFilter ||
+               championName.includes(championFilter) ||
+               championFilter.includes(championName);
+      });
+    }
+
+    return filtered;
+  }, [matchesByQueue, queueId, championFilter, puuid]);
+
+  // Buscar versão da liga (apenas uma vez)
+  useEffect(() => {
+    let mounted = true;
+
     const fetchLeagueVersion = async () => {
       try {
         setIsLoadingVersion(true);
         const version = await apiService.getLatestVersion();
-        setLeagueVersion(version);
+        if (mounted) {
+          setLeagueVersion(version);
+        }
       } catch (error) {
         console.error("Erro ao buscar versão da liga:", error);
       } finally {
-        setIsLoadingVersion(false);
+        if (mounted) {
+          setIsLoadingVersion(false);
+        }
       }
     };
+
     fetchLeagueVersion();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   // Buscar runas e feitiços só uma vez por versão
   useEffect(() => {
-    const fetchStaticData = async () => {
-      try {
-        const runesRes = await fetch(`https://ddragon.leagueoflegends.com/cdn/${leagueVersion}/data/en_US/runesReforged.json`);
-        const runes = await runesRes.json();
-        setRunesData(runes);
+    let mounted = true;
 
-        const spellsRes = await fetch(`https://ddragon.leagueoflegends.com/cdn/${leagueVersion}/data/en_US/summoner.json`);
-        const spellsJson = await spellsRes.json();
-        setSpellsData(spellsJson.data);
+    const fetchStaticData = async () => {
+      if (!leagueVersion || isLoadingVersion) return;
+
+      try {
+        const [runesRes, spellsRes] = await Promise.all([
+          fetch(`https://ddragon.leagueoflegends.com/cdn/${leagueVersion}/data/en_US/runesReforged.json`),
+          fetch(`https://ddragon.leagueoflegends.com/cdn/${leagueVersion}/data/en_US/summoner.json`)
+        ]);
+
+        const [runes, spellsJson] = await Promise.all([
+          runesRes.json(),
+          spellsRes.json()
+        ]);
+
+        if (mounted) {
+          setRunesData(runes);
+          setSpellsData(spellsJson.data);
+        }
       } catch (error) {
-        setRunesData([]);
-        setSpellsData({});
+        console.error("Erro ao buscar dados estáticos:", error);
+        if (mounted) {
+          setRunesData([]);
+          setSpellsData({});
+        }
       }
     };
-    if (leagueVersion) fetchStaticData();
-  }, [leagueVersion]);
 
-  // Atualiza matches ao trocar o filtro
+    fetchStaticData();
+
+    return () => {
+      mounted = false;
+    };
+  }, [leagueVersion, isLoadingVersion]);
+
+  // Inicializar matches quando filteredMatches mudar
   useEffect(() => {
-    setMatches(filteredMatches || []);
-    setStart(filteredMatches?.length || 0);
-    setHasMore(true);
+    setMatches(filteredMatches);
+    setStart(filteredMatches.length);
+    setHasMore(filteredMatches.length > 0);
   }, [filteredMatches]);
 
-  // Função para carregar mais partidas filtradas
-  const fetchMoreMatches = async () => {
-    setLoadingMore(true);
-
-    let collectedMatches: Match[] = [];
-    let localStart = start;
-    let keepFetching = true;
-    let championName = "";
-
-    if (typeof window !== "undefined") {
-      const urlParts = window.location.pathname.split("/");
-      championName = urlParts[urlParts.length - 1];
-    }
-
-    // Se não está filtrando por campeão, busca normalmente
-    if (!championName || championName === "all") {
-      const params = new URLSearchParams({
-        puuid,
-        region,
-        start: localStart.toString(),
-        count: "10",
-      });
-
-      if (queueId !== "all") {
-        params.append("queueId", String(queueId));
-      }
-
-      const endpoint =
-        queueId === "all"
-          ? `/api/summoner/matches?${params.toString()}`
-          : `/api/summoner/matchesByQueue?${params.toString()}`;
-
-      const res = await fetch(endpoint);
-      const data = await res.json();
-      const newMatches = data.data || [];
-
-      setMatches(prev => [...prev, ...newMatches]);
-      setStart(prev => prev + 10);
-      setHasMore(newMatches.length === 10);
-      setLoadingMore(false);
-      return;
-    }
-
-    // Se está filtrando por campeão, busca até preencher 10 partidas do campeão
-    while (collectedMatches.length < 10 && keepFetching) {
-      const params = new URLSearchParams({
-        puuid,
-        region,
-        start: localStart.toString(),
-        count: "10",
-      });
-
-      if (queueId !== "all") {
-        params.append("queueId", String(queueId));
-      }
-
-      const endpoint =
-        queueId === "all"
-          ? `/api/summoner/matches?${params.toString()}`
-          : `/api/summoner/matchesByQueue?${params.toString()}`;
-
-      const res = await fetch(endpoint);
-      const data = await res.json();
-      let newMatches: Match[] = data.data || [];
-
-      // Filtra pelo campeão no client
-      newMatches = newMatches.filter(
-        (match) =>
-          match.info?.participants?.some(
-            (p) =>
-              p.puuid === puuid &&
-              String(p.championName).toLowerCase() === championName.toLowerCase()
-          )
-      );
-
-      collectedMatches = [...collectedMatches, ...newMatches];
-
-      // Se retornou menos de 10 do endpoint, acabou as partidas
-      if ((data.data?.length ?? 0) < 10) {
-        keepFetching = false;
-      } else {
-        localStart += 10;
-      }
-    }
-
-    setMatches(prev => [...prev, ...collectedMatches]);
-    setStart(localStart);
-    setHasMore(collectedMatches.length === 10);
-    setLoadingMore(false);
-  };
-
-  // Helpers
-  function getSummonerSpellImageUrl(summonerId: string | number) {
+  // Memoizar funções helper para evitar recriações
+  const getSummonerSpellImageUrl = useCallback((summonerId: string | number) => {
     const spell = Object.values(spellsData).find(
       (s: any) => String(s.key) === String(summonerId)
     );
     return spell
       ? `https://ddragon.leagueoflegends.com/cdn/${leagueVersion}/img/spell/${spell.image.full}`
       : "";
-  }
+  }, [spellsData, leagueVersion]);
 
-  function getSummonerPerkImageUrl(id: number) {
+  const getSummonerPerkImageUrl = useCallback((id: number) => {
     for (const perk of runesData) {
       if (perk.id === id) {
         return `https://ddragon.leagueoflegends.com/cdn/img/${perk.icon}`;
@@ -268,32 +248,117 @@ export function MatchHistoryFiltred({
       }
     }
     return "";
-  }
+  }, [runesData]);
 
-  function getTranslatedQueueName(queueId: number) {
+  const getTranslatedQueueName = useCallback((queueId: number) => {
     const queue = queueTypes.find(q => q.queueId === queueId);
     return queue?.description || "Custom Game";
-  }
+  }, [queueTypes]);
 
-  function formatGameDuration(duration: number) {
+  const formatGameDuration = useCallback((duration: number) => {
     const minutes = Math.floor(duration / 60);
     const seconds = duration % 60;
     return `${minutes}m ${seconds}s`;
-  }
+  }, []);
 
-  function formatGameCreation(timestamp: number) {
+  const formatGameCreation = useCallback((timestamp: number) => {
     const date = new Date(timestamp);
     return date.toLocaleDateString();
-  }
+  }, []);
 
-  function getItemImageUrl(itemId: number) {
+  const getItemImageUrl = useCallback((itemId: number) => {
     if (itemId === 0) return "";
     return `https://ddragon.leagueoflegends.com/cdn/${leagueVersion}/img/item/${itemId}.png`;
-  }
+  }, [leagueVersion]);
 
-  function getChampionImageUrl(championId: number) {
+  const getChampionImageUrl = useCallback((championId: number) => {
     return `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${championId}.png`;
-  }
+  }, []);
+
+  // Função para carregar mais partidas filtradas
+  const fetchMoreMatches = useCallback(async () => {
+    if (loadingMore) return;
+    
+    setLoadingMore(true);
+
+    try {
+      let collectedMatches: Match[] = [];
+      let localStart = start;
+      let keepFetching = true;
+      const maxAttempts = 50; // Limite de tentativas para evitar loop infinito
+      let attempts = 0;
+
+      // Se estamos filtrando por campeão, precisamos buscar mais partidas até encontrar suficientes
+      const needsChampionFiltering = championFilter && championFilter !== "all";
+      const targetMatches = needsChampionFiltering ? 10 : 10;
+
+      while (collectedMatches.length < targetMatches && keepFetching && attempts < maxAttempts) {
+        attempts++;
+        
+        const params = new URLSearchParams({
+          puuid,
+          region,
+          start: localStart.toString(),
+          count: needsChampionFiltering ? "20" : "10", // Buscar mais se filtrando por campeão
+        });
+
+        if (queueId !== "all") {
+          params.append("queueId", String(queueId));
+        }
+
+        // Adicionar filtro de campeão como parâmetro da API
+        if (needsChampionFiltering) {
+          params.append("championName", championFilter);
+        }
+
+        const endpoint =
+          queueId === "all"
+            ? `/api/summoner/matches?${params.toString()}`
+            : `/api/summoner/matchesByQueue?${params.toString()}`;
+
+        const res = await fetch(endpoint);
+        if (!res.ok) {
+          console.error("Erro na API:", res.status, res.statusText);
+          break;
+        }
+
+        const data = await res.json();
+        let newMatches: Match[] = data.data || [];
+
+        console.log(`Tentativa ${attempts}: ${newMatches.length} partidas recebidas${needsChampionFiltering ? ` para campeão ${championFilter}` : ''}`);
+
+        // Se não há mais partidas da API, para
+        if (newMatches.length === 0) {
+          keepFetching = false;
+          break;
+        }
+
+        // A API já fez o filtro, então só adicionamos as partidas
+        collectedMatches = [...collectedMatches, ...newMatches];
+        localStart += (needsChampionFiltering ? 20 : newMatches.length);
+
+        // Se recebemos menos partidas que o solicitado, provavelmente acabaram
+        if (newMatches.length < (needsChampionFiltering ? 10 : 10)) {
+          keepFetching = false;
+        }
+      }
+
+      console.log(`Total coletado: ${collectedMatches.length} partidas`);
+
+      if (collectedMatches.length > 0) {
+        setMatches(prev => [...prev, ...collectedMatches]);
+        setStart(localStart);
+      }
+      
+      setHasMore(collectedMatches.length === targetMatches && attempts < maxAttempts);
+      
+    } catch (error) {
+      console.error("Erro ao carregar mais partidas:", error);
+      setHasMore(false);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [loadingMore, start, puuid, region, queueId, championFilter]);
 
   if (isLoading || isLoadingVersion) {
     return (
@@ -326,8 +391,8 @@ export function MatchHistoryFiltred({
         const participant = match.info.participants.find(p => p.puuid === puuid);
         if (!participant || !participant.perks || !participant.perks.styles) return null;
 
-        const perk1Url = getSummonerPerkImageUrl(participant.perks.styles[0].selections[0].perk) || "";
-        const perk2Url = getSummonerPerkImageUrl(participant.perks.styles[1].style) || "";
+        const perk1Url = getSummonerPerkImageUrl(participant.perks.styles[0]?.selections?.[0]?.perk) || "";
+        const perk2Url = getSummonerPerkImageUrl(participant.perks.styles[1]?.style) || "";
         const spell1Url = getSummonerSpellImageUrl(participant.summoner1Id) || "";
         const spell2Url = getSummonerSpellImageUrl(participant.summoner2Id) || "";
 
@@ -378,8 +443,8 @@ export function MatchHistoryFiltred({
             riotIdTagline: p.riotIdTagline,
             spell1Url: getSummonerSpellImageUrl(p.summoner1Id),
             spell2Url: getSummonerSpellImageUrl(p.summoner2Id),
-            mainStyle: getSummonerPerkImageUrl(p.perks.styles[0].selections[0].perk),
-            subStyle: getSummonerPerkImageUrl(p.perks.styles[1].style),
+            mainStyle: getSummonerPerkImageUrl(p.perks?.styles?.[0]?.selections?.[0]?.perk),
+            subStyle: getSummonerPerkImageUrl(p.perks?.styles?.[1]?.style),
             items: [
               p.item0,
               p.item1,
@@ -409,8 +474,8 @@ export function MatchHistoryFiltred({
       <div className="flex justify-center">
         {hasMore && (
           loadingMore ? (
-              <div className="flex items-center h-10 px-4 py-2 text-sm rounded-md">
-                <span className="px-4 font-medium animate-pulse">Carregando...</span>
+            <div className="flex items-center h-10 px-4 py-2 text-sm rounded-md">
+              <span className="px-4 font-medium animate-pulse">Carregando...</span>
             </div>
           ) : (
             <button
