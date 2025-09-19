@@ -187,7 +187,6 @@ export async function GET(request: NextRequest) {
           matchesChampionFilter(match, puuid!, championFilter)
         );
         
-        console.log(`Filtro de campeão '${championFilter}': ${matchDetails.length} de ${matchIds.length} partidas`);
       }
 
       collectedMatches = [...collectedMatches, ...matchDetails];

@@ -59,7 +59,6 @@ export async function GET(request: NextRequest) {
     const championId = searchParams.get('championId'); // <- novo parâmetro
 
     const validatedData = matchesSchema.parse({ region, puuid, start, count });
-    //console.log("Validated Data:", validatedData);
     const { RIOT_API_KEY } = process.env;
 
     if (!RIOT_API_KEY) {

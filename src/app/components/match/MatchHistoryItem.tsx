@@ -161,7 +161,9 @@ export function MatchHistoryItem({
             </div>
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-1">
-              <h3 className="text-sm font-semibold">{champion.name}</h3>
+              <h3 className="text-sm font-semibold">
+                {champion.name === "MonkeyKing" ? "Wukong" : champion.name}
+              </h3>
             </div>
 
             <div className="flex items-center gap-2">

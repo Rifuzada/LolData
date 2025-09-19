@@ -325,7 +325,6 @@ export function MatchHistoryFiltred({
         const data = await res.json();
         let newMatches: Match[] = data.data || [];
 
-        console.log(`Tentativa ${attempts}: ${newMatches.length} partidas recebidas${needsChampionFiltering ? ` para campeão ${championFilter}` : ''}`);
 
         // Se não há mais partidas da API, para
         if (newMatches.length === 0) {
@@ -343,7 +342,6 @@ export function MatchHistoryFiltred({
         }
       }
 
-      console.log(`Total coletado: ${collectedMatches.length} partidas`);
 
       if (collectedMatches.length > 0) {
         setMatches(prev => [...prev, ...collectedMatches]);

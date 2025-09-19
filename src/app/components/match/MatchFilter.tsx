@@ -171,6 +171,12 @@ const champions = [
   { id: "142", name: "Zoe" },
   { id: "143", name: "Zyra" },
 ];
+// Função utilitária para pegar o nome pelo ID
+export default function getChampionNameById(id: number): string {
+  const champ = champions.find(c => c.id === String(id));
+  return champ ? champ.name : "Desconhecido";
+}
+
 
 const queues = [
   { id: "", name: "Filtro de Partidas" },
@@ -240,7 +246,6 @@ export function MatchFilter() {
   //   const queue = newQueueId !== null ? newQueueId : queueId;
   //   let champ = newChampionId !== null ? newChampionId : championId;
 
-  //   console.log('Fila selecionada:', queue, '| Campeão selecionado:', champ);
 
   //   if (!champ || champ === "" || champ === undefined) champ = "all";
 
@@ -265,7 +270,6 @@ export function MatchFilter() {
   //   }
 
   //   const url = `/summoner/${region}/${gameName}/${tagLine}/${queueParam}${championParam}`;
-  //   console.log('Navegando para:', url);
 
   //   router.push(url); // Navega para a nova rota dinâmica
   // }

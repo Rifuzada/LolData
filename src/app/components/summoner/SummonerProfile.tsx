@@ -1,9 +1,12 @@
+'use client';
+
 import { Card } from "../ui/Card"
 import Image from "next/image"
+import  getChampionNameById  from "../match/MatchFilter";
+
 
 interface ChampionMastery {
   championId: number
-  championName: string
   level: number
   points: number
 }
@@ -59,6 +62,7 @@ export function SummonerProfile({
 
     return `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${tier}.svg`;
   };
+  
 
   return (
     <div className="space-y-6">
@@ -124,7 +128,7 @@ export function SummonerProfile({
               <div className="relative w-16 h-16">
               <Image
                   src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${champion.championId}.png`}
-                  alt={champion.championName}
+                  alt={getChampionNameById(champion.championId)}
                   fill
                   className="object-cover object-top border-4 rounded-full border-accent/50"
                   style={{
@@ -137,7 +141,9 @@ export function SummonerProfile({
                 </div>
               </div>
               <div className="text-center">
-                <p className="text-sm font-medium">{champion.championName}</p>
+                                <p className="text-sm font-medium">
+                  {getChampionNameById(champion.championId)}
+                </p>
                 <p className="text-xs text-muted-foreground">
                   {new Intl.NumberFormat().format(champion.points)} pts
                 </p>

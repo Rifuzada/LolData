@@ -23,11 +23,9 @@ async function getAllRankings(region: string, queueType: string) {
 
   const cachedEntry = cache.get(cacheKey);
   if (cachedEntry && now - cachedEntry.timestamp < CACHE_TTL) {
-    console.log(`Cache hit para ${cacheKey}`);
     return cachedEntry.data;
   }
 
-  console.log(`Cache miss ou expirado para ${cacheKey}, fazendo requests...`);
 
   try {
     const [challenger, grandmaster, master] = await Promise.all([
@@ -49,13 +47,10 @@ async function getAllRankings(region: string, queueType: string) {
       queueType,
     });
 
-    console.log(
-      `Dados salvos no cache para ${cacheKey}. Total de entradas: ${allEntries.length}`
-    );
+
     return allEntries;
   } catch (error) {
     if (cachedEntry) {
-      console.log(`Erro na API, usando cache expirado para ${cacheKey}`);
       return cachedEntry.data;
     }
     throw error;

@@ -32,6 +32,7 @@ export async function GET(request: NextRequest) {
         }
       }
     );
+    
 
     if (!response.ok) {
       const error = await response.json();

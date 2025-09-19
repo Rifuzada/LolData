@@ -89,7 +89,6 @@ export function useSearchHandler(): SearchHandlerHook {
   //     console.error('Nenhuma região foi usada anteriormente. Faça uma busca inicial primeiro!');
   //     return;
   //   }
-  //   console.log(lastRegion)
 
   //   // Remover todos os espaços antes de dividir o Riot ID
   //   const sanitizedRiotId = riotid.replace(/\s+/g, '');

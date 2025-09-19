@@ -18,7 +18,6 @@ export function cleanExpiredCache(
   for (const [key, entry] of cache.entries()) {
     if (now - entry.timestamp > ttl) {
       cache.delete(key);
-      console.log(`Cache expirado removido: ${key}`);
     }
   }
 }

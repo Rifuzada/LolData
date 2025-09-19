@@ -58,12 +58,6 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
       throw new Error('Não foi possível encontrar o invocador');
     }
 
-    //console.log('Summoner encontrado:', {
-      //name: summoner.name,
-      //puuid: summoner.puuid,
-      //tagLine: summoner.tagLine
-    //});
-
     // Decodificar o tagLine
     const decodedGameName = decodeURIComponent(gameName);
     const decodedTagLine = decodeURIComponent(tagLine);
