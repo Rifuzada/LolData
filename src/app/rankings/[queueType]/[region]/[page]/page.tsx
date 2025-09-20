@@ -294,14 +294,17 @@ export default function RankingsPage({ params }: { params: { queueType: string; 
           </svg>
           Back
         </a>
-        <h1 className="text-2xl font-bold">
+        <h1 className="hidden text-2xl font-bold md:block">
           High Elo Rankings - {displayRegionMap[region.toUpperCase()] || region.toUpperCase()} - {queueDisplayNames[friendlyQueueType] || friendlyQueueType}
+        </h1>
+        <h1 className="text-xs font-bold md:block">
+          Rankings {queueDisplayNames[friendlyQueueType] || friendlyQueueType}
         </h1>
         <div className="flex items-center gap-2">
           <select
             value={region}
             onChange={(e) => changeRegion(e.target.value)}
-            className="px-3 py-2 text-sm border rounded-md cursor-pointer border-input bg-background"
+            className="w-12 px-3 py-2 text-sm border rounded-md cursor-pointer border-input bg-background"
           >
             <optgroup label="Americas">
               <option value="BR1">🇧🇷 - Brazil</option>
@@ -356,93 +359,102 @@ export default function RankingsPage({ params }: { params: { queueType: string; 
       {!isLoading && !isLoadingNames && rankings && rankings.entries.length > 0 && (
         <div className="grid gap-4">
           <Card className="p-4">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="p-2 text-left">Rank</th>
-                  <th className="p-2 text-left">Summoner</th>
-                  <th className="p-2 text-left">Tier</th>
-                  <th className="p-2 text-left">LP</th>
-                  <th className="p-2 text-left">Wins</th>
-                  <th className="p-2 text-left">Losses</th>
-                  <th className="p-2 text-left">Win Rate</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rankings.entries.map((entry, index) => {
-                  const winRate = ((entry.wins / (entry.wins + entry.losses)) * 100).toFixed(1);
-                  const summonerInfo = summonerNames[entry.puuid];
-                  const displayName = summonerInfo && summonerInfo.gameName && summonerInfo.tagLine
-                    ? `${summonerInfo.gameName} #${summonerInfo.tagLine}`
-                    : 'Carregando...';
+          <table className="w-full mx-auto">
+            <thead>
+              <tr className="border-b">
+                <th className="hidden p-2 text-center sm:table-cell">Rank</th>
+                <th className="w-1/5 p-2 text-left sm:text-center sm:w-auto">Name</th>
+                <th className="p-2 text-center">Tier</th>
+                <th className="p-2 text-center">LP</th>
+                <th className="hidden p-2 text-center sm:table-cell">Wins</th>
+                <th className="hidden p-2 text-center sm:table-cell">Losses</th>
+                <th className="p-2 text-center">
+                  <span className="hidden sm:inline">Win Rate</span>
+                  <span className="inline sm:hidden">WR</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {rankings.entries.map((entry, index) => {
+                const winRate = ((entry.wins / (entry.wins + entry.losses)) * 100).toFixed(1);
+                const summonerInfo = summonerNames[entry.puuid];
+                const displayName = summonerInfo && summonerInfo.gameName && summonerInfo.tagLine
+                  ? `${summonerInfo.gameName} #${summonerInfo.tagLine}`
+                  : 'Carregando...';
 
-                  // Determinar tier baseado na posição no ranking
-                  const getTier = (globalRank: number) => {
-                    // Challenger são apenas os top 200
-                    if (globalRank <= 200) return 'Challenger';
-                    // Grandmaster são do 201 ao 700
-                    if (globalRank <= 700) return 'Grandmaster';
-                    // Resto é Master
-                    return 'Master';
-                  };
+                const getTier = (globalRank: number) => {
+                  if (globalRank <= 200) return 'Challenger';
+                  if (globalRank <= 700) return 'Grandmaster';
+                  return 'Master';
+                };
 
-                  const globalRank = ((currentPage - 1) * itemsPerPage) + index + 1;
-                  const tier = getTier(globalRank);
-                  
-                  const getTierColor = (tier: string) => {
-                    switch (tier) {
-                      case 'Challenger': return 'text-yellow-400 font-bold';
-                      case 'Grandmaster': return 'text-red-400 font-semibold';
-                      case 'Master': return 'text-purple-400 font-medium';
-                      default: return 'text-gray-400';
-                    }
-                  };
+                const globalRank = ((currentPage - 1) * itemsPerPage) + index + 1;
+                const tier = getTier(globalRank);
+                
+                const getTierColor = (tier: string) => {
+                  switch (tier) {
+                    case 'Challenger': return 'text-yellow-400 font-bold';
+                    case 'Grandmaster': return 'text-red-400 font-semibold';
+                    case 'Master': return 'text-purple-400 font-medium';
+                    default: return 'text-gray-400';
+                  }
+                };
 
-                  return (
-                    <tr key={entry.puuid} className="border-b last:border-0">
-                      <td className="p-2">{globalRank}</td>
-                      <td className="p-2">
-                        <div className="flex items-center gap-2">
-                          {summonerInfo?.profileIconId && (
-                            <Image
-                              src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/${summonerInfo.profileIconId}.jpg`}
-                              alt="Profile Icon"
-                              width={32}
-                              height={32}
-                              className="object-cover border rounded-full border-zinc-700"
-                              unoptimized
-                            />
-                          )}
-                          <Link 
-                            href={summonerInfo ? `/summoner/${region}/${summonerInfo.gameName}/${summonerInfo.tagLine}/all` : '#'}
-                            className="cursor-pointer hover:underline"
-                          >
-                            {displayName}
-                          </Link>
-                        </div>
-                      </td>
-                      <td className={`p-2 ${getTierColor(tier)}`}>
-                        <div className="flex items-center gap-2">
-                          <Image
-                            src={getTierIconUrl(tier)}
-                            alt={`${tier} tier`}
-                            width={20}
-                            height={20}
-                            className="inline-block"
-                            unoptimized
-                          />
-                          {tier}
-                        </div>
-                      </td>
-                      <td className="p-2">{entry.leaguePoints} LP</td>
-                      <td className="p-2">{entry.wins}</td>
-                      <td className="p-2">{entry.losses}</td>
-                      <td className="p-2">{winRate}%</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                return (
+                  <tr key={entry.puuid} className="border-b last:border-0">
+                    <td className="hidden p-2 text-center sm:table-cell">{globalRank}</td>
+                    <td className="w-1/3 p-2 sm:w-auto">
+                    <div className="flex items-center min-w-0 gap-2">
+                      {summonerInfo?.profileIconId && (
+                        <Image
+                          src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/${summonerInfo.profileIconId}.jpg`}
+                          alt="Profile Icon"
+                          width={24}
+                          height={24}
+                          className="flex-shrink-0 object-cover border rounded-full border-zinc-700 sm:w-8 sm:h-8"
+                          unoptimized
+                        />
+                      )}
+                      <Link 
+                        href={summonerInfo ? `/summoner/${region}/${summonerInfo.gameName}/${summonerInfo.tagLine}/all` : '#'}
+                        className="block min-w-0 truncate cursor-pointer hover:underline"
+                      >
+                        <span className="hidden sm:inline">{displayName}</span>
+                        <span className="block inline truncate sm:hidden">{summonerInfo?.gameName || 'Carregando...'}</span>
+                      </Link>
+                    </div>
+                  </td>
+                    <td className={`p-2 text-center ${getTierColor(tier)}`}>
+                      <div className="flex items-center justify-center gap-2">
+                        <Image
+                          src={getTierIconUrl(tier)}
+                          alt={`${tier} tier`}
+                          width={20}
+                          height={20}
+                          className="inline-block"
+                          unoptimized
+                        />
+                        <span className="hidden md:inline">{tier}</span>
+                      </div>
+                    </td>
+                    <td className="p-2 text-center">
+                      {entry.leaguePoints}<span className="hidden sm:inline"> LP</span>
+                    </td>
+                    <td className="hidden p-2 text-center sm:table-cell">{entry.wins}</td>
+                    <td className="hidden p-2 text-center sm:table-cell">{entry.losses}</td>
+                    <td className="p-2 text-center">
+                      <div className="flex flex-col sm:block">
+                        <span className="inline text-xs text-gray-400 sm:hidden">
+                          {entry.wins}W/{entry.losses}L
+                        </span>
+                        <span>{winRate}%</span>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
             
             {/* Paginação Numérica */}
             <div className="flex items-center justify-between px-2 mt-4">
