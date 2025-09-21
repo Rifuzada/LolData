@@ -42,19 +42,23 @@ const Home: React.FC = () => {
   };
 
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen p-4">
-      <nav className='top-bar'>Links</nav>
-      <div id="title" className="mb-8 text-center">
-        <h1 className="mb-2 font-mono text-4xl">LoLData</h1>
-        <p className="mb-2 text-lg text-gray-600">
-          Search for League of Legends player information
-        </p>
-        {error && (
-          <p className="font-medium text-red-500">{error}</p>
-        )}
-      </div>
+    <div className="flex flex-col min-h-screen">
+      <header role="banner" className="w-full">
+        <nav className='top-bar' role="navigation" aria-label="Principal">Links</nav>
+      </header>
 
-      <div id="input-container" className="flex flex-col w-full max-w-lg gap-4">
+      <main className="flex flex-col items-center justify-center flex-grow p-4" role="main">
+        <div id="title" className="mb-8 text-center">
+          <h1 className="mb-2 font-mono text-4xl">LoLData</h1>
+          <p className="mb-2 text-lg text-gray-600">
+            Search for League of Legends player information
+          </p>
+          {error && (
+            <p className="font-medium text-red-500" role="alert" aria-live="assertive">{error}</p>
+          )}
+        </div>
+
+        <div id="input-container" className="flex flex-col w-full max-w-lg gap-4" role="search" aria-label="Pesquisa de invocador">
         <input
           className="w-full p-3 transition border-2 border-gray-300 rounded input focus:outline-none focus:border-blue-500"
           type="text"
@@ -114,14 +118,16 @@ const Home: React.FC = () => {
           {isLoading ? 'Searching...' : 'Search Summoner'}
         </button>
       </div>
-
+    </main>
+    <footer>
       <div className="mt-10 text-center text-gray-500">
         <p>
           LoLData is not endorsed by Riot Games and does not reflect the views or opinions of Riot Games
           or anyone officially involved in the production or management of League of Legends.
         </p>
       </div>
-    </main>
+    </footer>
+    </div>
   );
 };
 

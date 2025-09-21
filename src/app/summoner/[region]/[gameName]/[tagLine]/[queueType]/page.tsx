@@ -95,74 +95,98 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
     const regionTranslated = getRegionDisplay(region);
     
     return (
-      <main className="container min-h-screen py-8 mx-auto space-y-8">
-        <SummonerSearch defaultRegion={region} />
-        <div className="relative">
-          <div className="absolute inset-0 -z-10 bg-gradient-to-b from-background/80 to-background" />
-          <SummonerProfile
-            name={summoner.name ?? decodedGameName}
-            gameName={decodedGameName}
-            tagLine={decodedTagLine} // Use o tagLine decodificado
-            level={summoner.summonerLevel}
-            profileIconId={summoner.profileIconId}
-            region={regionTranslated}
-            masteries={(masteries as ChampionMastery[]).slice(0, 5).map((mastery) => ({
-              championId: mastery.championId,
-              championName: mastery.championName,
-              level: mastery.championLevel,
-              points: mastery.championPoints
-            }))}
-            eloSoloq={eloSoloq}
-            eloFlex={eloFlex}
-            lpSoloq={lpSoloq}
-            lpFlex={lpFlex}
-            winsSoloq={soloQData?.wins}
-            losesSoloq={soloQData?.losses}
-            winsFlex={flexData?.wins}
-            losesFlex={flexData?.losses}
-          />
-        </div>
+      <div className="flex flex-col min-h-screen">
+        <header role="banner" className="w-full">
+          <nav role="navigation" aria-label="Pesquisa de invocador">
+            <SummonerSearch defaultRegion={region} />
+          </nav>
+        </header>
 
-        <div className="p-6 border rounded-lg bg-card">
-          <div className="mb-6">
-            <h2 className="text-2xl font-semibold">Match History</h2>
-            <p className="text-sm text-muted-foreground">
-              Recent games played by {decodedGameName} on {queueType} with all champions
-            </p>
-            <MatchFilter />
+        <main className="container flex-grow py-8 mx-auto space-y-8" role="main">
+          <div className="relative">
+            <div className="absolute inset-0 -z-10 bg-gradient-to-b from-background/80 to-background" />
+            <section aria-label="Perfil do Invocador">
+              <SummonerProfile
+                name={summoner.name ?? decodedGameName}
+                gameName={decodedGameName}
+                tagLine={decodedTagLine}
+                level={summoner.summonerLevel}
+                profileIconId={summoner.profileIconId}
+                region={regionTranslated}
+                masteries={(masteries as ChampionMastery[]).slice(0, 5).map((mastery) => ({
+                  championId: mastery.championId,
+                  championName: mastery.championName,
+                  level: mastery.championLevel,
+                  points: mastery.championPoints
+                }))}
+                eloSoloq={eloSoloq}
+                eloFlex={eloFlex}
+                lpSoloq={lpSoloq}
+                lpFlex={lpFlex}
+                winsSoloq={soloQData?.wins}
+                losesSoloq={soloQData?.losses}
+                winsFlex={flexData?.wins}
+                losesFlex={flexData?.losses}
+              />
+            </section>
           </div>
-          <Suspense
-            fallback={
-              <div className="space-y-4">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="h-32 rounded-lg animate-pulse bg-muted/50"
-                  />
-                ))}
-              </div>
-            }
-          >
-            <MatchHistoryFiltred
-              matchesByQueue={(matchesByQueue as any[])}
-              puuid={summoner.puuid}
-              queueTypes={(queueTypes as any)}
-              region={region}
-              queueId={queueId} // <-- string, pode ser "all" ou um número em string
-            />
-          </Suspense>
-        </div>
-      </main>
+
+          <section className="p-6 border rounded-lg bg-card" aria-label="Histórico de Partidas">
+            <header className="mb-6">
+              <h2 className="text-2xl font-semibold">Match History</h2>
+              <p className="text-sm text-muted-foreground">
+                Recent games played by {decodedGameName} on {queueType} with all champions
+              </p>
+              <MatchFilter />
+            </header>
+            <Suspense
+              fallback={
+                <div className="space-y-4" role="status" aria-label="Carregando partidas">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="h-32 rounded-lg animate-pulse bg-muted/50"
+                      aria-hidden="true"
+                    />
+                  ))}
+                </div>
+              }
+            >
+              <MatchHistoryFiltred
+                matchesByQueue={(matchesByQueue as any[])}
+                puuid={summoner.puuid}
+                queueTypes={(queueTypes as any)}
+                region={region}
+                queueId={queueId}
+              />
+            </Suspense>
+          </section>
+        </main>
+
+        <footer role="contentinfo" className="w-full py-4 mt-auto">
+          <div className="container mx-auto">
+            <div className="p-6 text-sm text-center text-muted-foreground">
+              <p>© {new Date().getFullYear()} LolData - Dados fornecidos pela API da Riot Games</p>
+            </div>
+          </div>
+        </footer>
+      </div>
     );
   } catch (error) {
     console.error('Erro ao carregar dados:', error);
     return (
-      <main className="container min-h-screen py-8 mx-auto">
-        <div className="p-6 border rounded-lg border-destructive bg-destructive/10 text-destructive">
-          <h2 className="text-lg font-semibold">Erro ao carregar dados</h2>
-          <p>Não foi possível carregar os dados do invocador. Por favor, tente novamente mais tarde.</p>
-        </div>
-      </main>
+      <div className="flex flex-col min-h-screen">
+        <main className="container flex-grow py-8 mx-auto" role="main">
+          <div 
+            className="p-6 border rounded-lg border-destructive bg-destructive/10 text-destructive"
+            role="alert"
+            aria-live="assertive"
+          >
+            <h2 className="text-lg font-semibold">Erro ao carregar dados</h2>
+            <p>Não foi possível carregar os dados do invocador. Por favor, tente novamente mais tarde.</p>
+          </div>
+        </main>
+      </div>
     );
   }
 }

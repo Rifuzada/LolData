@@ -137,11 +137,18 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
     const regionTranslated = getRegionDisplay(region);
 
     return (
-      <main className="container min-h-screen py-8 mx-auto space-y-8">
-        <SummonerSearch defaultRegion={region} />
-        <div className="relative">
-          <div className="absolute inset-0 -z-10 bg-gradient-to-b from-background/80 to-background" />
-          <SummonerProfile
+      <div className="flex flex-col min-h-screen">
+        <header role="banner" className="w-full">
+          <nav role="navigation" aria-label="Pesquisa de invocador">
+            <SummonerSearch defaultRegion={region} />
+          </nav>
+        </header>
+
+        <main className="container flex-grow py-8 mx-auto space-y-8" role="main">
+          <div className="relative">
+            <div className="absolute inset-0 -z-10 bg-gradient-to-b from-background/80 to-background" />
+            <section aria-label="Perfil do Invocador">
+              <SummonerProfile
             name={summoner.name ?? ''}
             gameName={decodedGameName}
             tagLine={decodedTagLine}
@@ -163,6 +170,7 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
             winsFlex={flexData?.wins}
             losesFlex={flexData?.losses}
           />
+            </section>
         </div>
 
         <div className="p-6 border rounded-lg bg-card">
@@ -195,6 +203,15 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
           </Suspense>
         </div>
       </main>
+      
+      <footer role="contentinfo" className="w-full py-4 mt-auto">
+          <div className="container mx-auto">
+            <div className="p-6 text-sm text-center text-muted-foreground">
+              <p>© {new Date().getFullYear()} LolData - Dados fornecidos pela API da Riot Games</p>
+            </div>
+          </div>
+        </footer>
+      </div>
     );
   } catch (error) {
     console.error('Erro ao carregar dados:', error);
