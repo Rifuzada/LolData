@@ -1,8 +1,10 @@
 # Lista de melhoras para o futuro:
 
-- Otimizar tempo de resposta.
-- Arrumar filtro de champ.
-- Maior parte dos erros é causado por demora de carregar(que o vercel bloqueia apos 40 segundos).
+- historico de partidas ✔ (feito na versao old e refeito na dev)
+- rankings ✔ (Challenger, GrandMaster, Master)
+- Otimizar tempo de resposta → ou usando cache ou banco de dados.
+- Arrumar filtro de champ(nem ideia de onde começar).
+- Maior parte dos erros é causado por demora de carregar(que o vercel bloqueia apos 40 segundos) → (eu acho que) tambem podem ser arrumados com cache ou banco de dados.
 - Adicionar sobre tft(futuro um pouco distante).
 
 ---
