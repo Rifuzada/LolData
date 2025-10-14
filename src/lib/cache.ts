@@ -1,7 +1,7 @@
 // src/lib/cache.ts
 
 export interface CacheEntry {
-  data: any[];
+  data: any; // can be array or object payload
   timestamp: number;
   region: string;
   queueType: string;
@@ -28,7 +28,7 @@ export function getCacheStatus(
 ) {
   const status = Array.from(cache.entries()).map(([key, entry]) => ({
     key,
-    entriesCount: entry.data.length,
+    entriesCount: Array.isArray(entry.data) ? entry.data.length : (entry.data?.allEntries ? entry.data.allEntries.length : 0),
     ageInMinutes: Math.floor((Date.now() - entry.timestamp) / (1000 * 60)),
     isExpired: (Date.now() - entry.timestamp) > ttl
   }));

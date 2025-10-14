@@ -121,14 +121,14 @@ export async function getChampionMasteries(region: string, puuid: string) {
 
 export async function getMatchHistory(region: string, puuid: string) {
   try {
-    console.log("🔍 Iniciando getMatchHistory:", { region, puuid });
+    //console.log("🔍 Iniciando getMatchHistory:", { region, puuid });
     
     let apiUrl = BASE_URL;
     if (['euw1','eun1','ru','tr1','me1'].includes(region)) apiUrl = EUROPE_URL;
     else if (['kr','jp1'].includes(region)) apiUrl = ASIA_URL;
     else if (['oc1','sg2','tw2','vn2'].includes(region)) apiUrl = SEA_URL;
 
-    console.log("🌐 URL base escolhida:", apiUrl);
+    //console.log("🌐 URL base escolhida:", apiUrl);
 
     const matchIds = await safeAxios<string[]>({
       method: 'get',
@@ -137,7 +137,7 @@ export async function getMatchHistory(region: string, puuid: string) {
       params: { start: 0, count: 10 }
     });
 
-    console.log("✅ matchIds retornados:", matchIds);
+    //console.log("✅ matchIds retornados:", matchIds);
 
     const matches = await Promise.all(
       matchIds.map(id => 
@@ -149,7 +149,7 @@ export async function getMatchHistory(region: string, puuid: string) {
       )
     );
 
-    console.log("✅ Histórico completo retornado com sucesso");
+    //console.log("✅ Histórico completo retornado com sucesso");
     return matches;
 
   } catch (error: any) {
@@ -157,7 +157,6 @@ export async function getMatchHistory(region: string, puuid: string) {
     throw new Error('Falha ao buscar histórico de partidas');
   }
 }
-"RGAPI-1ace7485-1756-48bf-9bdb-98a1b11a266b"
 
 export async function getMatchHistoryByQueue(region: string, puuid: string, queueId: string) {
   try {
