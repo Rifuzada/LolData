@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+
+// Force this API route to be treated as dynamic (server-only runtime)
+export const dynamic = 'force-dynamic';
 import { z } from 'zod';
 import { getRegionalApiUrl } from '@/app/utils/helpers';
 import { OptimisticCache } from '@/app/utils/optimisticCacheApi';

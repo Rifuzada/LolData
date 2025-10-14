@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
 import { getSummonerByRiotId, getChampionMasteries, getMatchHistory, getQueueTypes, getMatchHistoryByQueue } from '@/app/actions/summoner';
 
 export async function GET(request: NextRequest) {

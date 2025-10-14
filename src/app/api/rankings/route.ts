@@ -1,4 +1,8 @@
 import { NextResponse, NextRequest } from "next/server";
+
+// This API route relies on runtime request params and external API calls.
+// Force it to be dynamic so Next.js doesn't attempt to statically call it during build.
+export const dynamic = 'force-dynamic';
 import { CACHE_TTL, CacheEntry, cleanExpiredCache, getCacheStatus } from "@/lib/cache";
 
 const RIOT_API_KEY = process.env.RIOT_API_KEY;
@@ -11,9 +15,31 @@ async function fetchLeague(
   queueType: string,
   tier: "challenger" | "grandmaster" | "master"
 ) {
+  if (!RIOT_API_KEY) {
+    throw new Error('RIOT_API_KEY not configured on the server');
+  }
+
   const url = `https://${region}.api.riotgames.com/lol/league/v4/${tier}leagues/by-queue/${queueType}?api_key=${RIOT_API_KEY}`;
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`Erro ao buscar ${tier}: ${res.status}`);
+  if (!res.ok) {
+    // Try to include Riot message when possible
+    let detail = '';
+    try {
+      const body = await res.json();
+      if (body?.status?.message) detail = ` - ${body.status.message}`;
+    } catch (e) {
+      // ignore JSON parse errors
+    }
+
+    if (res.status === 401) {
+      throw new Error(`Riot API unauthorized (401). Check RIOT_API_KEY is valid and configured.${detail}`);
+    }
+    if (res.status === 429) {
+      throw new Error(`Riot API rate limit (429). Consider retrying later.${detail}`);
+    }
+
+    throw new Error(`Erro ao buscar ${tier}: ${res.status}${detail}`);
+  }
   return res.json();
 }
 
@@ -190,6 +216,10 @@ export async function GET(req: NextRequest) {
 
     if (!region) {
       return NextResponse.json({ error: "Missing region" }, { status: 400 });
+    }
+
+    if (!RIOT_API_KEY) {
+      return NextResponse.json({ error: 'RIOT_API_KEY not configured on server' }, { status: 500 });
     }
 
   const data = await getAllRankings(region, queueType);
