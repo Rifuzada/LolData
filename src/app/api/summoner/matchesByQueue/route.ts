@@ -89,8 +89,8 @@ function matchesChampionFilter(match: any, puuid: string, championFilter: string
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    
+    const { searchParams } = request.nextUrl;
+
     // Parâmetros da requisição
     const puuid = searchParams.get('puuid');
     const start = searchParams.get('start') || '0';
@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Criar chave de cache considerando todos os parâmetros importantes
-    const cacheKey = `${region}-${puuid}-${queueId}-${championFilter}-${start}-${count}`;
+  const cacheKey = `matchesByQueue:${region}:${puuid}:${queueId}:${championFilter}:${start}:${count}`;
     const now = Date.now();
 
     // Verificar cache

@@ -9,11 +9,10 @@ const rankedSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    // Padroniza a chave do cache para ser apenas path + search (sem domínio)
-    const urlObj = new URL(request.url);
+  // Use request.nextUrl to safely access the parsed URL/search params
+  const urlObj = request.nextUrl;
     const refresh = urlObj.searchParams.get('refresh') === '1';
 
-    // Não usa mais cache, busca sempre direto
     const { searchParams } = urlObj;
     const summonerId = searchParams.get('summonerId');
     const region = searchParams.get('region');

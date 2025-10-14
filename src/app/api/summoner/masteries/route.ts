@@ -9,7 +9,7 @@ const masteriesSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = request.nextUrl;
     const puuid = searchParams.get('puuid');
     const region = searchParams.get('region');
 

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { CACHE_TTL, CacheEntry, cleanExpiredCache, getCacheStatus } from "@/lib/cache";
 
 const RIOT_API_KEY = process.env.RIOT_API_KEY;
@@ -180,9 +180,9 @@ async function getAllRankings(region: string, queueType: string) {
   }
 }
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
+    const { searchParams } = req.nextUrl;
     const region = searchParams.get("region");
     const queueType = searchParams.get("queueType") || "RANKED_SOLO_5x5";
     const page = parseInt(searchParams.get("page") || "1");
@@ -201,7 +201,7 @@ export async function GET(req: Request) {
   const endIndex = startIndex + limit;
   const paginatedEntries = allEntries.slice(startIndex, endIndex);
 
-    const cacheKey = `${region}-${queueType}`;
+  const cacheKey = `rankings:${region}-${queueType}`;
     const cachedEntry = cache.get(cacheKey);
     const cacheAge = cachedEntry ? Date.now() - cachedEntry.timestamp : 0;
 

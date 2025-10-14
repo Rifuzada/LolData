@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -54,8 +54,6 @@ export default function RankingsPage({ params }: { params: { queueType: string; 
   const [isLoadingNames, setIsLoadingNames] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [summonerNames, setSummonerNames] = useState<Record<string, SummonerInfo>>({});
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
-  const [sortedEntries, setSortedEntries] = useState<LeagueEntry[]>([]);
 
   // Parse page from URL params
   const currentPage = parseInt(params.page) || 1;
@@ -184,80 +182,24 @@ export default function RankingsPage({ params }: { params: { queueType: string; 
     }
   }, [region, queueType, currentPage, itemsPerPage]);
 
-  // Fetch all entries for sorting (loads up to 1000 entries from first 10 pages)
-  const fetchAllForSorting = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const promises = [];
-      
-      // Fetch first 10 pages (1000 entries total)
-      for (let i = 1; i <= 10; i++) {
-        promises.push(
-          fetch(`/api/rankings?region=${region}&queueType=${queueType}&page=${i}&limit=${itemsPerPage}`)
-            .then(res => res.ok ? res.json() : null)
-        );
-      }
-      
-      const results = await Promise.all(promises);
-      const allEntries = results
-        .filter(Boolean)
-        .flatMap(data => data.entries || []);
-      
-      setSortedEntries(allEntries);
-      
-      // Fetch all summoner names for the loaded entries
-      const allPuuids = allEntries.map(entry => entry.puuid);
-      if (allPuuids.length > 0) {
-        await fetchSummonerNames(allPuuids);
-      }
-    } catch (err) {
-      console.error('Error fetching all entries:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [region, queueType, itemsPerPage, fetchSummonerNames]);
+  // (sorting removed) 
 
   // Get display data based on sort state
   const getDisplayData = useCallback(() => {
     if (!rankings) return { entries: [], totalPages: 0, totalEntries: 0 };
     
-    if (sortOrder === null) {
-      return {
+    return {
         entries: rankings.entries,
         totalPages: rankings.pagination?.totalPages || 0,
         totalEntries: rankings.pagination?.totalEntries || rankings.entries.length
       };
-    }
-    
-    // When sorting, use sortedEntries
-    if (sortedEntries.length === 0) {
-      return { entries: [], totalPages: 0, totalEntries: 0 };
-    }
-    
-    const sorted = [...sortedEntries].sort((a, b) => {
-      const winRateA = a.wins / (a.wins + a.losses);
-      const winRateB = b.wins / (b.wins + b.losses);
-      return sortOrder === 'asc' ? winRateA - winRateB : winRateB - winRateA;
-    });
-    
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const paginatedEntries = sorted.slice(startIndex, endIndex);
-    
-    return {
-      entries: paginatedEntries,
-      totalPages: Math.ceil(sorted.length / itemsPerPage),
-      totalEntries: sorted.length
-    };
-  }, [rankings, sortOrder, sortedEntries, currentPage, itemsPerPage]);
+  }, [rankings, currentPage, itemsPerPage]);
 
   const displayData = getDisplayData();
   const totalPages = displayData.totalPages;
 
   // Fetch rankings on mount and when dependencies change
   useEffect(() => {
-    setSortedEntries([]);
-    setSortOrder(null);
     fetchRankings();
   }, [fetchRankings]);
 
@@ -270,37 +212,16 @@ export default function RankingsPage({ params }: { params: { queueType: string; 
 
   // Load names for current page when sort order changes
   useEffect(() => {
-    if (sortOrder === null) return;
-    
-    // Wait for displayData to be populated
+    // ensure names for current page are loaded
+    if (!rankings || isLoading) return;
     const data = getDisplayData();
     if (!data.entries.length) return;
-    
     const visiblePuuids = data.entries.map(entry => entry.puuid);
     const missingNames = visiblePuuids.filter(puuid => !summonerNames[puuid]);
-    
-    if (missingNames.length > 0) {
-      fetchSummonerNames(missingNames);
-    }
-  }, [sortOrder, currentPage, sortedEntries, summonerNames, fetchSummonerNames, getDisplayData]);
+    if (missingNames.length > 0) fetchSummonerNames(missingNames);
+  }, [currentPage, rankings, summonerNames, fetchSummonerNames]);
 
-  // Toggle sort order
-  const toggleSortOrder = async () => {
-    const newOrder = sortOrder === null ? 'desc' : sortOrder === 'desc' ? 'asc' : null;
-    
-    if (newOrder !== null && sortedEntries.length === 0) {
-      await fetchAllForSorting();
-      setSortOrder(newOrder);
-      if (currentPage !== 1) {
-        router.push(`/rankings/${friendlyQueueType}/${region}/1`);
-      }
-    } else {
-      setSortOrder(newOrder);
-      if (newOrder !== null && currentPage !== 1) {
-        router.push(`/rankings/${friendlyQueueType}/${region}/1`);
-      }
-    }
-  };
+  // (sorting removed)
 
   // Get tier icon URL
   const getTierIconUrl = (tier: string) => {
@@ -557,16 +478,10 @@ export default function RankingsPage({ params }: { params: { queueType: string; 
                     <th className="p-2 text-center">LP</th>
                     <th className="hidden p-2 text-center sm:table-cell">Wins</th>
                     <th className="hidden p-2 text-center sm:table-cell">Losses</th>
-                    <th 
-                      className="p-2 text-center transition-colors cursor-pointer select-none hover:bg-accent/50"
-                      onClick={toggleSortOrder}
-                      title="Clique para ordenar top 1000 por Win Rate"
-                    >
+                    <th className="p-2 text-center">
                       <div className="flex items-center justify-center gap-1">
                         <span className="hidden sm:inline">Win Rate</span>
                         <span className="inline sm:hidden">WR</span>
-                        {sortOrder === 'asc' && <span>▲</span>}
-                        {sortOrder === 'desc' && <span>▼</span>}
                       </div>
                     </th>
                   </tr>
@@ -579,9 +494,7 @@ export default function RankingsPage({ params }: { params: { queueType: string; 
                       ? `${summonerInfo.gameName} #${summonerInfo.tagLine}`
                       : 'Carregando...';
 
-                    const globalRank = sortOrder !== null 
-                      ? ((currentPage - 1) * itemsPerPage) + index + 1
-                      : ((currentPage - 1) * itemsPerPage) + index + 1;
+                    const globalRank = ((currentPage - 1) * itemsPerPage) + index + 1;
                     
                     const tier = getTier(globalRank);
 
@@ -645,7 +558,6 @@ export default function RankingsPage({ params }: { params: { queueType: string; 
               <div className="flex items-center justify-between px-2 mt-4">
                 <div className="text-sm text-muted-foreground">
                   {`Mostrando ${((currentPage - 1) * itemsPerPage) + 1} a ${Math.min(currentPage * itemsPerPage, displayData.totalEntries)} de ${displayData.totalEntries}`}
-                  {sortOrder && <span className="ml-2 text-xs text-yellow-500">(Top 1000 ordenado por WR)</span>}
                 </div>
                 
                 {totalPages > 1 && (

@@ -13,13 +13,16 @@ const accountCache = new OptimisticCache<any>(60_000);
 
 export async function GET(request: NextRequest) {
   try {
-    const cacheKey = request.url;
-    const cached = await accountCache.getOrFetch(cacheKey, async () => {
-      const { searchParams } = new URL(request.url);
-      const summonerName = searchParams.get('summonerName');
-      const region = searchParams.get('region');
+    // Use nextUrl to access parsed URL/search params safely in Next.js app routes
+    const { searchParams } = request.nextUrl;
+    const summonerName = searchParams.get('summonerName');
+    const region = searchParams.get('region');
+    const puuid = searchParams.get('puuid');
 
-      const puuid = searchParams.get('puuid');
+    // Build a deterministic cache key from relevant params (avoid using full request.url)
+    const cacheKey = `account:${region || 'unknown'}:name:${summonerName || ''}:puuid:${puuid || ''}`;
+
+    const cached = await accountCache.getOrFetch(cacheKey, async () => {
       const validatedData = accountSchema.parse({ summonerName, region, puuid });
       const { RIOT_API_KEY } = process.env;
 

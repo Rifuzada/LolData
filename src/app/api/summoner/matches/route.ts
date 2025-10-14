@@ -37,9 +37,13 @@ async function safeFetch(url: string, options: any, retries = 3): Promise<Respon
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    // Crie uma chave única para o cache
-    const cacheKey = request.url;
+    const { searchParams } = request.nextUrl;
+    // Crie uma chave única para o cache (evitar usar request.url diretamente)
+    const puuid = searchParams.get('puuid');
+    const region = searchParams.get('region');
+    const start = searchParams.get('start') || '0';
+    const count = searchParams.get('count') || '10';
+    const cacheKey = `matches:${region}:${puuid}:${start}:${count}`;
     const now = Date.now();
 
     // Verifica se existe cache válido
@@ -52,11 +56,8 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const puuid = searchParams.get('puuid');
-    const region = searchParams.get('region');
-    const start = searchParams.get('start') || '0';
-    const count = searchParams.get('count') || '10';
-    const championId = searchParams.get('championId'); // <- novo parâmetro
+  // params already extracted above
+  const championId = searchParams.get('championId'); // <- novo parâmetro
 
     const validatedData = matchesSchema.parse({ region, puuid, start, count });
     const { RIOT_API_KEY } = process.env;
