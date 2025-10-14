@@ -44,7 +44,6 @@ const Home: React.FC = () => {
   return (
     <div className="flex flex-col min-h-screen">
       <header role="banner" className="w-full">
-        <nav className='top-bar' role="navigation" aria-label="Principal">Links</nav>
       </header>
 
       <main className="flex flex-col items-center justify-center flex-grow p-4" role="main">

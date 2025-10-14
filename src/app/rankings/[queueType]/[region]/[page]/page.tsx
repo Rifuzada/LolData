@@ -45,10 +45,16 @@ export default function RankingsPage({ params }: { params: { queueType: string; 
 
   // Estados
   const [rankings, setRankings] = useState<RankingData | null>(null);
+  const [allEntries, setAllEntries] = useState<LeagueEntry[]>([]);
+  const [isLoadingAll, setIsLoadingAll] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingNames, setIsLoadingNames] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [summonerNames, setSummonerNames] = useState<Record<string, SummonerInfo>>({});
+  
+  // 👉 Estado para controlar ordenação por Win Rate
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
+
   
   // Parse page from URL params
   const currentPage = parseInt(params.page) || 1;
@@ -115,14 +121,53 @@ export default function RankingsPage({ params }: { params: { queueType: string; 
     }
   }, [region, queueType, currentPage, itemsPerPage]);
 
+  // 👉 NOVO: Função para carregar Challengers e Grandmasters (top 700)
+  const fetchAllEntries = useCallback(async () => {
+    if (allEntries.length > 0) return; // Já carregou antes
+    
+    try {
+      setIsLoadingAll(true);
+      setError(null);
+      
+      // Carrega as primeiras 7 páginas (700 jogadores = Challengers + Grandmasters)
+      const pagePromises = [];
+      for (let page = 1; page <= 7; page++) {
+        pagePromises.push(
+          fetch(`/api/rankings?region=${region}&queueType=${queueType}&page=${page}&limit=${itemsPerPage}`)
+            .then(res => res.json())
+        );
+      }
+      
+      const pagesData = await Promise.all(pagePromises);
+      const allEntriesData = pagesData.flatMap(data => data.entries);
+      
+      setAllEntries(allEntriesData);
+    } catch (err) {
+      setError('Failed to load high elo rankings');
+      console.error('Error fetching high elo rankings:', err);
+    } finally {
+      setIsLoadingAll(false);
+    }
+  }, [region, queueType, itemsPerPage, allEntries.length]);
+
   // Fetch rankings on mount and when region/queue changes
   useEffect(() => {
+    setAllEntries([]); // Limpa dados ao mudar região/queue
+    setSortOrder(null); // Reseta ordenação
     fetchRankings();
   }, [fetchRankings]);
 
+  // 👉 NOVO: Effect para carregar top 200 automaticamente na primeira página
+  useEffect(() => {
+    if (currentPage === 1 && rankings && !isLoading && allEntries.length === 0) {
+      // Carrega automaticamente os top 200 para mostrar cutoffs
+      fetchAllEntries();
+    }
+  }, [currentPage, rankings, isLoading, allEntries.length, fetchAllEntries]);
+
   // Persistent cache using localStorage
   const summonerNamesCache = useRef<Record<string, SummonerInfo>>({});
-  
+
   // Load cache from localStorage on mount
   useEffect(() => {
     const savedCache = localStorage.getItem(`summonerCache_${region}`);
@@ -140,6 +185,7 @@ export default function RankingsPage({ params }: { params: { queueType: string; 
     localStorage.setItem(`summonerCache_${region}`, JSON.stringify(updatedCache));
     setSummonerNames(prev => ({ ...prev, ...newData }));
   }, [region]);
+
 
   // Function to fetch summoner names in batches
   const fetchSummonerNames = useCallback(async (puuids: string[], isPreFetch = false) => {
@@ -206,7 +252,7 @@ export default function RankingsPage({ params }: { params: { queueType: string; 
     } finally {
       setIsLoadingNames(false);
     }
-  }, [region]);
+  }, [region, updateCache]);
 
   // Effect to load names when page changes or rankings update
   useEffect(() => {
@@ -217,6 +263,30 @@ export default function RankingsPage({ params }: { params: { queueType: string; 
     // Fetch current page data
     fetchSummonerNames(currentPagePuuids);
   }, [currentPage, rankings, isLoading, fetchSummonerNames]);
+
+  // 👉 NOVO: Effect para carregar nomes quando allEntries é populado
+  useEffect(() => {
+    if (allEntries.length === 0) return;
+    
+    // Carrega todos os nomes dos Challengers (top 200)
+    const allPuuids = allEntries.map(entry => entry.puuid);
+    fetchSummonerNames(allPuuids, true); // isPreFetch = true para não mostrar loading
+  }, [allEntries, fetchSummonerNames]);
+
+  // 👉 NOVO: Effect para carregar nomes da página atual quando está ordenado
+  useEffect(() => {
+    if (sortOrder === null || allEntries.length === 0) return;
+    
+    const displayData = getDisplayData();
+    const visiblePuuids = displayData.entries.map(entry => entry.puuid);
+    
+    // Verifica se há PUUIDs sem nome carregado
+    const missingNames = visiblePuuids.filter(puuid => !summonerNames[puuid]);
+    
+    if (missingNames.length > 0) {
+      fetchSummonerNames(missingNames);
+    }
+  }, [sortOrder, currentPage, allEntries, summonerNames, fetchSummonerNames]);
 
   // Function to get tier icon URL
   const getTierIconUrl = (tier: string) => {
@@ -234,9 +304,27 @@ export default function RankingsPage({ params }: { params: { queueType: string; 
     router.push(`/rankings/${newQueueType}/${region}/1`);
   };
 
+
   // Function to change region
   const changeRegion = (newRegion: string) => {
     router.push(`/rankings/${friendlyQueueType}/${newRegion}/1`);
+  };
+
+  // 👉 MODIFICADO: Função para alternar ordenação e carregar todos os dados
+  const toggleSortOrder = async () => {
+    const newOrder = sortOrder === null ? 'desc' : sortOrder === 'desc' ? 'asc' : null;
+    
+    // Se está ativando ordenação e ainda não carregou todos os dados
+    if (newOrder !== null && allEntries.length === 0) {
+      await fetchAllEntries();
+    }
+    
+    setSortOrder(newOrder);
+    
+    // Volta pra página 1 ao ordenar
+    if (newOrder !== null) {
+      router.push(`/rankings/${friendlyQueueType}/${region}/1`);
+    }
   };
 
   // Function to generate page numbers for pagination
@@ -280,7 +368,62 @@ export default function RankingsPage({ params }: { params: { queueType: string; 
     return pages;
   };
 
-  const totalPages = rankings?.pagination?.totalPages || 0;
+  // 👉 NOVO: Calcula dados para exibição (com ou sem ordenação)
+  const getDisplayData = () => {
+    if (!rankings) return { entries: [], totalPages: 0, totalEntries: 0 };
+    
+    // Se NÃO está ordenando, usa dados normais da API
+    if (sortOrder === null) {
+      return {
+        entries: rankings.entries,
+        totalPages: rankings.pagination?.totalPages || 0,
+        totalEntries: rankings.pagination?.totalEntries || rankings.entries.length
+      };
+    }
+    
+    // Se ESTÁ ordenando, usa allEntries
+    const sortedEntries = [...allEntries].sort((a, b) => {
+      const winRateA = a.wins / (a.wins + a.losses);
+      const winRateB = b.wins / (b.wins + b.losses);
+      return sortOrder === 'asc' ? winRateA - winRateB : winRateB - winRateA;
+    });
+    
+    // Pagina os resultados ordenados
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedEntries = sortedEntries.slice(startIndex, endIndex);
+    
+    return {
+      entries: paginatedEntries,
+      totalPages: Math.ceil(sortedEntries.length / itemsPerPage),
+      totalEntries: sortedEntries.length
+    };
+  };
+
+  const displayData = getDisplayData();
+  const totalPages = displayData.totalPages;
+
+  // 👉 NOVO: Calcula notas de corte baseado nos dados
+  const getCutoffPoints = () => {
+    // Se tem allEntries carregado (200 jogadores), calcula os cutoffs
+    if (allEntries.length >= 200) {
+      const challengerCutoff = allEntries[199]?.leaguePoints; // 200º jogador (último Challenger)
+      const grandmasterCutoff = allEntries.length >= 700 ? allEntries[699]?.leaguePoints : null;
+      
+      console.log('Cutoffs calculados:', { challengerCutoff, grandmasterCutoff, totalEntries: allEntries.length });
+      
+      return { 
+        challenger: challengerCutoff || null, 
+        grandmaster: grandmasterCutoff || null 
+      };
+    }
+
+    console.log('Cutoffs não disponíveis, allEntries.length:', allEntries.length);
+    return { challenger: null, grandmaster: null };
+  };
+
+  const cutoffs = getCutoffPoints();
+  console.log('Cutoffs finais:', cutoffs);
 
   return (
     <div className="container p-4 mx-auto">
@@ -308,10 +451,74 @@ export default function RankingsPage({ params }: { params: { queueType: string; 
             Back
           </a>
           <h1 className="hidden text-2xl font-bold md:block">
-            High Elo Rankings - {displayRegionMap[region.toUpperCase()] || region.toUpperCase()} - {queueDisplayNames[friendlyQueueType] || friendlyQueueType}
+            <div className="flex flex-col gap-2">
+              <span>High Elo Rankings - {displayRegionMap[region.toUpperCase()] || region.toUpperCase()} - {queueDisplayNames[friendlyQueueType] || friendlyQueueType}</span>
+              {(cutoffs.challenger || cutoffs.grandmaster) && (
+                <div className="flex items-center gap-4 text-base font-normal">
+                  <span>Cutoff</span>
+                  {cutoffs.challenger && (
+                    <div className="flex items-center gap-1.5">
+                      <Image
+                        src={getTierIconUrl('Challenger')}
+                        alt="Challenger"
+                        width={24}
+                        height={24}
+                        className="inline-block"
+                        unoptimized
+                      />
+                      <span className="text-yellow-400 font-semibold">{cutoffs.challenger} LP</span>
+                    </div>
+                  )}
+                  <span>Cutoff</span>
+                  {cutoffs.grandmaster && (
+                    <div className="flex items-center gap-1.5">
+                      <Image
+                        src={getTierIconUrl('Grandmaster')}
+                        alt="Grandmaster"
+                        width={24}
+                        height={24}
+                        className="inline-block"
+                        unoptimized
+                      />
+                      <span className="text-red-400 font-semibold">{cutoffs.grandmaster} LP</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </h1>
-          <h2 className="text-xs font-bold md:hidden">
-            Rankings {queueDisplayNames[friendlyQueueType] || friendlyQueueType}
+          <h2 className="flex flex-col gap-1 text-xs font-bold md:hidden">
+            <span>Rankings {queueDisplayNames[friendlyQueueType] || friendlyQueueType}</span>
+            {(cutoffs.challenger || cutoffs.grandmaster) && (
+              <div className="flex items-center gap-2 text-xs font-normal">
+                {cutoffs.challenger && (
+                  <div className="flex items-center gap-1">
+                    <Image
+                      src={getTierIconUrl('Challenger')}
+                      alt="Challenger"
+                      width={16}
+                      height={16}
+                      className="inline-block"
+                      unoptimized
+                    />
+                    <span className="text-yellow-400 font-medium">{cutoffs.challenger} LP</span>
+                  </div>
+                )}
+                {cutoffs.grandmaster && (
+                  <div className="flex items-center gap-1">
+                    <Image
+                      src={getTierIconUrl('Grandmaster')}
+                      alt="Grandmaster"
+                      width={16}
+                      height={16}
+                      className="inline-block"
+                      unoptimized
+                    />
+                    <span className="text-red-400 font-medium">{cutoffs.grandmaster} LP</span>
+                  </div>
+                )}
+              </div>
+            )}
           </h2>
           <div className="flex items-center gap-2" role="navigation" aria-label="Filtros">
             <select
@@ -356,19 +563,21 @@ export default function RankingsPage({ params }: { params: { queueType: string; 
       </header>
 
       <main role="main">
-        {(isLoading || isLoadingNames) && (
+        {(isLoading || isLoadingNames || isLoadingAll) && (
           <div className="py-8 text-center" role="status" aria-live="polite">
             <div 
               className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent motion-reduce:animate-[spin_1.5s_linear_infinite]"
               aria-hidden="true"
             />
             <p className="mt-2 text-sm text-muted-foreground">
-              {isLoadingNames ? 'Carregando dados dos invocadores...' : 'Carregando ranking...'}
+              {isLoadingAll ? 'Carregando top 700 (Challengers e Grandmasters)...' : 
+               isLoadingNames ? 'Carregando dados dos invocadores...' : 
+               'Carregando ranking...'}
             </p>
           </div>
         )}
 
-        {!isLoading && !isLoadingNames && error && (
+        {!isLoading && !isLoadingNames && !isLoadingAll && error && (
           <div className="py-8 text-center" role="alert">
             <Card className="p-4 mb-4 text-red-500">
               {error}
@@ -376,7 +585,7 @@ export default function RankingsPage({ params }: { params: { queueType: string; 
           </div>
         )}
 
-        {!isLoading && !isLoadingNames && rankings && rankings.entries.length > 0 && (
+        {!isLoading && !isLoadingNames && !isLoadingAll && rankings && displayData.entries.length > 0 && (
           <div className="grid gap-4">
             <Card className="p-4">
             <table className="w-full mx-auto">
@@ -388,14 +597,22 @@ export default function RankingsPage({ params }: { params: { queueType: string; 
                   <th className="p-2 text-center">LP</th>
                   <th className="hidden p-2 text-center sm:table-cell">Wins</th>
                   <th className="hidden p-2 text-center sm:table-cell">Losses</th>
-                  <th className="p-2 text-center">
-                    <span className="hidden sm:inline">Win Rate</span>
-                    <span className="inline sm:hidden">WR</span>
+                  <th 
+                    className="p-2 text-center cursor-pointer select-none hover:bg-accent/50 transition-colors"
+                    onClick={toggleSortOrder}
+                    title="Clique para ordenar top 700 (Challengers e Grandmasters) por Win Rate"
+                  >
+                    <div className="flex items-center justify-center gap-1">
+                      <span className="hidden sm:inline">Win Rate</span>
+                      <span className="inline sm:hidden">WR</span>
+                      {sortOrder === 'asc' && <span>▲</span>}
+                      {sortOrder === 'desc' && <span>▼</span>}
+                    </div>
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {rankings.entries.map((entry, index) => {
+                {displayData.entries.map((entry, index) => {
                   const winRate = ((entry.wins / (entry.wins + entry.losses)) * 100).toFixed(1);
                   const summonerInfo = summonerNames[entry.puuid];
                   const displayName = summonerInfo && summonerInfo.gameName && summonerInfo.tagLine
@@ -408,7 +625,11 @@ export default function RankingsPage({ params }: { params: { queueType: string; 
                     return 'Master';
                   };
 
-                  const globalRank = ((currentPage - 1) * itemsPerPage) + index + 1;
+                  // Se está ordenando, calcula rank baseado na posição ordenada
+                  const globalRank = sortOrder !== null 
+                    ? ((currentPage - 1) * itemsPerPage) + index + 1
+                    : ((currentPage - 1) * itemsPerPage) + index + 1;
+                  
                   const tier = getTier(globalRank);
                   
                   const getTierColor = (tier: string) => {
@@ -427,8 +648,7 @@ export default function RankingsPage({ params }: { params: { queueType: string; 
                       <div className="flex items-center min-w-0 gap-2">
                         {summonerInfo?.profileIconId && (
                           <Image
-                            src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/${summonerInfo.profileIconId}.jpg`}
-                            alt="Profile Icon"
+                            src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/${summonerInfo.profileIconId}.jpg`}                            alt="Profile Icon"
                             width={24}
                             height={24}
                             className="flex-shrink-0 object-cover border rounded-full border-zinc-700 sm:w-8 sm:h-8"
@@ -479,10 +699,8 @@ export default function RankingsPage({ params }: { params: { queueType: string; 
               {/* Paginação Numérica */}
               <div className="flex items-center justify-between px-2 mt-4">
                 <div className="text-sm text-muted-foreground">
-                  {rankings?.pagination ? 
-                    `Mostrando ${((currentPage - 1) * itemsPerPage) + 1} a ${Math.min(currentPage * itemsPerPage, rankings.pagination.totalEntries)} de ${rankings.pagination.totalEntries}` :
-                    `Mostrando ${((currentPage - 1) * itemsPerPage) + 1} a ${Math.min(currentPage * itemsPerPage, rankings.entries?.length || 0)} de ${rankings.entries?.length || 0}`
-                  }
+                  {`Mostrando ${((currentPage - 1) * itemsPerPage) + 1} a ${Math.min(currentPage * itemsPerPage, displayData.totalEntries)} de ${displayData.totalEntries}`}
+                  {sortOrder && <span className="ml-2 text-xs text-yellow-500">(Top 700 ordenado por WR)</span>}
                 </div>
                 
                 {totalPages > 1 && (

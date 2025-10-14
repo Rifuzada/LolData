@@ -121,10 +121,14 @@ export async function getChampionMasteries(region: string, puuid: string) {
 
 export async function getMatchHistory(region: string, puuid: string) {
   try {
+    console.log("🔍 Iniciando getMatchHistory:", { region, puuid });
+    
     let apiUrl = BASE_URL;
     if (['euw1','eun1','ru','tr1','me1'].includes(region)) apiUrl = EUROPE_URL;
     else if (['kr','jp1'].includes(region)) apiUrl = ASIA_URL;
     else if (['oc1','sg2','tw2','vn2'].includes(region)) apiUrl = SEA_URL;
+
+    console.log("🌐 URL base escolhida:", apiUrl);
 
     const matchIds = await safeAxios<string[]>({
       method: 'get',
@@ -133,13 +137,27 @@ export async function getMatchHistory(region: string, puuid: string) {
       params: { start: 0, count: 10 }
     });
 
-    return await Promise.all(matchIds.map(id =>
-      safeAxios({ method: 'get', url: `${apiUrl}/lol/match/v5/matches/${id}`, headers: { "X-Riot-Token": API_KEY } })
-    ));
-  } catch {
+    console.log("✅ matchIds retornados:", matchIds);
+
+    const matches = await Promise.all(
+      matchIds.map(id => 
+        safeAxios({ 
+          method: 'get', 
+          url: `${apiUrl}/lol/match/v5/matches/${id}`, 
+          headers: { "X-Riot-Token": API_KEY } 
+        })
+      )
+    );
+
+    console.log("✅ Histórico completo retornado com sucesso");
+    return matches;
+
+  } catch (error: any) {
+    console.error("❌ Erro em getMatchHistory:", error.response?.data || error.message || error);
     throw new Error('Falha ao buscar histórico de partidas');
   }
 }
+"RGAPI-1ace7485-1756-48bf-9bdb-98a1b11a266b"
 
 export async function getMatchHistoryByQueue(region: string, puuid: string, queueId: string) {
   try {
