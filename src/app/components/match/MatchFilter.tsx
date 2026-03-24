@@ -1,8 +1,7 @@
-'use client'
+"use client";
 
-import { useParams, useRouter } from 'next/navigation';
-import { useState, useRef, useEffect } from 'react';
-import { revalidatePath } from 'next/cache';
+import { useParams } from "next/navigation";
+import { useState, useRef, useEffect } from "react";
 
 const champions = [
   { id: "all", name: "Todos" },
@@ -162,7 +161,7 @@ const champions = [
   { id: "777", name: "Yone" },
   { id: "83", name: "Yorick" },
   { id: "350", name: "Yuumi" },
-  { id:"804", name:"Yunara" },
+  { id: "804", name: "Yunara" },
   { id: "154", name: "Zac" },
   { id: "238", name: "Zed" },
   { id: "221", name: "Zeri" },
@@ -171,27 +170,24 @@ const champions = [
   { id: "142", name: "Zoe" },
   { id: "143", name: "Zyra" },
 ];
-// Função utilitária para pegar o nome pelo ID
+
 export default function getChampionNameById(id: number): string {
-  const champ = champions.find(c => c.id === String(id));
+  const champ = champions.find((c) => c.id === String(id));
   return champ ? champ.name : "Desconhecido";
 }
 
-
 const queues = [
-  { id: "", name: "Filtro de Partidas" },
   { id: "all", name: "Todos" },
   { id: "420", name: "Solo/Duo" },
   { id: "440", name: "Flex" },
   { id: "450", name: "ARAM" },
-  { id: "400", name: "Normal Game" },
+  { id: "400", name: "Normal" },
   { id: "490", name: "Quickplay" },
   { id: "1700", name: "Arena" },
 ];
 
 export function MatchFilter() {
   const params = useParams();
-  const router = useRouter();
 
   const region = params.region as string;
   const gameName = params.gameName as string;
@@ -199,92 +195,63 @@ export function MatchFilter() {
   const queueType = params.queueType as string | undefined;
   const championName = params.championName as string | undefined;
 
-  // Traduz queueType da URL para o id usado no filtro
   const queueIdFromUrl =
     !queueType || queueType.toLowerCase() === "all"
       ? "all"
       : queueType
-          .replace('soloDuo', '420')
-          .replace('flex', '440')
-          .replace('aram', '450')
-          .replace('normal', '400')
-          .replace('quickplay', '490')
-          .replace('arena', '1700');
+          .replace("soloDuo", "420")
+          .replace("flex", "440")
+          .replace("aram", "450")
+          .replace("normal", "400")
+          .replace("quickplay", "490")
+          .replace("arena", "1700");
 
   const [queueId, setQueueId] = useState<string>(queueIdFromUrl);
   const [championId, setChampionId] = useState<string>(() => {
     if (!championName || championName.toLowerCase() === "all") return "all";
-    // Procura o id pelo nome formatado
     const champ = champions.find(
-      c => c.name.replace(/\s+/g, '').replace(/['.]/g, '').toLowerCase() === championName.toLowerCase()
+      (c) =>
+        c.name.replace(/\s+/g, "").replace(/['.]/g, "").toLowerCase() ===
+        championName.toLowerCase(),
     );
     return champ ? champ.id : "all";
   });
-  const [queueMenuOpen, setQueueMenuOpen] = useState(false);
   const [championMenuOpen, setChampionMenuOpen] = useState(false);
-
-  const queueMenuRef = useRef<HTMLDivElement>(null);
+  const [search, setSearch] = useState("");
   const championMenuRef = useRef<HTMLDivElement>(null);
 
-  // Atualiza o estado quando a URL muda
   useEffect(() => {
     setQueueId(queueIdFromUrl);
     if (!championName || championName.toLowerCase() === "all") {
       setChampionId("all");
     } else {
       const champ = champions.find(
-        c => c.name.replace(/\s+/g, '').replace(/['.]/g, '').toLowerCase() === championName.toLowerCase()
+        (c) =>
+          c.name.replace(/\s+/g, "").replace(/['.]/g, "").toLowerCase() ===
+          championName.toLowerCase(),
       );
       setChampionId(champ ? champ.id : "all");
     }
   }, [queueIdFromUrl, championName]);
 
-  // function handleFilterChange(newQueueId: string | null, newChampionId: string | null) {
-  //   if (newQueueId !== null) setQueueId(newQueueId);
-  //   if (newChampionId !== null) setChampionId(newChampionId);
+  useEffect(() => {
+    if (!championMenuOpen) setSearch("");
+  }, [championMenuOpen]);
 
-  //   const queue = newQueueId !== null ? newQueueId : queueId;
-  //   let champ = newChampionId !== null ? newChampionId : championId;
-
-
-  //   if (!champ || champ === "" || champ === undefined) champ = "all";
-
-  //   let championParam = "";
-  //   if (champ !== "all") {
-  //     const champObj = champions.find(c => c.id === champ);
-  //     const champName = champObj
-  //       ? champObj.name.replace(/\s+/g, '').replace(/['.]/g, '').toLowerCase()
-  //       : champ;
-  //     championParam = `/${champName}`;
-  //   }
-
-  //   let queueParam = "all";
-  //   if (queue && queue !== "all" && queue !== "") {
-  //     queueParam = queue
-  //       .replace('420', 'soloDuo')
-  //       .replace('440', 'flex')
-  //       .replace('450', 'aram')
-  //       .replace('400', 'normal')
-  //       .replace('490', 'quickplay')
-  //       .replace('1700', 'arena');
-  //   }
-
-  //   const url = `/summoner/${region}/${gameName}/${tagLine}/${queueParam}${championParam}`;
-
-  //   router.push(url); // Navega para a nova rota dinâmica
-  // }
-
-  function getFilterUrl(newQueueId: string | null, newChampionId: string | null) {
+  function getFilterUrl(
+    newQueueId: string | null,
+    newChampionId: string | null,
+  ) {
     const queue = newQueueId !== null ? newQueueId : queueId;
     let champ = newChampionId !== null ? newChampionId : championId;
 
-    if (!champ || champ === "" || champ === undefined) champ = "all";
+    if (!champ || champ === "") champ = "all";
 
-    let championParam = "";
+    let championParam = "/all";
     if (champ !== "all") {
-      const champObj = champions.find(c => c.id === champ);
+      const champObj = champions.find((c) => c.id === champ);
       const champName = champObj
-        ? champObj.name.replace(/\s+/g, '').replace(/['.]/g, '').toLowerCase()
+        ? champObj.name.replace(/\s+/g, "").replace(/['.]/g, "").toLowerCase()
         : champ;
       championParam = `/${champName}`;
     }
@@ -292,113 +259,110 @@ export function MatchFilter() {
     let queueParam = "all";
     if (queue && queue !== "all" && queue !== "") {
       queueParam = queue
-        .replace('420', 'soloDuo')
-        .replace('440', 'flex')
-        .replace('450', 'aram')
-        .replace('400', 'normal')
-        .replace('490', 'quickplay')
-        .replace('1700', 'arena');
+        .replace("420", "soloDuo")
+        .replace("440", "flex")
+        .replace("450", "aram")
+        .replace("400", "normal")
+        .replace("490", "quickplay")
+        .replace("1700", "arena");
     }
 
     return `/summoner/${region}/${gameName}/${tagLine}/${queueParam}${championParam}`;
   }
 
-  // Divide os campeões em 3 colunas
-  const colSize = Math.ceil(champions.length / 3);
-  const columns = [
-    champions.slice(0, colSize),
-    champions.slice(colSize, colSize * 2),
-    champions.slice(colSize * 2),
-  ];
+  const filtered = champions.filter((c) =>
+    c.name.toLowerCase().includes(search.toLowerCase().trim()),
+  );
 
-  // Fecha o menu ao clicar fora
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (queueMenuRef.current && !queueMenuRef.current.contains(event.target as Node)) {
-        setQueueMenuOpen(false);
-      }
-      if (championMenuRef.current && !championMenuRef.current.contains(event.target as Node)) {
+      if (
+        championMenuRef.current &&
+        !championMenuRef.current.contains(event.target as Node)
+      ) {
         setChampionMenuOpen(false);
       }
     }
-    if (queueMenuOpen || championMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+    if (championMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
     } else {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [queueMenuOpen, championMenuOpen]);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [championMenuOpen]);
 
   return (
-    <div className="mt-4">
-      <div className="flex items-center gap-4">
-        {/* Filtro de Filas */}
-        <div className="relative w-48 min-w-[180px]" ref={queueMenuRef}>
-          <button
-            type="button"
-            className="flex items-center justify-between w-full p-2 border rounded-md cursor-pointer border-input bg-background"
-            onClick={() => setQueueMenuOpen((open) => !open)}
+    <div className="mt-4 flex flex-col gap-3">
+      {/* Filtro de Filas — pill buttons */}
+      <div className="flex flex-wrap gap-2">
+        {queues.map((queue) => (
+          <a
+            key={queue.id}
+            href={getFilterUrl(queue.id, null)}
+            onClick={() => setQueueId(queue.id)}
+            className={`px-4 py-1.5 rounded-full border text-sm font-medium transition-all duration-150
+              ${
+                queueId === queue.id
+                  ? "bg-foreground text-background border-foreground"
+                  : "bg-background text-foreground border-border hover:border-foreground"
+              }
+            `}
           >
-            {queues.find(q => q.id === queueId)?.name || 'Filtro de Partidas'}
-            <span className="ml-2">&#9662;</span>
-          </button>
-          {queueMenuOpen && (
-            <div className="absolute z-10 w-full mt-1 border rounded shadow-lg bg-background">
-              <ul className="flex flex-col">
-                {queues.map((queue) => (
-                  <li
-                    key={queue.id}
-                    className={`cursor-pointer px-2 py-2 rounded transition-colors
-                      ${queueId === queue.id ? 'bg-accent font-bold' : ''}
-                      hover:bg-muted hover:text-accent-foreground
-                    `}
-                    onClick={() => setQueueMenuOpen(false)}
-                  >
-                    <a href={getFilterUrl(queue.id, null)} className="block w-full h-full">
-                      {queue.name}
-                    </a>
+            {queue.name}
+          </a>
+        ))}
+      </div>
+
+      {/* Filtro de Campeões — dropdown com busca */}
+      <div className="relative w-48 min-w-[180px]" ref={championMenuRef}>
+        <button
+          type="button"
+          className="flex items-center justify-between w-full p-2 border rounded-md cursor-pointer border-input bg-background text-sm"
+          onClick={() => setChampionMenuOpen((open) => !open)}
+        >
+          {champions.find((c) => c.id === championId)?.name ??
+            "Filtro de Campeão"}
+          <span className="ml-2">&#9662;</span>
+        </button>
+        {championMenuOpen && (
+          <div className="absolute z-10 mt-1 w-56 border rounded shadow-lg p-2 bg-background">
+            <input
+              autoFocus
+              placeholder="Buscar campeão..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full px-2 py-1 mb-2 border rounded bg-background text-sm outline-none"
+            />
+            <div className="overflow-y-auto max-h-64">
+              <ul className="flex flex-col gap-1">
+                {filtered.length > 0 ? (
+                  filtered.map((champ) => (
+                    <li
+                      key={champ.id}
+                      className={`cursor-pointer px-2 py-1 rounded transition-colors text-sm
+                        ${championId === champ.id ? "bg-accent font-bold" : ""}
+                        hover:bg-muted hover:text-accent-foreground
+                      `}
+                      onClick={() => setChampionMenuOpen(false)}
+                    >
+                      <a
+                        href={getFilterUrl(null, champ.id)}
+                        className="block w-full h-full"
+                      >
+                        {champ.name}
+                      </a>
+                    </li>
+                  ))
+                ) : (
+                  <li className="px-2 py-1 text-sm text-muted-foreground">
+                    Nenhum campeão encontrado
                   </li>
-                ))}
+                )}
               </ul>
             </div>
-          )}
-        </div>
-        {/* Filtro de Campeões */}
-        <div className="relative w-48 min-w-[180px]" ref={championMenuRef}>
-          <button
-            type="button"
-            className="flex items-center justify-between w-full p-2 border rounded-md cursor-pointer border-input bg-background"
-            onClick={() => setChampionMenuOpen((open) => !open)}
-          >
-            {champions.find(c => c.id === championId)?.name || 'Filtro de Campeão'}
-            <span className="ml-2">&#9662;</span>
-          </button>
-          {championMenuOpen && (
-            <div className="absolute z-10 mt-1 w-[32rem] border rounded shadow-lg p-4 bg-background">
-              <div className="flex gap-4 overflow-y-auto max-h-64">
-                {columns.map((col, i) => (
-                  <ul key={i} className="flex flex-col flex-1 gap-1">
-                    {col.map((champ) => (
-                      <li
-                        key={champ.id}
-                        className={`cursor-pointer px-2 py-1 rounded transition-colors
-                          ${championId === champ.id ? 'bg-accent font-bold' : ''}
-                          hover:bg-muted hover:text-accent-foreground
-                        `}
-                        onClick={() => setChampionMenuOpen(false)}
-                      >
-                        <a href={getFilterUrl(null, champ.id)} className="block w-full h-full">
-                          {champ.name}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
-  )
+  );
 }

@@ -1,32 +1,31 @@
-'use client';
+"use client";
 
-import { Card } from "../ui/Card"
-import Image from "next/image"
-import  getChampionNameById  from "../match/MatchFilter";
-
+import { Card } from "../ui/Card";
+import Image from "next/image";
+import getChampionNameById from "../match/MatchFilter";
 
 interface ChampionMastery {
-  championId: number
-  level: number
-  points: number
+  championId: number;
+  level: number;
+  points: number;
 }
 
 interface SummonerProfileProps {
-  name: string
-  gameName?: string
-  tagLine?: string
-  level: number
-  profileIconId: number
-  region: string
-  masteries: ChampionMastery[]
-  eloSoloq?: string | null
-  eloFlex?: string | null
-  lpSoloq?: number | null
-  lpFlex?: number | null
-  winsSoloq?: number | null
-  winsFlex?: number | null
-  losesSoloq?: number | null
-  losesFlex?: number | null
+  name: string;
+  gameName?: string;
+  tagLine?: string;
+  level: number;
+  profileIconId: number;
+  region: string;
+  masteries: ChampionMastery[];
+  eloSoloq?: string | null;
+  eloFlex?: string | null;
+  lpSoloq?: number | null;
+  lpFlex?: number | null;
+  winsSoloq?: number | null;
+  winsFlex?: number | null;
+  losesSoloq?: number | null;
+  losesFlex?: number | null;
 }
 
 export function SummonerProfile({
@@ -44,25 +43,31 @@ export function SummonerProfile({
   winsSoloq,
   winsFlex,
   losesSoloq,
-  losesFlex
+  losesFlex,
 }: SummonerProfileProps) {
   // Determinar o nome de display - usar gameName+tagLine se disponível, senão usar name
-  const displayName = gameName?.replace(/\s+/g, ' ') && tagLine
-    ? `${gameName.replace(/\s+/g, ' ')}#${tagLine}`
-    : (name || "Carregando...");
-    
-  const winrateSoloq = (winsSoloq ?? 0) + (losesSoloq ?? 0) > 0 ? (winsSoloq ?? 0) / ((winsSoloq ?? 0) + (losesSoloq ?? 0)) * 100 : null;
-  const winrateFlex = (winsFlex ?? 0) + (losesFlex ?? 0) > 0 ? (winsFlex ?? 0) / ((winsFlex ?? 0) + (losesFlex ?? 0)) * 100 : null;
+  const displayName =
+    gameName?.replace(/\s+/g, " ") && tagLine
+      ? `${gameName.replace(/\s+/g, " ")}#${tagLine}`
+      : name || "Carregando...";
+
+  const winrateSoloq =
+    (winsSoloq ?? 0) + (losesSoloq ?? 0) > 0
+      ? ((winsSoloq ?? 0) / ((winsSoloq ?? 0) + (losesSoloq ?? 0))) * 100
+      : null;
+  const winrateFlex =
+    (winsFlex ?? 0) + (losesFlex ?? 0) > 0
+      ? ((winsFlex ?? 0) / ((winsFlex ?? 0) + (losesFlex ?? 0))) * 100
+      : null;
   // Função para obter URL do ícone do tier
   const getTierIconUrl = (elo: string | null) => {
     if (!elo) return null;
 
     // Extrair o tier da string de elo (ex: "Diamond II" -> "diamond")
-    const tier = elo.split(' ')[0].toLowerCase();
+    const tier = elo.split(" ")[0].toLowerCase();
 
     return `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${tier}.svg`;
   };
-  
 
   return (
     <div className="space-y-6">
@@ -84,9 +89,7 @@ export function SummonerProfile({
             {displayName}
           </h1>
           <div className="flex flex-col gap-1">
-            <p className="text-sm text-muted-foreground">
-              Region: {region}
-            </p>
+            <p className="text-sm text-muted-foreground">Region: {region}</p>
             {eloSoloq && (
               <p className="flex items-center gap-1 text-sm">
                 <span className="font-medium">Solo/Duo:</span>
@@ -99,7 +102,17 @@ export function SummonerProfile({
                     className="inline-block"
                   />
                 )}
-                <span>{eloSoloq} {lpSoloq !== null && lpSoloq !== undefined && `(${lpSoloq} LP)`} - {winsSoloq !== null && winsSoloq !== undefined && `(${winsSoloq}-${losesSoloq})`} - {winrateSoloq?.toFixed(2)}%</span>
+                <span>
+                  {eloSoloq}{" "}
+                  {lpSoloq !== null &&
+                    lpSoloq !== undefined &&
+                    `(${lpSoloq} LP)`}{" "}
+                  -{" "}
+                  {winsSoloq !== null &&
+                    winsSoloq !== undefined &&
+                    `(${winsSoloq}-${losesSoloq})`}{" "}
+                  - {winrateSoloq?.toFixed(2)}%
+                </span>
               </p>
             )}
             {eloFlex && (
@@ -114,7 +127,15 @@ export function SummonerProfile({
                     className="inline-block"
                   />
                 )}
-                <span>{eloFlex} {lpFlex !== null && lpFlex !== undefined && `(${lpFlex} LP)`} - {winsFlex !== null && winsFlex !== undefined && `(${winsFlex}-${losesFlex})`} - {winrateFlex?.toFixed(2)}%</span>
+                <span>
+                  {eloFlex}{" "}
+                  {lpFlex !== null && lpFlex !== undefined && `(${lpFlex} LP)`}{" "}
+                  -{" "}
+                  {winsFlex !== null &&
+                    winsFlex !== undefined &&
+                    `(${winsFlex}-${losesFlex})`}{" "}
+                  - {winrateFlex?.toFixed(2)}%
+                </span>
               </p>
             )}
           </div>
@@ -123,10 +144,13 @@ export function SummonerProfile({
 
       <div className="grid grid-cols-2 gap-4 p-6 md:grid-cols-5">
         {masteries.map((champion) => (
-          <Card key={champion.championId} className="overflow-hidden">
+          <Card
+            key={champion.championId}
+            className="overflow-hidden transition-all duration-200 hover:scale-105 hover:shadow-lg cursor-pointer"
+          >
             <div className="flex flex-col items-center gap-2 p-4">
               <div className="relative w-16 h-16">
-              <Image
+                <Image
                   src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${champion.championId}.png`}
                   alt={getChampionNameById(champion.championId)}
                   fill
@@ -141,11 +165,14 @@ export function SummonerProfile({
                 </div>
               </div>
               <div className="text-center">
-                                <p className="text-sm font-medium">
+                <p className="text-sm font-medium">
                   {getChampionNameById(champion.championId)}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {new Intl.NumberFormat().format(champion.points)} pts
+                  {champion.points
+                    .toString()
+                    .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}{" "}
+                  pts
                 </p>
               </div>
             </div>
@@ -153,5 +180,5 @@ export function SummonerProfile({
         ))}
       </div>
     </div>
-  )
+  );
 }
