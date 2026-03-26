@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 /**
  * Interface para o hook de manipulação de pesquisa
@@ -49,36 +49,41 @@ export function useSearchHandler(): SearchHandlerHook {
       const cleanText = (text: string) => {
         return text
           .normalize("NFC") // Normaliza a string
-          .replace(/[\u2066-\u2069]/g, '') // Remove caracteres invisíveis
-          .replace(/\s+/g, ' ') // Substitui múltiplos espaços por um único
+          .replace(/[\u2066-\u2069]/g, "") // Remove caracteres invisíveis
+          .replace(/\s+/g, " ") // Substitui múltiplos espaços por um único
           .trim(); // Remove espaços extras nas extremidades
       };
-      
+
       const sanitizedRiotId = cleanText(riotid);
-      
+
       // Separar nome e tag corretamente
-      const parts = sanitizedRiotId.split('#');
+      const parts = sanitizedRiotId.split("#");
       if (parts.length !== 2 || !parts[0] || !parts[1]) {
-        setError('Por favor, insira um Riot ID válido no formato Nome#Tag');
+        setError("Por favor, insira um Riot ID válido no formato Nome#Tag");
         return;
       }
-      
+
       const [gameName, tagLine] = parts.map(cleanText);
       const encodedGameName = decodeURIComponent(gameName.trim());
       const encodedTagLine = decodeURIComponent(tagLine.trim());
 
       // Converter a região para lowercase
       const sanitizedRegion = region.toLowerCase();
-
+      if (sanitizedRegion == "") {
+        setError("Por favor, seleciona uma região.");
+        return;
+      }
       // Navega para a rota dinâmica
-      router.push(`/summoner/${sanitizedRegion}/${encodedGameName}/${encodedTagLine}/all`);
+      router.push(
+        `/summoner/${sanitizedRegion}/${encodedGameName}/${encodedTagLine}/all`,
+      );
     } catch (error) {
-      console.error('Erro ao processar a pesquisa:', error);
-      setError('Ocorreu um erro ao processar sua pesquisa. Tente novamente.');
+      console.error("Erro ao processar a pesquisa:", error);
+      setError("Ocorreu um erro ao processar sua pesquisa. Tente novamente.");
     } finally {
       setIsLoading(false);
     }
-  };
+  }
 
   // async function handleNewSearch(riotid: string){
   //   if (riotid === '') {
@@ -103,6 +108,6 @@ export function useSearchHandler(): SearchHandlerHook {
   return {
     handleSearch,
     isLoading,
-    error
+    error,
   };
-};
+}

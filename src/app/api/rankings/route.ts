@@ -1,59 +1,66 @@
 import { NextResponse, NextRequest } from "next/server";
 
-// This API route relies on runtime request params and external API calls.
-// Force it to be dynamic so Next.js doesn't attempt to statically call it during build.
-export const dynamic = 'force-dynamic';
-import { CACHE_TTL, CacheEntry, cleanExpiredCache, getCacheStatus } from "@/lib/cache";
+export const dynamic = "force-dynamic";
+import {
+  CACHE_TTL,
+  CacheEntry,
+  cleanExpiredCache,
+  getCacheStatus,
+} from "@/lib/cache";
 
 const RIOT_API_KEY = process.env.RIOT_API_KEY;
 
-// Cache em memória
+// In-memory cache
 const cache = new Map<string, CacheEntry>();
 
 async function fetchLeague(
   region: string,
   queueType: string,
-  tier: "challenger" | "grandmaster" | "master"
+  tier: "challenger" | "grandmaster" | "master",
 ) {
   if (!RIOT_API_KEY) {
-    throw new Error('RIOT_API_KEY not configured on the server');
+    throw new Error("RIOT_API_KEY not configured on the server");
   }
 
   const url = `https://${region}.api.riotgames.com/lol/league/v4/${tier}leagues/by-queue/${queueType}?api_key=${RIOT_API_KEY}`;
   const res = await fetch(url);
+
   if (!res.ok) {
-    // Try to include Riot message when possible
-    let detail = '';
+    let detail = "";
     try {
       const body = await res.json();
       if (body?.status?.message) detail = ` - ${body.status.message}`;
-    } catch (e) {
+    } catch {
       // ignore JSON parse errors
     }
 
     if (res.status === 401) {
-      throw new Error(`Riot API unauthorized (401). Check RIOT_API_KEY is valid and configured.${detail}`);
+      throw new Error(
+        `Riot API unauthorized (401). Check RIOT_API_KEY is valid and configured.${detail}`,
+      );
     }
     if (res.status === 429) {
-      throw new Error(`Riot API rate limit (429). Consider retrying later.${detail}`);
+      throw new Error(
+        `Riot API rate limit (429). Consider retrying later.${detail}`,
+      );
     }
 
-    throw new Error(`Erro ao buscar ${tier}: ${res.status}${detail}`);
+    throw new Error(`Error fetching ${tier}: ${res.status}${detail}`);
   }
+
   return res.json();
 }
 
 async function getAllRankings(region: string, queueType: string) {
+  // FIX 1: use a single consistent cache key everywhere
   const cacheKey = `${region}-${queueType}`;
   const now = Date.now();
 
   const cachedEntry = cache.get(cacheKey);
   if (cachedEntry && now - cachedEntry.timestamp < CACHE_TTL) {
+    // FIX 2: cached payload now always includes regionMode (stored below)
     return cachedEntry.data;
   }
-
-  // Minimum counts to enforce for tiers when computing cutoffs
-  const PAGE_SIZE = 100; // must match frontend itemsPerPage
 
   try {
     const [challenger, grandmaster, master] = await Promise.all([
@@ -62,127 +69,110 @@ async function getAllRankings(region: string, queueType: string) {
       fetchLeague(region, queueType, "master"),
     ]);
 
-  // Keep per-tier arrays (make sure to sort them by LP desc — Riot may not guarantee order)
-  const challengerEntries = (Array.isArray(challenger.entries) ? challenger.entries : []).slice().sort((a: any, b: any) => b.leaguePoints - a.leaguePoints);
-  const grandmasterEntries = (Array.isArray(grandmaster.entries) ? grandmaster.entries : []).slice().sort((a: any, b: any) => b.leaguePoints - a.leaguePoints);
-  const masterEntries = (Array.isArray(master.entries) ? master.entries : []).slice().sort((a: any, b: any) => b.leaguePoints - a.leaguePoints);
+    const sort = (entries: any[]) =>
+      (Array.isArray(entries) ? entries : [])
+        .slice()
+        .sort((a: any, b: any) => b.leaguePoints - a.leaguePoints);
 
-    // Combined and globally sorted list
+    const challengerEntries = sort(challenger.entries);
+    const grandmasterEntries = sort(grandmaster.entries);
+    const masterEntries = sort(master.entries);
+
     const allEntries = [
       ...challengerEntries,
       ...grandmasterEntries,
       ...masterEntries,
     ].sort((a, b) => b.leaguePoints - a.leaguePoints);
 
-    // Determine region-specific mode: pages-based or default
-    const regionsUsingThreePages = new Set(['KR', 'NA1', 'EUW1', 'VN2']);
-    const normalizedRegion = region.toUpperCase();
-    const regionMode = regionsUsingThreePages.has(normalizedRegion) ? 'three-pages' : 'two-pages';
+    // FIX 3: use actual region codes as returned by Riot (e.g. "NA1", "EUW1")
+    // PAGE_SIZE constant removed — cutoff positions are fixed at 300 / 200, not derived from page size
+    const regionsUsingThreePages = new Set(["KR", "NA1", "EUW1", "VN2"]);
+    const regionMode = regionsUsingThreePages.has(region.toUpperCase())
+      ? "three-pages"
+      : "two-pages";
 
-    // For three-pages mode: challenger covers pages 1..3 (PAGE_SIZE * 3)
-    // For two-pages mode: challenger covers pages 1..2 (PAGE_SIZE * 2)
-    const challengerPageLimit = regionMode === 'three-pages' ? (PAGE_SIZE * 3) : (PAGE_SIZE * 2);
+    // Challenger cutoff: position 300 for three-pages regions, 200 for others
+    const challengerCutoffPosition = regionMode === "three-pages" ? 300 : 200;
 
-    // Compute cutoff as the LP at the combined global index = challengerPageLimit
-    const getLPAtGlobalIndex = (idx: number) => {
-      if (allEntries.length >= idx) return allEntries[idx - 1].leaguePoints || 0;
-      // fallback to last challenger LP if index not available
-      return challengerEntries.length ? challengerEntries[challengerEntries.length - 1].leaguePoints || 0 : (allEntries.length ? allEntries[allEntries.length - 1].leaguePoints || 0 : 0);
-    };
-
-    // Calculate cutoffs differently based on region mode
     let challengerCutoffLP = 0;
+    if (allEntries.length >= challengerCutoffPosition) {
+      challengerCutoffLP =
+        allEntries[challengerCutoffPosition - 1].leaguePoints;
+    } else if (allEntries.length > 0) {
+      challengerCutoffLP = allEntries[allEntries.length - 1].leaguePoints;
+    }
+
+    // Grandmaster cutoff: lowest LP among GM players ranked after the challenger block
     let grandmasterCutoffLP = 0;
+    if (regionMode === "three-pages") {
+      // Build a fast lookup for global index by puuid
+      const globalIndexByPuuid = new Map<string, number>(
+        allEntries.map((e, i) => [e.puuid, i]),
+      );
 
-    if (regionMode === 'three-pages') {
-      // KR, NA, EUW, VN: use position-based cutoffs (at 300)
-      // Get LP at position 300 from combined allEntries (more accurate than using only challenger tier)
-      if (allEntries.length >= 300) {
-        challengerCutoffLP = allEntries[299].leaguePoints;  // index 299 = position 300
-      } else if (allEntries.length > 0) {
-        // If less than 300 total players, use last available LP
-        challengerCutoffLP = allEntries[allEntries.length - 1].leaguePoints;
-      }
-    } else {
-      // Other regions: use actual challenger tier entries
-      // Use position 200 if available
-      if (challengerEntries.length >= 200) {
-        challengerCutoffLP = challengerEntries[199].leaguePoints || 0;  // index 199 = position 200
-      } else if (challengerEntries.length > 0) {
-        challengerCutoffLP = challengerEntries[challengerEntries.length - 1].leaguePoints || 0;
-      }
-    }
-
-    // Grandmaster cutoff calculation
-    if (regionMode === 'three-pages') {
-      // KR, NA, EUW, VN: GM starts after position 300
-      // Get players between positions 301-800 who are in GM
-      const gmStartIndex = 300;  // after first 300 challengers
-      const relevantGMs = grandmasterEntries.filter((entry: { puuid: string; leaguePoints: number }) => {
-        // Find this entry's position in the global list
-        const globalIndex = allEntries.findIndex(e => e.puuid === entry.puuid);
-        // Keep only GMs that are after position 300 but in the first 800 players
-        return globalIndex >= gmStartIndex && globalIndex < 1000;
+      const relevantGMs = grandmasterEntries.filter((entry: any) => {
+        const idx = globalIndexByPuuid.get(entry.puuid) ?? -1;
+        // GM window: after the 300-player challenger block, up to position 1000
+        return idx >= challengerCutoffPosition && idx < 1000;
       });
-      
-      if (relevantGMs.length > 0) {
-        // Use the lowest LP among the relevant GMs
-        grandmasterCutoffLP = relevantGMs[relevantGMs.length - 1].leaguePoints;
-      } else if (grandmasterEntries.length > 0) {
-        // Fallback to lowest GM LP if we couldn't filter properly
-        grandmasterCutoffLP = grandmasterEntries[grandmasterEntries.length - 1].leaguePoints;
-      }
-    } else {
-      // Other regions: Simply use the lowest LP in GM tier
-      if (grandmasterEntries.length > 0) {
-        grandmasterCutoffLP = grandmasterEntries[grandmasterEntries.length - 1].leaguePoints;
-      }
-    }
-    
-    // Ensure we have a valid number, default to 0 if all else fails
-    grandmasterCutoffLP = grandmasterCutoffLP || 0;
 
-    // 🔥 Apply minimum cutoff values
-    // Challenger must be at least 500 LP
+      grandmasterCutoffLP =
+        relevantGMs.length > 0
+          ? relevantGMs[relevantGMs.length - 1].leaguePoints
+          : grandmasterEntries.length > 0
+            ? grandmasterEntries[grandmasterEntries.length - 1].leaguePoints
+            : 0;
+    } else {
+      grandmasterCutoffLP =
+        grandmasterEntries.length > 0
+          ? grandmasterEntries[grandmasterEntries.length - 1].leaguePoints
+          : 0;
+    }
+
+    // Apply minimum floors
     challengerCutoffLP = Math.max(challengerCutoffLP, 500);
-    // Grandmaster must be at least 200 LP
     grandmasterCutoffLP = Math.max(grandmasterCutoffLP, 200);
 
     const sampleLP = (entries: any[]) => ({
-      top: entries.length ? entries[0].leaguePoints || 0 : null,
-      at200: entries.length >= 200 ? entries[199].leaguePoints || 0 : null,
-      at300: entries.length >= 300 ? entries[299].leaguePoints || 0 : null,
-      at500: entries.length >= 500 ? entries[499].leaguePoints || 0 : null,
-      last: entries.length ? entries[entries.length - 1].leaguePoints || 0 : null,
+      top: entries.length ? (entries[0].leaguePoints ?? 0) : null,
+      at200: entries.length >= 200 ? (entries[199].leaguePoints ?? 0) : null,
+      at300: entries.length >= 300 ? (entries[299].leaguePoints ?? 0) : null,
+      at500: entries.length >= 500 ? (entries[499].leaguePoints ?? 0) : null,
+      last: entries.length
+        ? (entries[entries.length - 1].leaguePoints ?? 0)
+        : null,
       count: entries.length,
     });
 
     const cutoffs = {
       challenger: {
         actualCount: challengerEntries.length,
-        pageLimit: challengerPageLimit,
+        cutoffPosition: challengerCutoffPosition,
         cutoffLP: challengerCutoffLP,
         sample: sampleLP(challengerEntries),
       },
       grandmaster: {
         actualCount: grandmasterEntries.length,
-        pageLimit: (regionMode === 'three-pages' ? 300 : 200) + 700, // GM extends ~700 players after challenger section
         cutoffLP: grandmasterCutoffLP,
         sample: sampleLP(grandmasterEntries),
       },
       master: {
         actualCount: masterEntries.length,
-        cutoffLP: masterEntries.length ? masterEntries[masterEntries.length - 1].leaguePoints || 0 : 0,
+        cutoffLP: masterEntries.length
+          ? (masterEntries[masterEntries.length - 1].leaguePoints ?? 0)
+          : 0,
         sample: sampleLP(masterEntries),
       },
     };
 
+    // FIX 2: include regionMode in the cached payload so cache hits return it too
     const payload = {
       allEntries,
       challengerEntries,
       grandmasterEntries,
       masterEntries,
       cutoffs,
+      regionMode,
     };
 
     cache.set(cacheKey, {
@@ -192,12 +182,7 @@ async function getAllRankings(region: string, queueType: string) {
       queueType,
     });
 
-    const finalPayload = {
-      ...payload,
-      regionMode,
-    };
-
-    return finalPayload;
+    return payload;
   } catch (error) {
     if (cachedEntry) {
       return cachedEntry.data;
@@ -219,19 +204,22 @@ export async function GET(req: NextRequest) {
     }
 
     if (!RIOT_API_KEY) {
-      return NextResponse.json({ error: 'RIOT_API_KEY not configured on server' }, { status: 500 });
+      return NextResponse.json(
+        { error: "RIOT_API_KEY not configured on server" },
+        { status: 500 },
+      );
     }
 
-  const data = await getAllRankings(region, queueType);
+    const data = await getAllRankings(region, queueType);
 
-  // `data` may be the new payload shape or the old array shape (from cache) - normalize to `allEntries`
-  const allEntries = Array.isArray(data) ? data : data.allEntries;
+    const allEntries = Array.isArray(data) ? data : data.allEntries;
 
-  const startIndex = (page - 1) * limit;
-  const endIndex = startIndex + limit;
-  const paginatedEntries = allEntries.slice(startIndex, endIndex);
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedEntries = allEntries.slice(startIndex, endIndex);
 
-  const cacheKey = `rankings:${region}-${queueType}`;
+    // FIX 1: use the same key format as getAllRankings
+    const cacheKey = `${region}-${queueType}`;
     const cachedEntry = cache.get(cacheKey);
     const cacheAge = cachedEntry ? Date.now() - cachedEntry.timestamp : 0;
 
@@ -249,6 +237,7 @@ export async function GET(req: NextRequest) {
         hasPreviousPage: page > 1,
       },
       cutoffs: !Array.isArray(data) ? data.cutoffs : undefined,
+      regionMode: !Array.isArray(data) ? data.regionMode : undefined,
       counts: !Array.isArray(data)
         ? {
             challenger: data.challengerEntries.length,
@@ -257,25 +246,24 @@ export async function GET(req: NextRequest) {
           }
         : undefined,
       cache: {
-        isFromCache: cacheAge < CACHE_TTL,
+        isFromCache: cacheAge > 0 && cacheAge < CACHE_TTL,
         ageInMinutes: Math.floor(cacheAge / (1000 * 60)),
         expiresInMinutes: Math.floor((CACHE_TTL - cacheAge) / (1000 * 60)),
-        status: getCacheStatus(cache), // 👈 debug opcional
+        status: getCacheStatus(cache),
       },
     };
 
-    // Opcional: limpeza automática de caches expirados
     cleanExpiredCache(cache);
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error("Erro no endpoint /api/rankings:", error);
+    console.error("Error in /api/rankings:", error);
     return NextResponse.json(
       {
         error: "Failed to fetch rankings",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

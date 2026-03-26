@@ -33,7 +33,7 @@ interface RankingData {
     hasPreviousPage: boolean;
   };
   cutoffs?: {
-    challenger: { cutoffLP: number };
+    challenger: { cutoffLP: number; cutoffPosition: number };
     grandmaster: { cutoffLP: number };
   };
   regionMode?: string;
@@ -45,6 +45,9 @@ interface SummonerInfo {
   profileIconId?: number;
 }
 
+// Stable constant — keep outside component to avoid stale closure issues
+const ITEMS_PER_PAGE = 200;
+
 export default function RankingsPage({
   params,
 }: {
@@ -52,7 +55,6 @@ export default function RankingsPage({
 }) {
   const router = useRouter();
 
-  // Estados
   const [rankings, setRankings] = useState<RankingData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingNames, setIsLoadingNames] = useState(false);
@@ -63,11 +65,9 @@ export default function RankingsPage({
   >({});
   const [sortByWinRate, setSortByWinRate] = useState(false);
 
-  // Parse page from URL params
   const currentPage = parseInt(params.page) || 1;
   const region = params.region;
 
-  // Convert friendly URL names to API queue types
   const queueTypeMap: Record<string, string> = {
     soloduo: "RANKED_SOLO_5x5",
     flex: "RANKED_FLEX_SR",
@@ -76,9 +76,6 @@ export default function RankingsPage({
   const queueType = queueTypeMap[params.queueType] || "RANKED_SOLO_5x5";
   const friendlyQueueType = params.queueType;
 
-  const itemsPerPage = 200;
-
-  // Mapas de exibição
   const displayRegionMap: Record<string, string> = {
     BR1: "BR",
     NA1: "NA",
@@ -102,8 +99,11 @@ export default function RankingsPage({
     flex: "Flex",
   };
 
-  // Cache management
   const summonerNamesCache = useRef<Record<string, SummonerInfo>>({});
+  // Guard: prevents a second concurrent execution of fetchSummonerNames
+  // Guard: prevents concurrent fetchSummonerNames calls that fight over
+  // isLoadingNames and leave the spinner permanently stuck.
+  const isFetchingNamesRef = useRef(false);
 
   useEffect(() => {
     const savedCache = localStorage.getItem(`summonerCache_${region}`);
@@ -114,51 +114,45 @@ export default function RankingsPage({
     }
   }, [region]);
 
-  const updateCache = useCallback(
-    (newData: Record<string, SummonerInfo>) => {
-      const updatedCache = { ...summonerNamesCache.current, ...newData };
-      summonerNamesCache.current = updatedCache;
-      localStorage.setItem(
-        `summonerCache_${region}`,
-        JSON.stringify(updatedCache),
-      );
-      setSummonerNames((prev) => ({ ...prev, ...newData }));
-    },
-    [region],
-  );
+  // Stable ref — never changes identity, so it can never be a useEffect dep
+  // that causes re-fires. Reads region from the regionRef below.
+  const regionRef = useRef(region);
+  useEffect(() => {
+    regionRef.current = region;
+  }, [region]);
 
-  // Fetch summoner names in batches
-  const fetchSummonerNames = useCallback(
-    async (puuids: string[]) => {
-      if (!puuids.length) return;
+  const updateCache = useRef((newData: Record<string, SummonerInfo>) => {
+    const updatedCache = { ...summonerNamesCache.current, ...newData };
+    summonerNamesCache.current = updatedCache;
+    localStorage.setItem(
+      `summonerCache_${regionRef.current}`,
+      JSON.stringify(updatedCache),
+    );
+    setSummonerNames((prev) => ({ ...prev, ...newData }));
+  });
 
-      const uncachedPuuids = puuids.filter(
-        (puuid) => !summonerNamesCache.current[puuid],
-      );
+  // Stable ref function — identity never changes, so it is safe to call from
+  // effects without being listed as a dep (which would cause re-fire loops).
+  const fetchSummonerNames = useRef(async (puuids: string[]) => {
+    if (!puuids.length || isFetchingNamesRef.current) return;
 
-      if (uncachedPuuids.length === 0) {
-        setSummonerNames((prev) => ({
-          ...prev,
-          ...puuids.reduce(
-            (acc, puuid) => {
-              if (summonerNamesCache.current[puuid]) {
-                acc[puuid] = summonerNamesCache.current[puuid];
-              }
-              return acc;
-            },
-            {} as Record<string, SummonerInfo>,
-          ),
-        }));
-        return;
-      }
+    const uncachedPuuids = puuids.filter(
+      (puuid) => !summonerNamesCache.current[puuid],
+    );
+    if (uncachedPuuids.length === 0) return;
 
-      setIsLoadingNames(true);
-      try {
-        for (let i = 0; i < uncachedPuuids.length; i += 20) {
-          const batch = uncachedPuuids.slice(i, i + 20);
-          const batchPromises = batch.map(async (puuid) => {
+    isFetchingNamesRef.current = true;
+    setIsLoadingNames(true);
+    try {
+      for (let i = 0; i < uncachedPuuids.length; i += 20) {
+        const batch = uncachedPuuids.slice(i, i + 20);
+        const batchResults = await Promise.all(
+          batch.map(async (puuid) => {
             try {
-              const summonerData = await getSummonerNameByPuuid(region, puuid);
+              const summonerData = await getSummonerNameByPuuid(
+                regionRef.current,
+                puuid,
+              );
               if (!summonerData?.name || !summonerData?.tagLine) return null;
               return {
                 puuid,
@@ -166,323 +160,225 @@ export default function RankingsPage({
                 tagLine: summonerData.tagLine,
                 profileIconId: summonerData.profileIconId,
               };
-            } catch (error) {
-              console.error(
-                `Error fetching summoner name for PUUID ${puuid}:`,
-                error instanceof Error ? error.message : "Unknown error",
-              );
+            } catch (err) {
+              console.error(`Error fetching PUUID ${puuid}:`, err);
               return null;
             }
-          });
+          }),
+        );
 
-          const batchResults = await Promise.all(batchPromises);
-          const validResults = batchResults.filter(
+        const newNames = batchResults
+          .filter(
             (
-              result,
-            ): result is {
+              r,
+            ): r is {
               puuid: string;
               gameName: string;
               tagLine: string;
               profileIconId: number;
-            } => result !== null,
-          );
+            } => r !== null,
+          )
+          .reduce((acc: Record<string, SummonerInfo>, r) => {
+            acc[r.puuid] = {
+              gameName: r.gameName,
+              tagLine: r.tagLine,
+              profileIconId: r.profileIconId,
+            };
+            return acc;
+          }, {});
 
-          const newNames = validResults.reduce(
-            (acc: Record<string, SummonerInfo>, result) => {
-              acc[result.puuid] = {
-                gameName: result.gameName,
-                tagLine: result.tagLine,
-                profileIconId: result.profileIconId,
-              };
-              return acc;
-            },
-            {},
-          );
+        updateCache.current(newNames);
 
-          updateCache(newNames);
-
-          if (i + 20 < uncachedPuuids.length) {
-            await new Promise((resolve) => setTimeout(resolve, 300));
-          }
+        if (i + 20 < uncachedPuuids.length) {
+          await new Promise((resolve) => setTimeout(resolve, 300));
         }
-      } finally {
-        setIsLoadingNames(false);
       }
-    },
-    [region, updateCache],
-  );
+    } finally {
+      setIsLoadingNames(false);
+      isFetchingNamesRef.current = false;
+    }
+  });
 
-  // Fetch all rankings data
   const fetchAllRankings = useCallback(async () => {
     try {
-      console.log("[fetchAllRankings] Iniciando busca de todos os dados...");
-      console.log("[fetchAllRankings] region:", region);
-      console.log("[fetchAllRankings] queueType:", queueType);
-      console.log("[fetchAllRankings] itemsPerPage:", itemsPerPage);
-
       setIsSortingAll(true);
       setError(null);
 
-      console.log("[fetchAllRankings] Fazendo fetch da primeira página...");
       const firstRes = await fetch(
-        `/api/rankings?region=${region}&queueType=${queueType}&page=1&limit=${itemsPerPage}`,
+        `/api/rankings?region=${region}&queueType=${queueType}&page=1&limit=${ITEMS_PER_PAGE}`,
       );
-      console.log(
-        "[fetchAllRankings] Status resposta primeira página:",
-        firstRes.status,
-        firstRes.ok,
-      );
-
       if (!firstRes.ok) throw new Error("Failed to fetch first page");
       const firstData = await firstRes.json();
-      console.log("[fetchAllRankings] firstData recebido:", firstData);
 
       const totalPages = firstData.pagination?.totalPages || 1;
-      console.log("[fetchAllRankings] Total de páginas:", totalPages);
-
       let allEntries = [...firstData.entries];
-      console.log(
-        "[fetchAllRankings] Entradas da página 1:",
-        allEntries.length,
-      );
 
       for (let page = 2; page <= totalPages; page++) {
-        console.log(
-          `[fetchAllRankings] Iniciando busca página ${page}/${totalPages}...`,
+        const res = await fetch(
+          `/api/rankings?region=${region}&queueType=${queueType}&page=${page}&limit=${ITEMS_PER_PAGE}`,
         );
-        const fetchUrl = `/api/rankings?region=${region}&queueType=${queueType}&page=${page}&limit=${itemsPerPage}`;
-        console.log("[fetchAllRankings] URL:", fetchUrl);
-
-        const res = await fetch(fetchUrl);
-        console.log(
-          `[fetchAllRankings] Status página ${page}:`,
-          res.status,
-          res.ok,
-        );
-
         if (!res.ok) throw new Error(`Failed to fetch page ${page}`);
         const data = await res.json();
-        console.log(
-          `[fetchAllRankings] Página ${page} carregada com ${data.entries.length} entradas.`,
-        );
         allEntries = allEntries.concat(data.entries);
-        console.log("[fetchAllRankings] Total acumulado:", allEntries.length);
-
         await new Promise((r) => setTimeout(r, 200));
       }
 
-      console.log(
-        "[fetchAllRankings] Todas as páginas carregadas. Total:",
-        allEntries.length,
-      );
-
-      const fullData = {
+      const fullData: RankingData = {
         ...firstData,
         entries: allEntries,
         pagination: {
           ...firstData.pagination,
           totalEntries: allEntries.length,
-          totalPages: Math.ceil(allEntries.length / itemsPerPage),
+          // FIX: full dataset is paginated in-memory, so total pages reflects
+          // the full count divided by page size
+          totalPages: Math.ceil(allEntries.length / ITEMS_PER_PAGE),
         },
       };
 
-      console.log("[fetchAllRankings] Chamando setRankings com:", {
-        entriesCount: fullData.entries.length,
-        totalPages: fullData.pagination?.totalPages,
-      });
-
       setRankings(fullData);
-
-      if (typeof window !== "undefined") {
-        const storageKey = `rankings_${region}_${queueType}_all`;
-        localStorage.setItem(storageKey, JSON.stringify(fullData));
-        console.log(
-          "[fetchAllRankings] Dados salvos no localStorage com chave:",
-          storageKey,
-        );
-      }
-
-      console.log("[fetchAllRankings] Fetch concluído com sucesso!");
     } catch (err) {
-      console.error("[fetchAllRankings] Erro capturado:", err);
-      console.error("[fetchAllRankings] Erro tipo:", typeof err);
-      console.error(
-        "[fetchAllRankings] Erro stack:",
-        err instanceof Error ? err.stack : "Sem stack",
-      );
+      console.error("[fetchAllRankings] Error:", err);
       setError("Failed to load all rankings for sorting");
     } finally {
-      console.log(
-        "[fetchAllRankings] Finally block - setando isSortingAll para false",
-      );
       setIsSortingAll(false);
     }
-  }, [region, queueType, itemsPerPage]);
+  }, [region, queueType]);
 
-  // Fetch rankings data
+  // FIX: remove `sortByWinRate` from the dependency array so toggling sort
+  // does NOT trigger a re-fetch that overwrites the full dataset.
   const fetchRankings = useCallback(
     async (pageToFetch: number = currentPage) => {
       try {
-        console.log("[fetchRankings] Iniciando busca:", {
-          pageToFetch,
-          region,
-          queueType,
-        });
         setIsLoading(true);
         setError(null);
 
-        // NÃO usar cache se estiver carregando tudo (após ordenar)
-        if (typeof window !== "undefined" && !sortByWinRate) {
+        if (typeof window !== "undefined") {
           const storageKey = `rankings_${region}_${queueType}_page_${pageToFetch}`;
           const cached = localStorage.getItem(storageKey);
-
           if (cached) {
-            console.log(
-              "[fetchRankings] Usando cache localStorage:",
-              storageKey,
-            );
-            const parsed = JSON.parse(cached);
-            setRankings(parsed);
+            setRankings(JSON.parse(cached));
             setIsLoading(false);
             return;
           }
         }
 
-        // Busca normal (apenas uma página)
-        console.log("[fetchRankings] Modo normal: página", pageToFetch);
         const response = await fetch(
-          `/api/rankings?region=${region}&queueType=${queueType}&page=${pageToFetch}&limit=${itemsPerPage}`,
+          `/api/rankings?region=${region}&queueType=${queueType}&page=${pageToFetch}&limit=${ITEMS_PER_PAGE}`,
         );
         if (!response.ok) throw new Error("Failed to fetch rankings");
         const data = await response.json();
-        console.log(
-          "[fetchRankings] Página carregada com sucesso:",
-          data.entries.length,
-          "entradas",
-        );
 
         setRankings(data);
 
-        if (typeof window !== "undefined" && !sortByWinRate) {
+        if (typeof window !== "undefined") {
           const storageKey = `rankings_${region}_${queueType}_page_${pageToFetch}`;
           localStorage.setItem(storageKey, JSON.stringify(data));
-          console.log("[fetchRankings] Página salva no cache localStorage.");
         }
       } catch (err) {
-        console.error("[fetchRankings] Erro:", err);
+        console.error("[fetchRankings] Error:", err);
         setError("Failed to load rankings");
       } finally {
         setIsLoading(false);
-        console.log("[fetchRankings] Finalizado!");
       }
     },
-    [region, queueType, currentPage, itemsPerPage, sortByWinRate],
+    // FIX: sortByWinRate removed — changing sort mode must not trigger a new fetch
+    [region, queueType, currentPage],
   );
 
-  // Get display data based on sort state
-  const getDisplayData = useCallback(() => {
-    if (!rankings) return { entries: [], totalPages: 0, totalEntries: 0 };
+  // FIX: getTier now uses LP-based cutoffs from the API response instead of
+  // position arithmetic derived from an inconsistent page-size constant.
+  // Falls back to global-rank position only when cutoff data is unavailable.
+  const getTier = useCallback(
+    (entry: LeagueEntry, globalRank: number): string => {
+      if (rankings?.cutoffs) {
+        const { challenger, grandmaster } = rankings.cutoffs;
+        if (entry.leaguePoints >= challenger.cutoffLP) return "Challenger";
+        if (entry.leaguePoints >= grandmaster.cutoffLP) return "Grandmaster";
+        return "Master";
+      }
 
-    let entries = [...rankings.entries];
+      // Fallback: position-based using regionMode from API
+      const isThreePages = rankings?.regionMode === "three-pages";
+      const challengerLimit = isThreePages ? 300 : 200;
+      if (globalRank <= challengerLimit) return "Challenger";
+      if (globalRank <= challengerLimit + 700) return "Grandmaster";
+      return "Master";
+    },
+    [rankings],
+  );
 
-    if (sortByWinRate) {
-      console.log(
-        "[getDisplayData] Ordenando por Win Rate. Total:",
-        entries.length,
-      );
-      entries.sort((a, b) => {
-        const winRateA = a.wins / (a.wins + a.losses);
-        const winRateB = b.wins / (b.wins + b.losses);
-        return winRateB - winRateA;
-      });
-      console.log(
-        "[getDisplayData] Após ordenação, primeiros 5:",
-        entries.slice(0, 5),
-      );
-    }
-
-    return {
-      entries,
-      totalPages: rankings.pagination?.totalPages || 0,
-      totalEntries:
-        rankings.pagination?.totalEntries || rankings.entries.length,
-    };
+  // Stable sorted list — only recomputes when rankings data or sort mode changes.
+  // Must NOT spread inside render body; keep it here so the reference is stable.
+  const allSortedEntries = useMemo(() => {
+    if (!rankings) return [];
+    if (!sortByWinRate) return rankings.entries; // original reference — no copy
+    return [...rankings.entries].sort((a, b) => {
+      const wrA = a.wins / (a.wins + a.losses);
+      const wrB = b.wins / (b.wins + b.losses);
+      return wrB - wrA;
+    });
   }, [rankings, sortByWinRate]);
 
-  const displayData = getDisplayData();
-  const totalPages = displayData.totalPages;
+  const totalPages = rankings?.pagination?.totalPages ?? 0;
+  const totalEntries =
+    rankings?.pagination?.totalEntries ?? rankings?.entries.length ?? 0;
 
-  // Paginate display data for current view
+  // Stable paginated slice — only recomputes when the sorted list or page changes.
   const paginatedEntries = useMemo(() => {
     if (!sortByWinRate) {
-      return displayData.entries;
+      // Server already returned exactly the right page — use the reference as-is.
+      return allSortedEntries;
     }
-    // When sorted by win rate, paginate the sorted entries
-    const start = (currentPage - 1) * itemsPerPage;
-    const end = start + itemsPerPage;
-    return displayData.entries.slice(start, end);
-  }, [displayData, sortByWinRate, currentPage]);
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return allSortedEntries.slice(start, start + ITEMS_PER_PAGE);
+  }, [allSortedEntries, sortByWinRate, currentPage]);
 
-  // Fetch rankings on mount and when dependencies change
+  // Initial load and page navigation
   useEffect(() => {
-    fetchRankings();
-  }, [fetchRankings]);
+    if (sortByWinRate) return;
 
-  // Load names when rankings update
+    fetchRankings(currentPage);
+  }, [region, queueType, currentPage]);
+
+  // Load summoner names for the current visible entries.
+  // fetchSummonerNames.current and updateCache.current are stable refs —
+  // listing them as deps would be wrong (refs don't change identity) and
+  // omitting them is safe because they always point to the latest function.
   useEffect(() => {
-    console.log("[useEffect names] Acionado");
-    console.log("[useEffect names] rankings:", rankings ? "EXISTS" : "NULL");
-    console.log("[useEffect names] isLoading:", isLoading);
-    console.log(
-      "[useEffect names] paginatedEntries.length:",
-      paginatedEntries.length,
-    );
+    if (isLoading || paginatedEntries.length === 0) return;
 
-    if (!rankings || isLoading) {
-      console.log("[useEffect names] Retornando - rankings ou isLoading");
-      return;
-    }
-    const puuidsToFetch = paginatedEntries.map((entry) => entry.puuid);
-    console.log(
-      "[useEffect names] Buscando nomes para",
-      puuidsToFetch.length,
-      "puuids",
-    );
-    fetchSummonerNames(puuidsToFetch);
-  }, [paginatedEntries, isLoading, fetchSummonerNames]);
+    const puuids = paginatedEntries.map((e) => e.puuid);
 
-  // Handle win rate sort button click
+    fetchSummonerNames.current(puuids);
+  }, [currentPage, isLoading]);
   const handleWinRateSort = async () => {
-    console.log("[handleWinRateSort] Clicado no botão Win Rate");
     const newValue = !sortByWinRate;
-    console.log("[handleWinRateSort] sortByWinRate anterior:", sortByWinRate);
-    console.log("[handleWinRateSort] sortByWinRate novo:", newValue);
-    console.log("[handleWinRateSort] rankings:", rankings);
-    console.log(
-      "[handleWinRateSort] totalPages:",
-      rankings?.pagination?.totalPages,
-    );
 
-    if (newValue && rankings && rankings.pagination!.totalPages > 1) {
-      console.log(
-        "[handleWinRateSort] Múltiplas páginas detectadas - carregando tudo",
-      );
-      // Se há múltiplas páginas, busca todos os dados
-      await fetchAllRankings();
-    } else {
-      console.log("[handleWinRateSort] Página única ou desativando sort");
+    try {
+      if (newValue) {
+        const needsFullLoad =
+          rankings && (rankings.pagination?.totalPages ?? 1) > 1;
+
+        if (needsFullLoad) {
+          await fetchAllRankings();
+        }
+      } else {
+        setSortByWinRate(false);
+        await fetchRankings(currentPage);
+        return;
+      }
+
+      setSortByWinRate(newValue);
+    } catch (err) {
+      console.error(err);
+      setIsSortingAll(false);
     }
-
-    setSortByWinRate(newValue);
   };
 
-  // Get tier icon URL
   const getTierIconUrl = (tier: string) => {
-    const tierLower = tier.toLowerCase();
-    return `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${tierLower}.svg`;
+    return `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${tier.toLowerCase()}.svg`;
   };
 
-  // Navigation functions
   const navigateToPage = (page: number) => {
     router.push(`/rankings/${friendlyQueueType}/${region}/${page}`);
   };
@@ -495,62 +391,27 @@ export default function RankingsPage({
     router.push(`/rankings/${friendlyQueueType}/${newRegion}/1`);
   };
 
-  // Generate page numbers for pagination
   const generatePageNumbers = (currentPage: number, totalPages: number) => {
-    const pages = [];
+    const pages: (number | string)[] = [];
     const maxVisiblePages = 7;
 
     if (totalPages <= maxVisiblePages) {
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
     } else {
       pages.push(1);
-
-      if (currentPage > 4) {
-        pages.push("...");
-      }
+      if (currentPage > 4) pages.push("...");
 
       const start = Math.max(2, currentPage - 2);
       const end = Math.min(totalPages - 1, currentPage + 2);
-
       for (let i = start; i <= end; i++) {
-        if (!pages.includes(i)) {
-          pages.push(i);
-        }
+        if (!pages.includes(i)) pages.push(i);
       }
 
-      if (currentPage < totalPages - 3) {
-        pages.push("...");
-      }
-
-      if (!pages.includes(totalPages)) {
-        pages.push(totalPages);
-      }
+      if (currentPage < totalPages - 3) pages.push("...");
+      if (!pages.includes(totalPages)) pages.push(totalPages);
     }
 
     return pages;
-  };
-
-  // Get tier for a player based on global rank
-  const getTier = (globalRank: number) => {
-    const normalizedRegion = region.toUpperCase().replace(/[0-9]/g, "");
-    const extendedRegions = ["KR", "NA", "EUW", "VN"];
-    const isExtendedRegion = extendedRegions.includes(normalizedRegion);
-
-    const challengerLimit = isExtendedRegion
-      ? itemsPerPage * 3
-      : itemsPerPage * 2;
-    const gmEndPage = 10;
-    const grandmasterLimit = gmEndPage * itemsPerPage;
-
-    if (globalRank <= challengerLimit) return "Challenger";
-    if (
-      globalRank > challengerLimit &&
-      Math.ceil(globalRank / itemsPerPage) <= gmEndPage
-    )
-      return "Grandmaster";
-    return "Master";
   };
 
   const getTierColor = (tier: string) => {
@@ -566,11 +427,10 @@ export default function RankingsPage({
     }
   };
 
-  // Get cutoffs from API response
   const cutoffs = rankings?.cutoffs
     ? {
-        challenger: rankings.cutoffs.challenger?.cutoffLP || null,
-        grandmaster: rankings.cutoffs.grandmaster?.cutoffLP || null,
+        challenger: rankings.cutoffs.challenger?.cutoffLP ?? null,
+        grandmaster: rankings.cutoffs.grandmaster?.cutoffLP ?? null,
       }
     : { challenger: null, grandmaster: null };
 
@@ -585,7 +445,7 @@ export default function RankingsPage({
           <a
             href="/"
             className="inline-flex items-center gap-2 px-3 py-2 text-sm transition-colors border rounded-md bg-background border-input hover:bg-accent/50"
-            aria-label="Voltar para página inicial"
+            aria-label="Back to home"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -603,12 +463,13 @@ export default function RankingsPage({
             </svg>
             Back
           </a>
+
           <h1 className="hidden text-2xl font-bold md:block">
             <div className="flex flex-col gap-2">
               <span>
-                High Elo Rankings -{" "}
+                High Elo Rankings –{" "}
                 {displayRegionMap[region.toUpperCase()] || region.toUpperCase()}{" "}
-                - {queueDisplayNames[friendlyQueueType] || friendlyQueueType}
+                – {queueDisplayNames[friendlyQueueType] || friendlyQueueType}
               </span>
               {(cutoffs.challenger || cutoffs.grandmaster) && (
                 <div className="flex items-center gap-4 text-base font-normal">
@@ -647,6 +508,7 @@ export default function RankingsPage({
               )}
             </div>
           </h1>
+
           <h2 className="flex flex-col gap-1 text-xs font-bold md:hidden">
             <span>
               Rankings{" "}
@@ -687,10 +549,11 @@ export default function RankingsPage({
               </div>
             )}
           </h2>
+
           <div
             className="flex items-center gap-2"
             role="navigation"
-            aria-label="Filtros"
+            aria-label="Filters"
           >
             <select
               value={region}
@@ -698,27 +561,27 @@ export default function RankingsPage({
               className="w-12 px-3 py-2 text-sm border rounded-md cursor-pointer border-input bg-background"
             >
               <optgroup label="Americas">
-                <option value="BR1">🇧🇷 - Brazil</option>
-                <option value="NA1">🇺🇸 - North America</option>
-                <option value="LA1">🇲🇽 - Latin America North</option>
-                <option value="LA2">🇦🇷 - Latin America South</option>
+                <option value="BR1">🇧🇷 – Brazil</option>
+                <option value="NA1">🇺🇸 – North America</option>
+                <option value="LA1">🇲🇽 – Latin America North</option>
+                <option value="LA2">🇦🇷 – Latin America South</option>
               </optgroup>
               <optgroup label="Europe">
-                <option value="EUW1">🇪🇸 - Western Europe</option>
-                <option value="EUN1">🇸🇪 - Northern & Eastern Europe</option>
-                <option value="RU">🇷🇺 - Russia</option>
-                <option value="ME1">🇪🇬 - Middle East</option>
-                <option value="TR1">🇹🇷 - Turkey</option>
+                <option value="EUW1">🇪🇸 – Western Europe</option>
+                <option value="EUN1">🇸🇪 – Northern & Eastern Europe</option>
+                <option value="RU">🇷🇺 – Russia</option>
+                <option value="ME1">🇪🇬 – Middle East</option>
+                <option value="TR1">🇹🇷 – Turkey</option>
               </optgroup>
               <optgroup label="Asia">
-                <option value="KR">🇰🇷 - Korea</option>
-                <option value="JP1">🇯🇵 - Japan</option>
+                <option value="KR">🇰🇷 – Korea</option>
+                <option value="JP1">🇯🇵 – Japan</option>
               </optgroup>
               <optgroup label="South Asia">
-                <option value="OC1">🇦🇺 - Oceania</option>
-                <option value="TW2">🇹🇼 - Taiwan, Hong Kong & Macau</option>
-                <option value="VN2">🇻🇳 - Vietnam</option>
-                <option value="SG2">🇸🇬 - Singapore</option>
+                <option value="OC1">🇦🇺 – Oceania</option>
+                <option value="TW2">🇹🇼 – Taiwan, HK & Macau</option>
+                <option value="VN2">🇻🇳 – Vietnam</option>
+                <option value="SG2">🇸🇬 – Singapore</option>
               </optgroup>
             </select>
             <select
@@ -742,10 +605,10 @@ export default function RankingsPage({
             />
             <p className="mt-2 text-sm text-muted-foreground">
               {isSortingAll
-                ? "Carregando todos os challengers para ordenação..."
+                ? "Loading all players for sorting…"
                 : isLoadingNames
-                  ? "Carregando dados dos invocadores..."
-                  : "Carregando ranking..."}
+                  ? "Loading summoner data…"
+                  : "Loading rankings…"}
             </p>
           </div>
         )}
@@ -815,17 +678,20 @@ export default function RankingsPage({
                       ).toFixed(1);
                       const summonerInfo = summonerNames[entry.puuid];
                       const displayName =
-                        summonerInfo &&
-                        summonerInfo.gameName &&
-                        summonerInfo.tagLine
+                        summonerInfo?.gameName && summonerInfo?.tagLine
                           ? `${summonerInfo.gameName} #${summonerInfo.tagLine}`
-                          : "Carregando...";
+                          : "Loading…";
 
-                      const globalRank = sortByWinRate
-                        ? (currentPage - 1) * itemsPerPage + index + 1
-                        : (currentPage - 1) * itemsPerPage + index + 1;
+                      // FIX: globalRank always reflects LP rank (1-based position
+                      // in the full sorted list), regardless of the active sort mode.
+                      // When sortByWinRate is true we're paginating in-memory over
+                      // the full dataset, so the offset math is still correct.
+                      const globalRank =
+                        (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
 
-                      const tier = getTier(globalRank);
+                      // FIX: getTier uses LP-based cutoffs from the API, not a
+                      // position derived from the win-rate rank.
+                      const tier = getTier(entry, globalRank);
 
                       return (
                         <tr
@@ -859,7 +725,7 @@ export default function RankingsPage({
                                   {displayName}
                                 </span>
                                 <span className="block inline truncate sm:hidden">
-                                  {summonerInfo?.gameName || "Carregando..."}
+                                  {summonerInfo?.gameName || "Loading…"}
                                 </span>
                               </Link>
                             </div>
@@ -903,10 +769,13 @@ export default function RankingsPage({
                   </tbody>
                 </table>
 
-                {/* Paginação */}
+                {/* Pagination */}
                 <div className="flex items-center justify-between px-2 mt-4">
                   <div className="text-sm text-muted-foreground">
-                    {`Mostrando ${(currentPage - 1) * itemsPerPage + 1} a ${Math.min(currentPage * itemsPerPage, displayData.totalEntries)} de ${displayData.totalEntries}`}
+                    {`Showing ${(currentPage - 1) * ITEMS_PER_PAGE + 1}–${Math.min(
+                      currentPage * ITEMS_PER_PAGE,
+                      totalEntries,
+                    )} of ${totalEntries}`}
                   </div>
 
                   {totalPages > 1 && (
@@ -964,8 +833,8 @@ export default function RankingsPage({
         className="mt-8 text-sm text-center text-muted-foreground"
       >
         <p>
-          © {new Date().getFullYear()} LolData - High Elo Rankings. Dados
-          fornecidos pela Riot Games API.
+          © {new Date().getFullYear()} LolData – High Elo Rankings. Data
+          provided by Riot Games API.
         </p>
       </footer>
     </div>
