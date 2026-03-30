@@ -112,12 +112,26 @@ export default async function SummonerPage({
       (process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`) ||
       "http://localhost:3000";
 
-    let url =
-      queueId === "all"
-        ? `${baseUrl}/api/summoner/matches?region=${region}&puuid=${summoner.puuid}&count=20`
-        : `${baseUrl}/api/summoner/matchesByQueue?region=${region}&puuid=${summoner.puuid}&queueId=${queueId}&count=20`;
+    let url = `${baseUrl}/api/summoner/matches?region=${region}&puuid=${summoner.puuid}&count=20`;
+
+    // Se o usuário escolheu um queue específico, adiciona queueId
+    if (queueId && queueId !== "all") {
+      url += `&queueId=${queueId}`;
+    }
+
+    // Adiciona filtro por campeão, se houver
     if (championName && championName !== "all") {
-      url += `&championId=${championName}`;
+      url += `&championName=${championName}`;
+    }
+
+    // Adiciona filtro por gameName, se houver
+    if (gameName && gameName !== "all") {
+      url += `&gameName=${gameName}`;
+    }
+
+    // Adiciona filtro por tagLine, se houver
+    if (tagLine && tagLine !== "all") {
+      url += `&tagLine=${tagLine}`;
     }
 
     console.log("🌐 [4] Fetch URL:", url);

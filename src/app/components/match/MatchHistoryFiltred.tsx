@@ -1,7 +1,7 @@
 "use client";
 
 import { MatchHistoryItem } from "./MatchHistoryItem";
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import apiService from "@/app/services/apiService";
 
 interface Participant {
@@ -51,6 +51,13 @@ interface Match {
   };
 }
 
+interface Perk {
+  selections: any;
+  id: number;
+  style: number;
+  icon: string;
+}
+
 interface MatchHistoryProps {
   matchesByQueue: Match[];
   puuid: string;
@@ -60,31 +67,12 @@ interface MatchHistoryProps {
     description: string;
   }>;
   isLoading?: boolean;
+  region: string;
+  queueId: number | string;
   gameName?: string;
+  tagLine?: string;
   queueType?: string;
   championName?: string;
-}
-
-interface Spell {
-  id: string;
-  name: string;
-  key: string;
-  image: {
-    full: string;
-  };
-}
-
-interface Perk {
-  selections: any;
-  slots: {
-    runes: {
-      id: number;
-      icon: string;
-    }[];
-  }[];
-  id: number;
-  style: number;
-  icon: string;
 }
 
 export function MatchHistoryFiltred({
@@ -95,279 +83,140 @@ export function MatchHistoryFiltred({
   region,
   queueId,
   gameName,
-  queueType,
+  tagLine,
   championName,
-}: MatchHistoryProps & { region: string; queueId: number | string }) {
-  const [leagueVersion, setLeagueVersion] = useState<string>("15.6.1");
-  const [isLoadingVersion, setIsLoadingVersion] = useState<boolean>(true);
-
+}: MatchHistoryProps) {
+  const [leagueVersion, setLeagueVersion] = useState<string | null>(null);
   const [runesData, setRunesData] = useState<any[]>([]);
-  const [spellsData, setSpellsData] = useState<Record<string, Spell>>({});
-
-  const [matches, setMatches] = useState<Match[]>([]);
-  const [start, setStart] = useState(0);
+  const [spellsData, setSpellsData] = useState<Record<string, any>>({});
+  const [matches, setMatches] = useState<Match[]>(matchesByQueue);
+  const [start, setStart] = useState(matchesByQueue.length);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [championFilter, setChampionFilter] = useState<string>("");
+  const [hasMore, setHasMore] = useState(matchesByQueue.length >= 10);
 
-  const getChampionFromUrl = useCallback(() => {
-    if (typeof window !== "undefined") {
-      const urlParts = window.location.pathname.split("/");
-      const lastPart = urlParts[urlParts.length - 1];
-      if (
-        lastPart !== "all" &&
-        isNaN(Number(lastPart)) &&
-        lastPart.length > 2
-      ) {
-        return decodeURIComponent(lastPart).toLowerCase();
-      }
-    }
-    return "";
-  }, []);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
+  // 1. Carregar Versão e Dados Estáticos (DDragon)
   useEffect(() => {
-    const champion = getChampionFromUrl();
-    setChampionFilter(champion);
-  }, [getChampionFromUrl]);
-
-  const filteredMatches = useMemo(() => {
-    if (!matchesByQueue) return [];
-
-    let filtered =
-      queueId === "all"
-        ? matchesByQueue
-        : matchesByQueue.filter((m) => m.info.queueId === Number(queueId));
-
-    if (championFilter && championFilter !== "all") {
-      filtered = filtered.filter((match) => {
-        const participant = match.info?.participants?.find(
-          (p) => p.puuid === puuid,
-        );
-        if (!participant) return false;
-        const championName = participant.championName?.toLowerCase() || "";
-        const championId = String(participant.championId || "").toLowerCase();
-        return (
-          championName === championFilter ||
-          championId === championFilter ||
-          championName.includes(championFilter) ||
-          championFilter.includes(championName)
-        );
-      });
-    }
-
-    return filtered;
-  }, [matchesByQueue, queueId, championFilter, puuid]);
-
-  useEffect(() => {
-    let mounted = true;
-    const fetchLeagueVersion = async () => {
+    const loadStaticData = async () => {
       try {
-        setIsLoadingVersion(true);
+        // Pega a versão mais recente
         const version = await apiService.getLatestVersion();
-        if (mounted) setLeagueVersion(version);
-      } catch (error) {
-        console.error("Erro ao buscar versão da liga:", error);
-      } finally {
-        if (mounted) setIsLoadingVersion(false);
-      }
-    };
-    fetchLeagueVersion();
-    return () => {
-      mounted = false;
-    };
-  }, []);
+        setLeagueVersion(version);
 
-  useEffect(() => {
-    let mounted = true;
-    const fetchStaticData = async () => {
-      if (!leagueVersion || isLoadingVersion) return;
-      try {
         const [runesRes, spellsRes] = await Promise.all([
           fetch(
-            `https://ddragon.leagueoflegends.com/cdn/${leagueVersion}/data/en_US/runesReforged.json`,
+            `https://ddragon.leagueoflegends.com/cdn/${version}/data/en_US/runesReforged.json`,
           ),
           fetch(
-            `https://ddragon.leagueoflegends.com/cdn/${leagueVersion}/data/en_US/summoner.json`,
+            `https://ddragon.leagueoflegends.com/cdn/${version}/data/en_US/summoner.json`,
           ),
         ]);
-        const [runes, spellsJson] = await Promise.all([
-          runesRes.json(),
-          spellsRes.json(),
-        ]);
-        if (mounted) {
-          setRunesData(runes);
-          setSpellsData(spellsJson.data);
-        }
-      } catch (error) {
-        console.error("Erro ao buscar dados estáticos:", error);
-        if (mounted) {
-          setRunesData([]);
-          setSpellsData({});
-        }
+
+        const runes = await runesRes.json();
+        const spells = await spellsRes.json();
+
+        setRunesData(runes);
+        setSpellsData(spells.data);
+      } catch (e) {
+        console.error("Erro ao carregar dados do DDragon:", e);
       }
     };
-    fetchStaticData();
-    return () => {
-      mounted = false;
-    };
-  }, [leagueVersion, isLoadingVersion]);
+    loadStaticData();
+  }, []);
 
+  // 2. Resetar lista quando os filtros principais mudam via URL/Props
   useEffect(() => {
-    setMatches(filteredMatches);
-    setStart(filteredMatches.length);
-    setHasMore(filteredMatches.length > 0);
-  }, [filteredMatches]);
+    setMatches(matchesByQueue);
+    setStart(matchesByQueue.length);
+    setHasMore(matchesByQueue.length >= 10);
+  }, [matchesByQueue, queueId, championName]);
 
+  // 3. Atualizar estatísticas Globais (Wins/Losses)
   useEffect(() => {
-    const w = matches.filter((match) => {
-      const p = match?.info?.participants?.find((p) => p.puuid === puuid);
+    const wins = matches.filter((m) => {
+      const p = m.info?.participants?.find((p) => p.puuid === puuid);
       return p?.win === true;
     }).length;
 
     window.dispatchEvent(
       new CustomEvent("matchStatsUpdate", {
-        detail: { wins: w, losses: matches.length - w },
+        detail: { wins, losses: matches.length - wins },
       }),
     );
   }, [matches, puuid]);
 
-  const filterMatchClientSide = useCallback(
-    (rawMatches: Match[]): Match[] => {
-      let filtered =
-        queueId === "all"
-          ? rawMatches
-          : rawMatches.filter((m) => m.info.queueId === Number(queueId));
-
-      if (championFilter && championFilter !== "all") {
-        filtered = filtered.filter((match) => {
-          const participant = match.info?.participants?.find(
-            (p) => p.puuid === puuid,
-          );
-          if (!participant) return false;
-          const champName = participant.championName?.toLowerCase() || "";
-          const champId = String(participant.championId || "").toLowerCase();
-          return (
-            champName === championFilter ||
-            champId === championFilter ||
-            champName.includes(championFilter) ||
-            championFilter.includes(champName)
-          );
-        });
-      }
-
-      return filtered;
-    },
-    [queueId, championFilter, puuid],
-  );
-
+  // 4. Buscar mais partidas (Paginação)
   const fetchMoreMatches = useCallback(async () => {
-    if (loadingMore) return;
+    if (loadingMore || !hasMore) return;
     setLoadingMore(true);
 
+    if (abortControllerRef.current) abortControllerRef.current.abort();
+    abortControllerRef.current = new AbortController();
+
     try {
-      const BATCH_SIZE = 50;
-      const TARGET = 10;
+      const params = new URLSearchParams({
+        region,
+        puuid,
+        start: start.toString(),
+        count: "10",
+        gameName: gameName || "",
+        tagLine: tagLine || "",
+      });
 
-      let dbStart = start;
-      let collectedMatches: Match[] = [];
-      let attempts = 0;
-      const MAX_ATTEMPTS = 10;
+      if (queueId && queueId !== "all")
+        params.append("queueId", String(queueId));
+      if (championName && championName !== "all")
+        params.append("championName", championName);
 
-      // 🔥 Determina championId para enviar
-      let championIdToSend: number | undefined = undefined;
-      let championNameToSend: string | undefined = undefined;
+      const res = await fetch(`/api/summoner/matches?${params.toString()}`, {
+        signal: abortControllerRef.current.signal,
+      });
 
-      if (championFilter && championFilter !== "all") {
-        for (const match of matches) {
-          const p = match.info.participants.find((p) => p.puuid === puuid);
-          if (!p) continue;
-          if (
-            p.championName.toLowerCase() === championFilter.toLowerCase() ||
-            String(p.championId) === championFilter
-          ) {
-            championIdToSend = p.championId;
-            championNameToSend = p.championName; // 🔥 captura o nome
-            break;
-          }
-        }
-      }
+      if (!res.ok) throw new Error("Erro na API de partidas");
 
-      while (collectedMatches.length < TARGET && attempts < MAX_ATTEMPTS) {
-        attempts++;
+      const json = await res.json();
+      const newMatches: Match[] = json.data || [];
 
-        const params = new URLSearchParams({
-          puuid,
-          region,
-          start: dbStart.toString(),
-          count: String(BATCH_SIZE),
+      if (newMatches.length === 0) {
+        setHasMore(false);
+      } else {
+        setMatches((prev) => {
+          const existingIds = new Set(prev.map((m) => m.metadata.matchId));
+          const uniqueNew = newMatches.filter(
+            (m) => !existingIds.has(m.metadata.matchId),
+          );
+          return [...prev, ...uniqueNew];
         });
-
-        if (championNameToSend) {
-          championNameToSend = championNameToSend.toLowerCase();
-          params.append("championName", championNameToSend);
-        } else if (championIdToSend) {
-          params.append("championId", String(championIdToSend)); // fallback
-        }
-
-        const res = await fetch(`/api/summoner/matches?${params.toString()}`);
-
-        if (!res.ok) {
-          console.error("Erro na API:", res.status);
-          break;
-        }
-
-        const data = await res.json();
-        const rawMatches: Match[] = data.data || [];
-
-        if (rawMatches.length === 0) break;
-
-        const filtered = filterMatchClientSide(rawMatches);
-
-        const unique = filtered.filter(
-          (newMatch) =>
-            !matches.some(
-              (existing) =>
-                existing.metadata.matchId === newMatch.metadata.matchId,
-            ) &&
-            !collectedMatches.some(
-              (c) => c.metadata.matchId === newMatch.metadata.matchId,
-            ),
-        );
-
-        collectedMatches = [...collectedMatches, ...unique];
-
-        dbStart += rawMatches.length;
-
-        if (rawMatches.length < BATCH_SIZE) break;
+        setStart((prev) => prev + newMatches.length);
+        setHasMore(newMatches.length >= 10);
       }
-
-      if (collectedMatches.length > 0) {
-        setMatches((prev) => [...prev, ...collectedMatches]);
+    } catch (error: any) {
+      if (error.name !== "AbortError") {
+        console.error("Erro ao carregar mais partidas:", error);
+        setHasMore(false);
       }
-
-      setStart(dbStart);
-      setHasMore(collectedMatches.length >= TARGET);
-    } catch (error) {
-      console.error("Erro ao carregar mais partidas:", error);
-      setHasMore(false);
     } finally {
       setLoadingMore(false);
     }
   }, [
     loadingMore,
+    hasMore,
     start,
-    puuid,
     region,
-    matches,
-    filterMatchClientSide,
-    championFilter,
+    puuid,
+    queueId,
+    championName,
+    gameName,
+    tagLine,
   ]);
 
-  // 🔥 O restante do arquivo permanece inalterado (renderização, imagens, etc.)
+  // Helpers de Imagem (aguarda leagueVersion estar carregado)
   const getSummonerSpellImageUrl = useCallback(
-    (summonerId: string | number): string | null => {
+    (spellId: string | number) => {
+      if (!leagueVersion) return null;
       const spell = Object.values(spellsData).find(
-        (s: any) => String(s.key) === String(summonerId),
+        (s: any) => String(s.key) === String(spellId),
       );
       return spell
         ? `https://ddragon.leagueoflegends.com/cdn/${leagueVersion}/img/spell/${spell.image.full}`
@@ -376,17 +225,16 @@ export function MatchHistoryFiltred({
     [spellsData, leagueVersion],
   );
 
-  const getSummonerPerkImageUrl = useCallback(
-    (id: number): string | null => {
+  const getRuneImageUrl = useCallback(
+    (id: number) => {
+      if (!runesData.length) return null;
       for (const perk of runesData) {
-        if (perk.id === id) {
+        if (perk.id === id)
           return `https://ddragon.leagueoflegends.com/cdn/img/${perk.icon}`;
-        }
-        for (const slot of perk.slots) {
-          for (const rune of slot.runes) {
-            if (rune.id === id) {
+        for (const slot of perk.slots || []) {
+          for (const rune of slot.runes || []) {
+            if (rune.id === id)
               return `https://ddragon.leagueoflegends.com/cdn/img/${rune.icon}`;
-            }
           }
         }
       }
@@ -395,49 +243,10 @@ export function MatchHistoryFiltred({
     [runesData],
   );
 
-  const getTranslatedQueueName = useCallback(
-    (queueId: number) => {
-      const queue = queueTypes.find((q) => q.queueId === queueId);
-      return queue?.description || "Custom Game";
-    },
-    [queueTypes],
-  );
-
-  const formatGameDuration = useCallback((duration: number) => {
-    const minutes = Math.floor(duration / 60);
-    const seconds = duration % 60;
-    return `${minutes}m ${seconds}s`;
-  }, []);
-
-  const formatGameCreation = useCallback((timestamp: number) => {
-    return new Date(timestamp).toLocaleDateString();
-  }, []);
-
-  const getItemImageUrl = useCallback(
-    (itemId: number): string | null => {
-      if (!itemId || itemId === 0) return null;
-      return `https://ddragon.leagueoflegends.com/cdn/${leagueVersion}/img/item/${itemId}.png`;
-    },
-    [leagueVersion],
-  );
-
-  const getChampionImageUrl = useCallback((championId: number) => {
-    return `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${championId}.png`;
-  }, []);
-
-  const mapItems = useCallback(
-    (itemIds: number[]) =>
-      itemIds.map((itemId, index) => ({
-        id: `${itemId}-${index}`,
-        imageUrl: getItemImageUrl(itemId),
-      })),
-    [getItemImageUrl],
-  );
-
-  if (isLoading || isLoadingVersion) {
+  if (!leagueVersion || isLoading) {
     return (
       <div className="space-y-4">
-        {Array.from({ length: 5 }).map((_, i) => (
+        {[...Array(5)].map((_, i) => (
           <div key={i} className="h-32 rounded-lg animate-pulse bg-muted/50" />
         ))}
       </div>
@@ -446,69 +255,68 @@ export function MatchHistoryFiltred({
 
   if (!matches?.length) {
     return (
-      <div className="flex min-h-[200px] items-center justify-center rounded-lg border bg-card text-card-foreground">
-        <p className="text-sm text-muted-foreground">No matches found</p>
-        <div className="flex min-h-[200px] items-center justify-center rounded-lg border bg-card text-card-foreground">
-          <button
-            type="button"
-            className="h-10 px-4 py-2 text-sm font-medium border rounded-md bg-accent border-input hover:bg-accent/80"
-            onClick={fetchMoreMatches}
-            disabled={loadingMore}
-          >
-            Load more
-          </button>
-        </div>
+      <div className="flex flex-col items-center justify-center py-20 border rounded-lg bg-card/50">
+        <p className="text-muted-foreground mb-4">
+          Nenhuma partida encontrada.
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="text-sm font-medium text-primary hover:underline"
+        >
+          Recarregar página
+        </button>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      {matches.map((match, index) => {
-        if (!match?.info?.participants) return null;
-
-        const participant = match.info.participants.find(
+      {matches.map((match) => {
+        const participant = match.info?.participants?.find(
           (p) => p.puuid === puuid,
         );
-        if (!participant?.perks?.styles) return null;
+        if (!participant) return null;
 
-        const perk1Url = getSummonerPerkImageUrl(
-          participant.perks.styles[0]?.selections?.[0]?.perk,
-        );
-        const perk2Url = getSummonerPerkImageUrl(
-          participant.perks.styles[1]?.style,
-        );
         const spell1Url = getSummonerSpellImageUrl(participant.summoner1Id);
         const spell2Url = getSummonerSpellImageUrl(participant.summoner2Id);
+        const perk1Url = getRuneImageUrl(
+          participant.perks?.styles?.[0]?.selections?.[0]?.perk,
+        );
+        const perk2Url = getRuneImageUrl(participant.perks?.styles?.[1]?.style);
 
         const matchData = {
           champion: {
             name: participant.championName,
-            imageUrl: getChampionImageUrl(participant.championId),
+            imageUrl: `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${participant.championId}.png`,
             spell1Url,
             spell2Url,
             mainStyle: perk1Url,
             subStyle: perk2Url,
           },
           gameMode: match.info.gameMode,
-          gameType: getTranslatedQueueName(match.info.queueId),
+          gameType:
+            queueTypes.find((q) => q.queueId === match.info.queueId)
+              ?.description || "Partida",
           isWin: participant.win,
           kills: participant.kills,
           deaths: participant.deaths,
           assists: participant.assists,
           creepScore:
             participant.totalMinionsKilled + participant.neutralMinionsKilled,
-          items: mapItems([
-            participant.item0,
-            participant.item1,
-            participant.item2,
-            participant.item3,
-            participant.item4,
-            participant.item5,
-            participant.item6,
-          ]),
-          gameDuration: formatGameDuration(match.info.gameDuration),
-          gameCreation: formatGameCreation(match.info.gameStartTimestamp),
+          items: [0, 1, 2, 3, 4, 5, 6].map((i) => ({
+            id: (participant as any)[`item${i}`],
+            imageUrl: (participant as any)[`item${i}`]
+              ? `https://ddragon.leagueoflegends.com/cdn/${leagueVersion}/img/item/${
+                  (participant as any)[`item${i}`]
+                }.png`
+              : null,
+          })),
+          gameDuration: `${Math.floor(match.info.gameDuration / 60)}m ${
+            match.info.gameDuration % 60
+          }s`,
+          gameCreation: new Date(
+            match.info.gameStartTimestamp,
+          ).toLocaleDateString(),
           goldEarned: participant.goldEarned,
           visionScore: participant.visionScore,
           totalDamageDealt: participant.totalDamageDealtToChampions,
@@ -522,52 +330,41 @@ export function MatchHistoryFiltred({
             kills: p.kills,
             deaths: p.deaths,
             assists: p.assists,
-            riotIdGameName: p.riotIdGameName,
-            riotIdTagline: p.riotIdTagline,
             spell1Url: getSummonerSpellImageUrl(p.summoner1Id),
             spell2Url: getSummonerSpellImageUrl(p.summoner2Id),
-            mainStyle: getSummonerPerkImageUrl(
+            mainStyle: getRuneImageUrl(
               p.perks?.styles?.[0]?.selections?.[0]?.perk,
             ),
-            subStyle: getSummonerPerkImageUrl(p.perks?.styles?.[1]?.style),
-            items: mapItems([
-              p.item0,
-              p.item1,
-              p.item2,
-              p.item3,
-              p.item4,
-              p.item5,
-              p.item6,
-            ]),
+            subStyle: getRuneImageUrl(p.perks?.styles?.[1]?.style),
+            items: [0, 1, 2, 3, 4, 5, 6].map((i) => ({
+              id: (p as any)[`item${i}`],
+              imageUrl: (p as any)[`item${i}`]
+                ? `https://ddragon.leagueoflegends.com/cdn/${leagueVersion}/img/item/${
+                    (p as any)[`item${i}`]
+                  }.png`
+                : null,
+            })),
           })),
         };
 
         return (
-          <div
-            key={`${match.metadata.matchId}-${index}`}
-            style={{ animationDelay: `${index * 50}ms` }}
-          >
-            <MatchHistoryItem {...matchData} />
+          <div key={match.metadata.matchId} className="transition-all">
+            <MatchHistoryItem {...(matchData as any)} />
           </div>
         );
       })}
 
-      <div className="flex justify-center">
-        {hasMore &&
-          (loadingMore ? (
-            <div className="flex items-center h-10 px-4 py-2 text-sm rounded-md">
-              <span className="px-4 font-medium animate-pulse">Loading...</span>
-            </div>
-          ) : (
-            <button
-              type="button"
-              className="h-10 px-4 py-2 text-sm font-medium border rounded-md bg-accent border-input hover:bg-accent/80"
-              onClick={fetchMoreMatches}
-              disabled={loadingMore}
-            >
-              Load more
-            </button>
-          ))}
+      <div className="flex justify-center pt-4">
+        {hasMore && (
+          <button
+            type="button"
+            className="h-10 px-6 py-2 text-sm font-medium border rounded-md bg-accent hover:bg-accent/80 disabled:opacity-50 transition-colors"
+            onClick={fetchMoreMatches}
+            disabled={loadingMore}
+          >
+            {loadingMore ? "Carregando..." : "Carregar mais partidas"}
+          </button>
+        )}
       </div>
     </div>
   );

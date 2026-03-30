@@ -716,7 +716,7 @@ export default function RankingsPage({
                               <Link
                                 href={
                                   summonerInfo
-                                    ? `/summoner/${region}/${summonerInfo.gameName}/${summonerInfo.tagLine}/all`
+                                    ? `/summoner/${region}/${summonerInfo.gameName}/${summonerInfo.tagLine}/all/all`
                                     : "#"
                                 }
                                 className="block min-w-0 truncate cursor-pointer hover:underline"

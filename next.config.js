@@ -1,8 +1,5 @@
+/** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
-  env: {
-    RIOT_API_KEY: process.env.RIOT_API_KEY,
-  },
   images: {
     remotePatterns: [
       {
@@ -16,4 +13,5 @@ const nextConfig = {
     ],
   },
 };
-module.exports = nextConfig;
+
+export default nextConfig;

@@ -196,10 +196,12 @@ export function MatchHistoryItem({
           {/* Itens do campeão principal */}
           <div className="flex items-center gap-2 ml-auto mr-auto">
             <div className="flex flex-wrap items-center gap-1">
-              {items.map((item) => (
+              {items.map((item, index) => (
                 <div
-                  key={item.id}
-                  className="relative rounded-md h-9 w-9 bg-background/50"
+                  // Usando o índice para garantir que cada slot de item seja único,
+                  // mesmo que o ID do item seja repetido ou 0.
+                  key={`item-slot-${index}`}
+                  className="relative rounded-md h-9 w-9 bg-background/50 overflow-hidden"
                 >
                   {item.imageUrl && (
                     <Image
