@@ -75,7 +75,7 @@ export function useSearchHandler(): SearchHandlerHook {
       }
       // Navega para a rota dinâmica
       router.push(
-        `/summoner/${sanitizedRegion}/${encodedGameName}/${encodedTagLine}/all`,
+        `/summoner/${sanitizedRegion}/${encodedGameName}/${encodedTagLine}/all/all`,
       );
     } catch (error) {
       console.error("Erro ao processar a pesquisa:", error);

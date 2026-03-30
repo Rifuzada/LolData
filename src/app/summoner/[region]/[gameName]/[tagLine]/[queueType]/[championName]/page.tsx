@@ -9,6 +9,7 @@ import {
 } from "@/app/actions/summoner";
 import { MatchFilter } from "@/app/components/match/MatchFilter";
 import { MatchHistoryFiltred } from "@/app/components/match/MatchHistoryFiltred";
+import { MatchStatsText } from "@/app/components/match/MatchStatsText";
 
 interface ChampionMastery {
   championId: number;
@@ -48,7 +49,7 @@ function getRegionDisplay(region: string) {
 }
 
 export async function generateMetadata({ params }: SummonerPageProps) {
-  const { gameName, tagLine, region } = params;
+  const { gameName, tagLine, region } = await params;
   const regionDisplay = getRegionDisplay(region);
   return {
     icons: {
@@ -61,54 +62,88 @@ export async function generateMetadata({ params }: SummonerPageProps) {
   };
 }
 
-export default async function SummonerPage({ params }: SummonerPageProps) {
-  const { region, gameName, tagLine, queueType, championName } = params;
-  const queueIdFromUrl = queueType
+export default async function SummonerPage({
+  params,
+}: {
+  params: Promise<SummonerPageProps["params"]>;
+}) {
+  console.log("🔥 [PAGE] Entrou na SummonerPage");
+
+  const { region, gameName, tagLine, queueType, championName } = await params;
+
+  const decodedGameName = decodeURIComponent(gameName);
+  const decodedTagLine = decodeURIComponent(tagLine);
+
+  console.log("📥 Params:", {
+    region,
+    gameName,
+    tagLine,
+    queueType,
+    championName,
+  });
+
+  const queueIdFromUrl = (queueType || "")
     .replace("soloDuo", "420")
     .replace("flex", "440")
     .replace("aram", "450")
     .replace("normal", "400")
     .replace("quickplay", "490")
     .replace("arena", "1700");
+
   const queueId = queueIdFromUrl;
 
   try {
-    // Buscar dados do invocador
+    console.log("🚀 [1] Buscando summoner...");
+
     const summoner = await getSummonerByRiotId(region, gameName, tagLine);
 
-    // Decodificar o tagLine
-    const decodedGameName = decodeURIComponent(gameName);
-    const decodedTagLine = decodeURIComponent(tagLine);
+    console.log("✅ [2] Summoner:", summoner?.puuid);
 
-    // Buscar dados em paralelo
     const [queueTypes, masteries, rankedData] = await Promise.all([
       getQueueTypes(),
       getChampionMasteries(region, summoner.puuid),
       getRankedByPuuid(region, summoner.puuid),
     ]);
 
-    // Defina a base da URL do seu site
+    console.log("📊 [3] Dados paralelos carregados");
+
     const baseUrl =
       process.env.NEXT_PUBLIC_SITE_URL ||
       (process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`) ||
       "http://localhost:3000";
 
-    // Buscar histórico de partidas já filtrado via API interna
-    const matchesRes = await fetch(
+    let url =
       queueId === "all"
         ? `${baseUrl}/api/summoner/matches?region=${region}&puuid=${summoner.puuid}&count=20`
-        : `${baseUrl}/api/summoner/matchesByQueue?region=${region}&puuid=${summoner.puuid}&queueId=${queueId}&count=20`,
-      { cache: "no-store" },
-    );
+        : `${baseUrl}/api/summoner/matchesByQueue?region=${region}&puuid=${summoner.puuid}&queueId=${queueId}&count=20`;
+    if (championName && championName !== "all") {
+      url += `&championId=${championName}`;
+    }
+
+    console.log("🌐 [4] Fetch URL:", url);
+
+    const matchesRes = await fetch(url, { cache: "no-store" });
+
+    console.log("📡 [5] Status:", matchesRes.status);
+
     const contentType = matchesRes.headers.get("content-type");
+    console.log("📦 [6] Content-Type:", contentType);
+
     if (!matchesRes.ok || !contentType?.includes("application/json")) {
       const text = await matchesRes.text();
+      console.error("❌ [ERRO API]:", text);
       throw new Error(
         `Erro na API de partidas: ${matchesRes.status} - ${text}`,
       );
     }
+
     const matchesJson = await matchesRes.json();
+
+    console.log("🎮 [7] Matches recebidos:", matchesJson);
+
     let filteredMatches = matchesJson.data || [];
+
+    console.log("🧹 [8] Total matches:", filteredMatches.length);
 
     // Agora filtre manualmente pelo championName, se necessário
     if (championName && championName.toLowerCase() !== "all") {
@@ -170,10 +205,6 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
     }).length;
 
     const lastLoses = last20Matches.length - lastWins;
-    const lastWinrate =
-      last20Matches.length > 0
-        ? Math.round((lastWins / last20Matches.length) * 100)
-        : 0;
 
     return (
       <div className="flex flex-col min-h-screen">
@@ -220,11 +251,13 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
           <div className="p-6 border rounded-lg bg-card">
             <div className="mb-6">
               <h2 className="text-2xl font-semibold">Match History</h2>
-              <p className="text-sm text-muted-foreground">
-                Recent games played by {decodedGameName} on {queueType} with{" "}
-                {championName} - last {lastWins + lastLoses} games: {lastWins} -{" "}
-                {lastLoses} - {lastWinrate}%
-              </p>
+              <MatchStatsText
+                initialWins={lastWins}
+                initialLosses={lastLoses}
+                gameName={decodedGameName}
+                queueType={queueType}
+                championName={championName}
+              />
               <MatchFilter />
             </div>
             <Suspense
@@ -245,6 +278,9 @@ export default async function SummonerPage({ params }: SummonerPageProps) {
                 queueTypes={queueTypes as any}
                 region={region}
                 queueId={queueId}
+                gameName={decodedGameName}
+                queueType={queueType}
+                championName={championName}
               />
             </Suspense>
           </div>

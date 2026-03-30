@@ -8,26 +8,26 @@ import {
   ASIA_API_URL,
   SEA_API_URL,
 } from "@/app/utils/helpers";
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+);
 
 const matchesSchema = z.object({
   region: z.string().min(1),
-  puuid: z.string().min(10),
-  start: z
-    .string()
-    .transform((val) => Number(val || 0))
-    .default("0"),
-  count: z
-    .string()
-    .transform((val) => Number(val || 20))
-    .default("20"),
-  queueId: z.string().optional(),
+  puuid: z.string().min(20),
+  queueId: z.string().transform(Number),
+  start: z.number().default(0),
+  count: z.number().default(20),
   championId: z.string().optional(),
 });
 
 const matchCache = new Map<string, { data: any; expires: number }>();
-const CACHE_TTL = 2 * 60 * 1000; // 2 minutes
+const L1_TTL = 2 * 60 * 1000;
+const L2_TTL_MINUTES = 30;
 
-// Utility to limit concurrency
 async function fetchInBatches<T>(
   tasks: (() => Promise<T>)[],
   batchSize: number,
@@ -36,14 +36,12 @@ async function fetchInBatches<T>(
   for (let i = 0; i < tasks.length; i += batchSize) {
     const batch = tasks.slice(i, i + batchSize).map((fn) => fn());
     results.push(...(await Promise.all(batch)));
-    if (i + batchSize < tasks.length) {
+    if (i + batchSize < tasks.length)
       await new Promise((res) => setTimeout(res, 150));
-    }
   }
   return results;
 }
 
-// Fetch with retry on 429
 async function safeFetch(
   url: string,
   options: RequestInit,
@@ -58,7 +56,6 @@ async function safeFetch(
   return await fetch(url, options);
 }
 
-// Resolve the regional routing URL based on region
 function getRegionalUrl(region: string): string {
   const r = region.toLowerCase();
   if (["euw1", "eun1", "ru", "tr1", "me1"].some((k) => r.includes(k)))
@@ -69,38 +66,100 @@ function getRegionalUrl(region: string): string {
   return AMERICAS_API_URL;
 }
 
+async function getFromSupabase(cacheKey: string): Promise<any | null> {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("match_cache")
+      .select("data, cached_at")
+      .eq("id", cacheKey)
+      .single();
+
+    if (error || !data) return null;
+
+    const ageMinutes =
+      (Date.now() - new Date(data.cached_at).getTime()) / 60000;
+
+    if (ageMinutes > L2_TTL_MINUTES) return null;
+
+    return data.data;
+  } catch {
+    return null;
+  }
+}
+
+async function saveToSupabase(cacheKey: string, value: any): Promise<void> {
+  await supabaseAdmin.from("match_cache").upsert({
+    id: cacheKey,
+    data: value,
+    cached_at: new Date().toISOString(),
+  });
+}
+
+// Salva cache específico de campeão com riotOffset para saber
+// onde parou no histórico total da Riot (independente do filtro)
+async function saveChampionCache(
+  cacheKey: string,
+  matches: any[],
+  riotOffset: number,
+): Promise<void> {
+  await saveToSupabase(cacheKey, {
+    matches,
+    riotOffset, // posição real no histórico total da Riot
+  });
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl;
-
-    const region = searchParams.get("region") || "";
+    const region = searchParams.get("region");
     const puuid = searchParams.get("puuid");
-    const start = searchParams.get("start") || "0";
-    const count = searchParams.get("count") || "20";
-    const queueId = searchParams.get("queueId") || "";
+    const start = Number(searchParams.get("start") || "0");
+    const count = Number(searchParams.get("count") || "20");
     const championId = searchParams.get("championId") || "";
 
-    const cacheKey = `matchesByQueue:${region}:${puuid}:${queueId}:${championId || "all"}:${start}:${count}`;
+    const isFilteringByChampion = !!championId && championId !== "all";
+
+    // Chave base (sem filtro) e chave específica de campeão
+    const baseCacheKey = `matches:${region}:${puuid}:all`;
+    const cacheKey = isFilteringByChampion
+      ? `matches:${region}:${puuid}:${championId}`
+      : baseCacheKey;
+
     const now = Date.now();
 
-    // Return cached response if still valid
-    if (matchCache.has(cacheKey)) {
-      const cached = matchCache.get(cacheKey)!;
-      if (cached.expires > now) {
-        return NextResponse.json({
-          data: cached.data,
-          meta: { fromCache: true },
-        });
+    // ================= L2 CACHE (Supabase) =================
+    const supabaseCached = await getFromSupabase(cacheKey);
+
+    let existingMatches: any[] = [];
+    let riotOffset = 0;
+
+    if (supabaseCached) {
+      if (isFilteringByChampion) {
+        // cache específico de campeão
+        existingMatches = supabaseCached.matches || [];
+        riotOffset = supabaseCached.riotOffset ?? 0;
+      } else {
+        // cache geral (sem filtro)
+        existingMatches = supabaseCached.matches || [];
+        riotOffset = existingMatches.length; // opcional
       }
-      matchCache.delete(cacheKey);
     }
 
+    // ================= CACHE COMPLETO =================
+    if (existingMatches.length >= start + count) {
+      const paginated = existingMatches.slice(start, start + count);
+
+      matchCache.set(cacheKey, { data: paginated, expires: now + L1_TTL });
+
+      return NextResponse.json({ data: paginated, cache: "FULL_CACHE" });
+    }
+
+    // ================= FETCH RIOT =================
     const validatedData = matchesSchema.parse({
       region,
       puuid,
       start,
       count,
-      queueId,
       championId,
     });
 
@@ -112,29 +171,25 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const apiUrl = getRegionalUrl(region);
-    const isFilteringByChampion = !!championId && championId !== "all";
-    const targetCount = Number(count);
+    const detailsApiUrl = getRegionalUrl(validatedData.region);
 
-    // When filtering by champion we paginate until we have enough matching games.
-    // Each page fetches 100 IDs (Riot's max) to minimise round-trips.
-    const PAGE_SIZE = isFilteringByChampion ? 100 : targetCount;
-    const MAX_PAGES = isFilteringByChampion ? 5 : 1; // cap at 500 history lookback
+    const PAGE_SIZE = isFilteringByChampion ? 100 : count;
+    const MAX_PAGES = isFilteringByChampion ? 5 : 1;
 
     let collectedMatches: any[] = [];
-    let currentStart = validatedData.start;
+
+    // Usa riotOffset para continuar de onde parou no histórico total
+    // (não usa existingMatches.length, que seria a contagem filtrada)
+    let currentStart = riotOffset;
 
     for (let page = 0; page < MAX_PAGES; page++) {
-      // Build match IDs URL
       const matchIdsUrl = new URL(
-        `${apiUrl}/lol/match/v5/matches/by-puuid/${validatedData.puuid}/ids`,
+        `${detailsApiUrl}/lol/match/v5/matches/by-puuid/${validatedData.puuid}/ids`,
       );
+
+      matchIdsUrl.searchParams.set("queue", String(queueId));
       matchIdsUrl.searchParams.set("start", String(currentStart));
       matchIdsUrl.searchParams.set("count", String(PAGE_SIZE));
-
-      if (queueId && queueId !== "" && queueId !== "all") {
-        matchIdsUrl.searchParams.set("queue", queueId);
-      }
 
       const matchIdsResponse = await safeFetch(matchIdsUrl.toString(), {
         headers: { "X-Riot-Token": RIOT_API_KEY },
@@ -149,74 +204,77 @@ export async function GET(request: NextRequest) {
       }
 
       const matchIds: string[] = await matchIdsResponse.json();
-
-      // No more matches available
       if (matchIds.length === 0) break;
 
-      // Fetch full match details for this page
       const matchDetailsPromises = matchIds.map(
         (matchId: string) => () =>
-          safeFetch(`${apiUrl}/lol/match/v5/matches/${matchId}`, {
+          safeFetch(`${detailsApiUrl}/lol/match/v5/matches/${matchId}`, {
             headers: { "X-Riot-Token": RIOT_API_KEY },
           }).then((res) => res.json()),
       );
 
       const matchDetails = await fetchInBatches(matchDetailsPromises, 4);
 
-      // Filter by champion — find the participant matching puuid and check championId
-      const filtered = isFilteringByChampion
-        ? matchDetails.filter((match: any) => {
-            const participant = match.info?.participants?.find(
-              (p: any) => p.puuid === validatedData.puuid,
-            );
-            return (
-              participant &&
-              String(participant.championId) === String(championId)
-            );
-          })
-        : matchDetails;
+      const filtered = matchDetails.filter((match: any) => {
+        const participant = match.info?.participants?.find(
+          (p: any) => p.puuid === validatedData.puuid,
+        );
+
+        if (!participant) return false;
+        if (!isFilteringByChampion) return true;
+
+        return (
+          Number(participant.championId) === Number(validatedData.championId)
+        );
+      });
 
       collectedMatches.push(...filtered);
+
+      // Avança no histórico TOTAL da Riot (não no filtrado)
       currentStart += matchIds.length;
 
-      // Stop early if we already have enough
-      if (collectedMatches.length >= targetCount) break;
-
-      // Riot returned fewer IDs than requested — no more pages
+      if (collectedMatches.length >= count) break;
       if (matchIds.length < PAGE_SIZE) break;
     }
 
-    const finalMatches = collectedMatches.slice(0, targetCount);
+    // ================= MERGE =================
+    const mergedMatches = [...existingMatches, ...collectedMatches].filter(
+      (match, index, self) =>
+        index ===
+        self.findIndex((m) => m.metadata.matchId === match.metadata.matchId),
+    );
 
-    // Save to cache
-    matchCache.set(cacheKey, {
-      data: finalMatches,
-      expires: Date.now() + CACHE_TTL,
-    });
+    mergedMatches.sort((a, b) => b.info.gameCreation - a.info.gameCreation);
 
-    return NextResponse.json({
-      data: finalMatches,
-      meta: {
-        requested: targetCount,
-        returned: finalMatches.length,
-        championFilter: championId || null,
-        fromCache: false,
-      },
-    });
+    const finalMatches = mergedMatches.slice(start, start + count);
+
+    // ================= SAVE =================
+    if (isFilteringByChampion) {
+      // Salva cache do campeão com o offset real no histórico da Riot
+      await saveChampionCache(cacheKey, mergedMatches, currentStart);
+    } else {
+      // Cache base sem filtro não precisa de riotOffset
+      await saveToSupabase(cacheKey, {
+        matches: mergedMatches,
+        riotOffset: mergedMatches.length, // opcional (consistência)
+      });
+    }
+
+    // ================= L1 =================
+    matchCache.set(cacheKey, { data: finalMatches, expires: now + L1_TTL });
+
+    return NextResponse.json({ data: finalMatches, cache: "MISS_UPDATE" });
   } catch (error) {
     if (error instanceof z.ZodError) {
+      console.log(error);
       return NextResponse.json(
-        { error: "Invalid request parameters", details: error.errors },
+        { error: "Invalid request parameters" },
         { status: 400 },
       );
     }
 
-    console.error("[matchesByQueue API error]", error);
     return NextResponse.json(
-      {
-        error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
+      { error: "Internal server error" },
       { status: 500 },
     );
   }

@@ -13,10 +13,10 @@ interface MatchHistoryItemProps {
   champion: {
     name: string;
     imageUrl: string;
-    spell1Url: string;
-    spell2Url: string;
-    mainStyle: string;
-    subStyle: string;
+    spell1Url: string | null;
+    spell2Url: string | null;
+    mainStyle: string | null;
+    subStyle: string | null;
   };
   gameMode: string;
   gameType: string;
@@ -26,8 +26,8 @@ interface MatchHistoryItemProps {
   assists: number;
   creepScore: number;
   items: Array<{
-    id: number;
-    imageUrl: string;
+    id: string; // "itemId-index" para garantir unicidade
+    imageUrl: string | null;
   }>;
   gameDuration: string;
   gameCreation: string;
@@ -37,8 +37,8 @@ interface MatchHistoryItemProps {
   totalDamageTaken?: number;
   summonerName: string;
   participants?: Array<{
-    subStyle: string;
-    mainStyle: string;
+    subStyle: string | null;
+    mainStyle: string | null;
     championName: string;
     championId: number;
     summonerName: string;
@@ -49,11 +49,11 @@ interface MatchHistoryItemProps {
     riotIdGameName: string;
     riotIdTagline: string;
     items: Array<{
-      id: number;
-      imageUrl: string;
+      id: string;
+      imageUrl: string | null;
     }>;
-    spell1Url?: string;
-    spell2Url?: string;
+    spell1Url?: string | null;
+    spell2Url?: string | null;
   }>;
 }
 
@@ -116,11 +116,12 @@ export function MatchHistoryItem({
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          {/* Perks do campeão principal */}
           <div className="relative flex items-center gap-1">
             {champion.mainStyle && (
               <Image
                 src={champion.mainStyle}
-                alt=""
+                alt="Main Rune"
                 width={25}
                 height={25}
                 className="object-cover rounded-md"
@@ -129,40 +130,48 @@ export function MatchHistoryItem({
             {champion.subStyle && (
               <Image
                 src={champion.subStyle}
-                alt=""
+                alt="Sub Rune"
                 width={15}
                 height={15}
                 className="object-cover rounded-md"
               />
             )}
           </div>
+
+          {/* Ícone do campeão */}
           <div className="relative flex-shrink-0 w-16 h-16">
             <Image
               src={champion.imageUrl}
               alt={champion.name}
-              fill
+              fill={true}
+              sizes="64px"
               className="object-cover border-4 rounded-full"
-              style={{
-                clipPath: "inset(10% 10% round 50%)",
-              }}
+              style={{ clipPath: "inset(10% 10% round 50%)" }}
             />
           </div>
+
+          {/* Spells do campeão principal */}
           <div className="flex-wrap items-center gap-1 flexbox">
-            <Image
-              src={champion.spell1Url}
-              alt="Spell 1"
-              width={25}
-              height={25}
-              className="object-cover mb-1 rounded-md"
-            />
-            <Image
-              src={champion.spell2Url}
-              alt="Spell 2"
-              width={25}
-              height={25}
-              className="object-cover rounded-md"
-            />
+            {champion.spell1Url && (
+              <Image
+                src={champion.spell1Url}
+                alt="Spell 1"
+                width={25}
+                height={25}
+                className="object-cover mb-1 rounded-md"
+              />
+            )}
+            {champion.spell2Url && (
+              <Image
+                src={champion.spell2Url}
+                alt="Spell 2"
+                width={25}
+                height={25}
+                className="object-cover rounded-md"
+              />
+            )}
           </div>
+
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-1">
               <h3 className="text-sm font-semibold">
@@ -183,6 +192,8 @@ export function MatchHistoryItem({
               </span>
             </div>
           </div>
+
+          {/* Itens do campeão principal */}
           <div className="flex items-center gap-2 ml-auto mr-auto">
             <div className="flex flex-wrap items-center gap-1">
               {items.map((item) => (
@@ -194,7 +205,8 @@ export function MatchHistoryItem({
                     <Image
                       src={item.imageUrl}
                       alt={`Item ${item.id}`}
-                      fill
+                      fill={true}
+                      sizes="36px"
                       className="object-cover rounded-md"
                     />
                   )}
@@ -202,6 +214,7 @@ export function MatchHistoryItem({
               ))}
             </div>
           </div>
+
           <div className="flex items-center gap-2 ml-auto">
             <div className="flex flex-col items-end ml-2">
               <span className="text-xs font-medium">{gameDuration}</span>
@@ -248,8 +261,10 @@ export function MatchHistoryItem({
             </div>
           </div>
           <div className="w-full h-px mb-4 bg-border"></div>
+
           {participants && (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {/* Time 1 */}
               <div className="space-y-2">
                 <h4 className="mb-2 text-xs font-medium sm:text-sm text-muted-foreground">
                   Team 1
@@ -261,6 +276,7 @@ export function MatchHistoryItem({
                       key={participant.summonerName}
                       className="flex items-center gap-2 mb-2"
                     >
+                      {/* Perks */}
                       <div className="relative flex items-center gap-1">
                         {participant.mainStyle && (
                           <Image
@@ -281,42 +297,52 @@ export function MatchHistoryItem({
                           />
                         )}
                       </div>
+
+                      {/* Ícone campeão */}
                       <div
                         className="relative flex-shrink-0 w-8 h-8 cursor-pointer"
                         onClick={(e) => {
                           e.stopPropagation();
-                          window.location.href = `/summoner/${region}/${participant.riotIdGameName}/${participant.riotIdTagline}/all`;
+                          window.location.href = `/summoner/${region}/${participant.riotIdGameName}/${participant.riotIdTagline}/all/all`;
                         }}
                       >
                         <Image
                           src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${participant.championId}.png`}
                           alt={participant.championName}
-                          fill
+                          fill={true}
+                          sizes="32px"
                           className="rounded-full"
                         />
                       </div>
+
+                      {/* Spells */}
                       <div className="flex-wrap items-center gap-1 flexbox">
-                        <Image
-                          src={participant.spell1Url || ""}
-                          alt="Spell 1"
-                          width={15}
-                          height={15}
-                          className="object-cover mb-1 rounded"
-                        />
-                        <Image
-                          src={participant.spell2Url || ""}
-                          alt="Spell 2"
-                          width={15}
-                          height={15}
-                          className="object-cover rounded"
-                        />
+                        {participant.spell1Url && (
+                          <Image
+                            src={participant.spell1Url}
+                            alt="Spell 1"
+                            width={15}
+                            height={15}
+                            className="object-cover mb-1 rounded"
+                          />
+                        )}
+                        {participant.spell2Url && (
+                          <Image
+                            src={participant.spell2Url}
+                            alt="Spell 2"
+                            width={15}
+                            height={15}
+                            className="object-cover rounded"
+                          />
+                        )}
                       </div>
+
                       <div className="flex flex-col flex-1 min-w-0">
                         <span
                           className="hidden sm:inline text-sm truncate cursor-pointer hover:underline max-w-[120px] inline-block"
                           onClick={(e) => {
                             e.stopPropagation();
-                            window.location.href = `/summoner/${region}/${participant.riotIdGameName}/${participant.riotIdTagline}/all`;
+                            window.location.href = `/summoner/${region}/${participant.riotIdGameName}/${participant.riotIdTagline}/all/all`;
                           }}
                           title={participant.summonerName}
                         >
@@ -326,16 +352,18 @@ export function MatchHistoryItem({
                           className="text-sm font-medium cursor-pointer sm:hidden hover:underline"
                           onClick={(e) => {
                             e.stopPropagation();
-                            window.location.href = `/summoner/${region}/${participant.riotIdGameName}/${participant.riotIdTagline}/all`;
+                            window.location.href = `/summoner/${region}/${participant.riotIdGameName}/${participant.riotIdTagline}/all/all`;
                           }}
                         >
-                          {participant.summonerName.slice(0, 3)}
+                          /all {participant.summonerName.slice(0, 3)}
                         </span>
                         <span className="text-xs text-left sm:text-sm text-muted-foreground">
                           {participant.kills}/{participant.deaths}/
                           {participant.assists}
                         </span>
                       </div>
+
+                      {/* Itens */}
                       <div className="flex items-center gap-1 ml-auto">
                         {participant.items.slice(0, 7).map((item) => (
                           <div
@@ -346,7 +374,8 @@ export function MatchHistoryItem({
                               <Image
                                 src={item.imageUrl}
                                 alt={`Item ${item.id}`}
-                                fill
+                                fill={true}
+                                sizes="20px"
                                 className="object-cover rounded-md"
                               />
                             )}
@@ -356,6 +385,8 @@ export function MatchHistoryItem({
                     </div>
                   ))}
               </div>
+
+              {/* Time 2 */}
               <div className="space-y-2 md:border-l md:border-border/50 md:pl-4">
                 <h4 className="mb-2 text-xs font-medium sm:text-sm text-muted-foreground">
                   Team 2
@@ -367,6 +398,7 @@ export function MatchHistoryItem({
                       key={participant.summonerName}
                       className="flex items-center gap-2 mb-2"
                     >
+                      {/* Perks */}
                       <div className="relative flex items-center gap-1">
                         {participant.mainStyle && (
                           <Image
@@ -387,42 +419,52 @@ export function MatchHistoryItem({
                           />
                         )}
                       </div>
+
+                      {/* Ícone campeão */}
                       <div
                         className="relative flex-shrink-0 w-8 h-8 cursor-pointer"
                         onClick={(e) => {
                           e.stopPropagation();
-                          window.location.href = `/summoner/${region}/${participant.riotIdGameName}/${participant.riotIdTagline}/all`;
+                          window.location.href = `/summoner/${region}/${participant.riotIdGameName}/${participant.riotIdTagline}/all/all`;
                         }}
                       >
                         <Image
                           src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${participant.championId}.png`}
                           alt={participant.championName}
-                          fill
+                          fill={true}
+                          sizes="32px"
                           className="rounded-full"
                         />
                       </div>
+
+                      {/* Spells */}
                       <div className="flex-wrap items-center gap-1 flexbox">
-                        <Image
-                          src={participant.spell1Url || ""}
-                          alt="Spell 1"
-                          width={15}
-                          height={15}
-                          className="object-cover mb-1 rounded"
-                        />
-                        <Image
-                          src={participant.spell2Url || ""}
-                          alt="Spell 2"
-                          width={15}
-                          height={15}
-                          className="object-cover rounded"
-                        />
+                        {participant.spell1Url && (
+                          <Image
+                            src={participant.spell1Url}
+                            alt="Spell 1"
+                            width={15}
+                            height={15}
+                            className="object-cover mb-1 rounded"
+                          />
+                        )}
+                        {participant.spell2Url && (
+                          <Image
+                            src={participant.spell2Url}
+                            alt="Spell 2"
+                            width={15}
+                            height={15}
+                            className="object-cover rounded"
+                          />
+                        )}
                       </div>
+
                       <div className="flex flex-col flex-1 min-w-0">
                         <span
                           className="hidden sm:inline text-sm truncate cursor-pointer hover:underline max-w-[120px] inline-block"
                           onClick={(e) => {
                             e.stopPropagation();
-                            window.location.href = `/summoner/${region}/${participant.riotIdGameName}/${participant.riotIdTagline}/all`;
+                            window.location.href = `/summoner/${region}/${participant.riotIdGameName}/${participant.riotIdTagline}/all/all`;
                           }}
                           title={participant.summonerName}
                         >
@@ -432,7 +474,7 @@ export function MatchHistoryItem({
                           className="text-sm font-medium cursor-pointer sm:hidden hover:underline"
                           onClick={(e) => {
                             e.stopPropagation();
-                            window.location.href = `/summoner/${region}/${participant.riotIdGameName}/${participant.riotIdTagline}/all`;
+                            window.location.href = `/summoner/${region}/${participant.riotIdGameName}/${participant.riotIdTagline}/all/all`;
                           }}
                         >
                           {participant.summonerName.slice(0, 3)}
@@ -442,6 +484,8 @@ export function MatchHistoryItem({
                           {participant.assists}
                         </span>
                       </div>
+
+                      {/* Itens */}
                       <div className="flex items-center gap-1 ml-auto">
                         {participant.items.slice(0, 7).map((item) => (
                           <div
@@ -452,7 +496,8 @@ export function MatchHistoryItem({
                               <Image
                                 src={item.imageUrl}
                                 alt={`Item ${item.id}`}
-                                fill
+                                fill={true}
+                                sizes="20px"
                                 className="object-cover rounded-md"
                               />
                             )}

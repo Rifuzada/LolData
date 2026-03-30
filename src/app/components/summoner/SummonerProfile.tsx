@@ -76,7 +76,9 @@ export function SummonerProfile({
           <Image
             src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/${profileIconId}.jpg`}
             alt={`${displayName}'s profile icon`}
-            fill
+            fill={true}
+            sizes="80px"
+            priority
             className="object-cover border-4 rounded-full border-accent"
           />
           <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-accent px-2 py-0.5 text-xs font-medium">
@@ -99,6 +101,7 @@ export function SummonerProfile({
                     alt={`${eloSoloq} tier`}
                     width={20}
                     height={20}
+                    priority
                     className="inline-block"
                   />
                 )}
@@ -124,6 +127,7 @@ export function SummonerProfile({
                     alt={`${eloFlex} tier`}
                     width={20}
                     height={20}
+                    priority
                     className="inline-block"
                   />
                 )}
@@ -153,7 +157,9 @@ export function SummonerProfile({
                 <Image
                   src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${champion.championId}.png`}
                   alt={getChampionNameById(champion.championId)}
-                  fill
+                  fill={true}
+                  sizes="64px"
+                  priority
                   className="object-cover object-top border-4 rounded-full border-accent/50"
                   style={{
                     clipPath: "inset(10% 10% round 50%)", // Adjust this if needed
