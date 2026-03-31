@@ -1,18 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// [FIX 1] "force-dynamic" foi removido.
-//
-// Por quê era um problema:
-//   O Next.js interpreta `dynamic = "force-dynamic"` como "forçar cache: 'no-store'
-//   em TODOS os fetch() desta rota", sobrescrevendo qualquer `next: { revalidate }`
-//   que você colocar nos fetches individuais. Resultado: zero cache de fetch,
-//   cold start re-busca tudo na Riot toda vez.
-//
-// Por que é seguro remover:
-//   A rota já é dinamicamente renderizada porque lê `request.nextUrl.searchParams`.
-//   O Next.js detecta isso automaticamente — não é necessário declarar explicitamente.
-//   Agora os fetches individuais podem usar o Vercel Data Cache normalmente.
-
 import { z } from "zod";
 import {
   AMERICAS_API_URL,
@@ -44,9 +31,6 @@ const MAX_RIOT_OFFSET = 200;
 
 const DETAIL_BATCH_SIZE = 10;
 
-// [FIX 2] A opção `next` do Next.js não faz parte do RequestInit padrão do TypeScript.
-// Sem esse tipo, o TypeScript reclamaria ao passar { next: { revalidate } } no safeFetch.
-// Isso garante que o cache de fetch seja reconhecido corretamente pelo compilador.
 type RiotFetchOptions = RequestInit & {
   next?: { revalidate?: number | false; tags?: string[] };
 };
@@ -59,22 +43,10 @@ async function fetchInBatches<T>(
   for (let i = 0; i < tasks.length; i += batchSize) {
     const batch = tasks.slice(i, i + batchSize).map((fn) => fn());
     results.push(...(await Promise.all(batch)));
-
-    // [FIX 3] O delay de 150ms entre batches foi removido.
-    //
-    // Por quê existia: tentativa de evitar rate-limit da Riot API.
-    // Por quê era desnecessário agora:
-    //   Com `next: { revalidate: 86400 }` nos detalhes, o Vercel Data Cache
-    //   serve partidas já conhecidas em ~5ms sem tocar na Riot. O throttle
-    //   só importa para IDs genuinamente novos, e 10 requests simultâneos
-    //   está bem dentro dos limites (500 req/10s em dev keys, muito mais em prod).
-    //   Remover economiza 150ms por batch adicional — para 20 partidas em 2 batches: -150ms.
-    //   Para filtro de campeão com 5 páginas de 50 IDs: pode economizar 600ms+.
   }
   return results;
 }
 
-// Atualizado para aceitar RiotFetchOptions (com o campo `next` do Next.js).
 async function safeFetch(
   url: string,
   options: RiotFetchOptions,
@@ -135,16 +107,6 @@ async function saveToSupabase(
   });
 }
 
-// Busca detalhes de várias partidas em lote pelo matchId.
-//
-// Por que existe:
-//   Detalhes de uma partida encerrada são IMUTÁVEIS para sempre.
-//   Faz sentido guardá-los individualmente no Supabase (chave: "match:<matchId>")
-//   para que qualquer busca futura — de qualquer jogador que tenha jogado aquela partida,
-//   em qualquer filtro de campeão — não precise bater na Riot novamente.
-//
-// Usa a mesma tabela match_cache com uma convenção de chave diferente.
-// Não precisa de TTL — esses dados nunca ficam desatualizados.
 async function getMatchDetailsBatch(
   matchIds: string[],
 ): Promise<Map<string, any>> {
@@ -163,16 +125,12 @@ async function getMatchDetailsBatch(
       detailMap.set(matchId, row.data);
     }
   } catch {
-    // Cache miss silencioso — os IDs faltantes irão à Riot normalmente.
+    // cache miss silencioso
   }
 
   return detailMap;
 }
 
-// Salva detalhes individuais de partidas no Supabase em lote (fire-and-forget).
-//
-// Chamado após buscar detalhes novos na Riot. O upsert em lote é muito mais
-// eficiente do que N upserts individuais — o Supabase processa tudo em 1 round-trip.
 async function saveMatchDetailsBatch(matches: any[]): Promise<void> {
   if (matches.length === 0) return;
 
@@ -207,15 +165,22 @@ export async function GET(request: NextRequest) {
     const championKey = (championName || championId).toLowerCase();
     const isFilteringByChampion = !!championKey && championKey !== "all";
 
+    // cacheKey do Supabase/L2 — não inclui start, representa o histórico acumulado
     const baseCacheKey = `matches:${region}:${puuid}:${queueId || "all"}:all`;
     const cacheKey = isFilteringByChampion
       ? `matches:${region}:${puuid}:${queueId || "all"}:${championKey}`
       : baseCacheKey;
 
+    // FIX: L1 cache inclui `start` para não servir a página errada.
+    //
+    // Antes, todas as páginas usavam a mesma chave no L1. A chamada start=20
+    // sobrescrevia o L1 com as partidas 20-40, e a próxima chamada start=40
+    // recebia essas partidas erradas como cache hit.
+    const l1Key = `${cacheKey}:${start}`;
     const now = Date.now();
 
     // ================= L1 CACHE (in-memory) =================
-    const l1 = matchCache.get(cacheKey);
+    const l1 = matchCache.get(l1Key);
     if (l1 && l1.expires > now) {
       return NextResponse.json({
         data: l1.data,
@@ -236,24 +201,6 @@ export async function GET(request: NextRequest) {
     }
 
     // ================= BASE CACHE REUSE (filtro de campeão) =================
-    //
-    // Problema resolvido:
-    //   Quando o jogador abre o perfil, o código baixa as últimas N partidas e
-    //   salva tudo no baseCacheKey (ex: matches:br1:<puuid>:all:all).
-    //   Ao trocar para filtro "sett", o código criava uma chave nova e começava
-    //   do zero — riotOffset = 0 — re-baixando 100–250 detalhes que já existiam.
-    //
-    // O que fazemos agora:
-    //   1. Lemos o base cache (matches sem filtro) do Supabase — ele já existe.
-    //   2. Filtramos localmente por campeão (zero requests de rede).
-    //   3. Definimos riotOffset como o ponto onde o base cache parou de buscar.
-    //      Isso faz o loop da Riot começar DEPOIS dos matches já conhecidos,
-    //      evitando buscar detalhes que já foram baixados anteriormente.
-    //
-    // Resultado prático:
-    //   Base cache com 20 matches → filtramos ~2-4 setts localmente → offset = 20.
-    //   O loop da Riot começa no offset 20 em vez de 0.
-    //   Saves: re-download de 20 detalhes + 1 página de matchIds = ~10–30s a menos.
     if (isFilteringByChampion && existingMatches.length < start + count) {
       const baseCached = await getFromSupabase(baseCacheKey);
 
@@ -262,7 +209,6 @@ export async function GET(request: NextRequest) {
         const baseRiotOffset: number =
           baseCached.riotOffset ?? baseMatches.length;
 
-        // Filtra os matches do base cache pelo campeão pedido — sem rede.
         const champFromBase = baseMatches.filter((match: any) => {
           const participant = match.info?.participants?.find(
             (p: any) => p.puuid === puuid,
@@ -270,8 +216,6 @@ export async function GET(request: NextRequest) {
           return participant?.championName?.toLowerCase() === championKey;
         });
 
-        // Mescla com o que já tínhamos no cache específico do campeão (se houver),
-        // removendo duplicatas pelo matchId.
         const merged = [...existingMatches, ...champFromBase].filter(
           (match, index, self) =>
             index ===
@@ -282,8 +226,6 @@ export async function GET(request: NextRequest) {
 
         existingMatches = merged;
 
-        // Avança o offset para onde o base cache parou.
-        // O loop da Riot só buscará a partir daí — não re-baixa nada já visto.
         if (baseRiotOffset > riotOffset) {
           riotOffset = baseRiotOffset;
         }
@@ -293,11 +235,14 @@ export async function GET(request: NextRequest) {
     // ================= FULL CACHE HIT =================
     if (existingMatches.length >= start + count) {
       const paginated = existingMatches.slice(start, start + count);
-      matchCache.set(cacheKey, { data: paginated, expires: now + L1_TTL });
+      matchCache.set(l1Key, { data: paginated, expires: now + L1_TTL });
       return NextResponse.json({
         data: paginated,
         cache: "FULL_CACHE",
-        hasMore: true,
+        // Há mais se o histórico acumulado vai além do que o cliente pediu
+        hasMore:
+          existingMatches.length > start + count ||
+          riotOffset < MAX_RIOT_OFFSET,
       });
     }
 
@@ -346,13 +291,6 @@ export async function GET(request: NextRequest) {
         matchIdsUrl.searchParams.set("queue", String(queueId));
       }
 
-      // [FIX 4a] Cache de fetch para a lista de matchIds — revalidate: 60s.
-      //
-      // Por quê 60 segundos:
-      //   Uma partida de LoL dura no mínimo ~20 minutos. Cachear os IDs por 60s
-      //   é seguro e não vai exibir dados desatualizados de forma perceptível.
-      //   Benefício principal: instâncias serverless que sofreram cold start
-      //   servem a lista do Vercel Data Cache (~5ms) em vez de bater na Riot (~200–400ms).
       const matchIdsResponse = await safeFetch(matchIdsUrl.toString(), {
         headers: { "X-Riot-Token": RIOT_API_KEY },
         next: { revalidate: 60 },
@@ -378,17 +316,6 @@ export async function GET(request: NextRequest) {
       const newMatchIds = matchIds.filter((id) => !existingIds.has(id));
 
       if (newMatchIds.length > 0) {
-        // ---- Etapa 1: consulta Supabase pelos detalhes que já foram baixados ----
-        //
-        // Antes de ir à Riot, verifica se esses matchIds já foram baixados
-        // em algum momento anterior (qualquer jogador, qualquer filtro de campeão).
-        // Detalhes de partida encerrada são imutáveis — o cache nunca fica desatualizado.
-        //
-        // Impacto principal:
-        //   Busca "sett" → baixa 250 detalhes da Riot → salva no Supabase.
-        //   Busca "shen" logo depois → os mesmos 250 IDs já estão no Supabase.
-        //   Supabase retorna tudo em ~80ms num único round-trip → 0 requests à Riot.
-        //   De 3.6 minutos → < 1 segundo.
         const cachedDetailsMap = await getMatchDetailsBatch(newMatchIds);
 
         const fromSupabaseDetails: any[] = [];
@@ -396,20 +323,26 @@ export async function GET(request: NextRequest) {
 
         for (const id of newMatchIds) {
           if (cachedDetailsMap.has(id)) {
-            fromSupabaseDetails.push(cachedDetailsMap.get(id));
+            const cached = cachedDetailsMap.get(id);
+            // Se participants não tem riotIdGameName, cache antigo — rebaixa da Riot
+            const hasNgc = cached?.info?.participants?.every(
+              (p: any) => p.riotIdGameName !== undefined,
+            );
+            if (hasNgc) {
+              fromSupabaseDetails.push(cached);
+            } else {
+              trulyNewMatchIds.push(id);
+            }
           } else {
             trulyNewMatchIds.push(id);
           }
         }
 
-        // ---- Etapa 2: só vai à Riot para o que realmente não existe em lugar nenhum ----
         let riotMatchDetails: any[] = [];
 
         if (trulyNewMatchIds.length > 0) {
           const matchDetailsPromises = trulyNewMatchIds.map(
             (matchId: string) => () =>
-              // revalidate: 86400 para o Vercel Data Cache em produção.
-              // Em dev local, o Supabase resolve o mesmo problema (cache permanente).
               safeFetch(`${detailsApiUrl}/lol/match/v5/matches/${matchId}`, {
                 headers: { "X-Riot-Token": RIOT_API_KEY },
                 next: { revalidate: 86400 },
@@ -425,12 +358,9 @@ export async function GET(request: NextRequest) {
             (m: any) => m?.metadata?.matchId && m?.info?.participants,
           );
 
-          // Salva os detalhes novos no Supabase em lote (fire-and-forget).
-          // Qualquer filtro futuro que topar esses matchIds vai servir do Supabase.
           saveMatchDetailsBatch(riotMatchDetails).catch(() => {});
         }
 
-        // ---- Etapa 3: combina Supabase + Riot e aplica o filtro de campeão ----
         const allDetails = [
           ...fromSupabaseDetails.filter(
             (m: any) => m?.metadata?.matchId && m?.info?.participants,
@@ -467,7 +397,11 @@ export async function GET(request: NextRequest) {
 
     const finalMatches = mergedMatches.slice(start, start + count);
 
-    const hasMore = !(hitOffsetLimit && mergedMatches.length < start + count);
+    // hasMore = verdadeiro se há mais partidas no histórico acumulado
+    // OU se ainda não chegamos no limite de offset da Riot
+    const hasMore =
+      mergedMatches.length > start + count ||
+      (!hitOffsetLimit && currentStart < MAX_RIOT_OFFSET);
 
     // ================= SAVE =================
     saveToSupabase(
@@ -477,7 +411,7 @@ export async function GET(request: NextRequest) {
       tagLine,
     ).catch(() => {});
 
-    matchCache.set(cacheKey, { data: finalMatches, expires: now + L1_TTL });
+    matchCache.set(l1Key, { data: finalMatches, expires: now + L1_TTL });
 
     return NextResponse.json({
       data: finalMatches,

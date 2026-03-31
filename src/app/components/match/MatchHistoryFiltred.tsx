@@ -1,7 +1,7 @@
 "use client";
 
 import { MatchHistoryItem } from "./MatchHistoryItem";
-import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import apiService from "@/app/services/apiService";
 
 interface Participant {
@@ -95,12 +95,44 @@ export function MatchHistoryFiltred({
   const [hasMore, setHasMore] = useState(matchesByQueue.length >= 10);
 
   const abortControllerRef = useRef<AbortController | null>(null);
+  const loadingRef = useRef(false);
 
-  // 1. Carregar Versão e Dados Estáticos (DDragon)
+  // Sempre reflete matchesByQueue mais recente sem ser dep do efeito de reset.
+  const latestMatchesByQueueRef = useRef(matchesByQueue);
+  latestMatchesByQueueRef.current = matchesByQueue;
+
+  // FIX 1 -- tagLine e gameName em refs.
+  //
+  // Problema: o pai pode re-renderizar com tagLine="" antes de ter o valor
+  // correto (route params resolvidos de forma assincrona no Next.js).
+  // Com tagLine e gameName nas deps do useCallback, a funcao fetchMoreMatches
+  // era recriada com o valor vazio capturado no closure, e enviava tagLine=
+  // na URL. Isso causava cache miss no Supabase (a chave salva originalmente
+  // tinha tagLine="nri", a nova nao tinha).
+  //
+  // Com refs, a funcao sempre le o valor ATUAL no momento do clique,
+  // independente de quando o useCallback foi criado.
+  const tagLineRef = useRef(tagLine);
+  tagLineRef.current = tagLine;
+  const gameNameRef = useRef(gameName);
+  gameNameRef.current = gameName;
+
+  // FIX 2 -- start em ref.
+  //
+  // Problema: setStart() e assincrono -- agenda atualizacao de estado.
+  // O React pode re-renderizar o botao antes de recriar fetchMoreMatches.
+  // O proximo clique usava o closure com o start anterior ao setStart,
+  // buscando as mesmas partidas. O botao parecia travado/inativo.
+  //
+  // Com ref sincronizada dentro do proprio setStart, o valor correto esta
+  // disponivel imediatamente para o proximo clique, antes mesmo do re-render.
+  const startRef = useRef(start);
+  startRef.current = start;
+
+  // 1. Carregar versao e dados estaticos (DDragon)
   useEffect(() => {
     const loadStaticData = async () => {
       try {
-        // Pega a versão mais recente
         const version = await apiService.getLatestVersion();
         setLeagueVersion(version);
 
@@ -125,14 +157,26 @@ export function MatchHistoryFiltred({
     loadStaticData();
   }, []);
 
-  // 2. Resetar lista quando os filtros principais mudam via URL/Props
-  useEffect(() => {
-    setMatches(matchesByQueue);
-    setStart(matchesByQueue.length);
-    setHasMore(matchesByQueue.length >= 10);
-  }, [matchesByQueue, queueId, championName]);
+  // 2. Resetar lista SOMENTE quando o filtro real muda.
+  //
+  // filterKey usa apenas escalares -- nao muda quando o array de prop
+  // recebe nova referencia (o que acontecia a cada re-render do pai e
+  // resetava o start de volta para matchesByQueue.length).
+  const filterKey = `${region}||${puuid}||${queueId ?? ""}||${championName ?? ""}`;
+  const prevFilterKeyRef = useRef(filterKey);
 
-  // 3. Atualizar estatísticas Globais (Wins/Losses)
+  useEffect(() => {
+    if (prevFilterKeyRef.current === filterKey) return;
+    prevFilterKeyRef.current = filterKey;
+
+    const fresh = latestMatchesByQueueRef.current;
+    setMatches(fresh);
+    setStart(fresh.length);
+    startRef.current = fresh.length; // sincroniza o ref imediatamente
+    setHasMore(fresh.length >= 10);
+  }, [filterKey]);
+
+  // 3. Atualizar estatisticas globais (Wins/Losses)
   useEffect(() => {
     const wins = matches.filter((m) => {
       const p = m.info?.participants?.find((p) => p.puuid === puuid);
@@ -146,9 +190,15 @@ export function MatchHistoryFiltred({
     );
   }, [matches, puuid]);
 
-  // 4. Buscar mais partidas (Paginação)
+  // 4. Buscar mais partidas (paginacao)
+  //
+  // Deps minimas: so o que muda o TIPO de busca (filtros de consulta).
+  // tagLine, gameName e start foram removidos das deps -- ficam em refs.
+  // hasMore permanece porque e a condicao de parada (nao causa stale closure).
   const fetchMoreMatches = useCallback(async () => {
-    if (loadingMore || !hasMore) return;
+    if (loadingRef.current || !hasMore) return;
+
+    loadingRef.current = true;
     setLoadingMore(true);
 
     if (abortControllerRef.current) abortControllerRef.current.abort();
@@ -158,10 +208,10 @@ export function MatchHistoryFiltred({
       const params = new URLSearchParams({
         region,
         puuid,
-        start: start.toString(),
-        count: "10",
-        gameName: gameName || "",
-        tagLine: tagLine || "",
+        start: startRef.current.toString(), // sempre o valor atual, sem stale closure
+        count: "20",
+        gameName: gameNameRef.current || "", // sempre o valor atual
+        tagLine: tagLineRef.current || "", // sempre o valor atual
       });
 
       if (queueId && queueId !== "all")
@@ -188,8 +238,12 @@ export function MatchHistoryFiltred({
           );
           return [...prev, ...uniqueNew];
         });
-        setStart((prev) => prev + newMatches.length);
-        setHasMore(newMatches.length >= 10);
+        setStart((prev) => {
+          const next = prev + newMatches.length;
+          startRef.current = next; // sincroniza o ref antes do proximo render
+          return next;
+        });
+        setHasMore(json.hasMore !== false && newMatches.length >= 10);
       }
     } catch (error: any) {
       if (error.name !== "AbortError") {
@@ -197,21 +251,12 @@ export function MatchHistoryFiltred({
         setHasMore(false);
       }
     } finally {
+      loadingRef.current = false;
       setLoadingMore(false);
     }
-  }, [
-    loadingMore,
-    hasMore,
-    start,
-    region,
-    puuid,
-    queueId,
-    championName,
-    gameName,
-    tagLine,
-  ]);
+  }, [hasMore, region, puuid, queueId, championName]);
 
-  // Helpers de Imagem (aguarda leagueVersion estar carregado)
+  // Helpers de imagem
   const getSummonerSpellImageUrl = useCallback(
     (spellId: string | number) => {
       if (!leagueVersion) return null;
@@ -263,7 +308,7 @@ export function MatchHistoryFiltred({
           onClick={() => window.location.reload()}
           className="text-sm font-medium text-primary hover:underline"
         >
-          Recarregar página
+          Recarregar pagina
         </button>
       </div>
     );
@@ -317,25 +362,37 @@ export function MatchHistoryFiltred({
           gameCreation: new Date(
             match.info.gameStartTimestamp,
           ).toLocaleDateString(),
+
           goldEarned: participant.goldEarned,
           visionScore: participant.visionScore,
           totalDamageDealt: participant.totalDamageDealtToChampions,
           totalDamageTaken: participant.totalDamageTaken,
-          summonerName: participant.riotIdGameName,
+
+          // 🔥 fallback importante
+          summonerName: participant.summonerName,
+
           participants: match.info.participants.map((p) => ({
             championName: p.championName,
             championId: p.championId,
-            summonerName: p.riotIdGameName,
+
+            // 🔥 AGORA SIM (isso resolve teu bug)
+            riotIdGameName: p.riotIdGameName,
+            riotIdTagline: p.riotIdTagline,
+
+            summonerName: p.summonerName,
             team: p.teamId,
             kills: p.kills,
             deaths: p.deaths,
             assists: p.assists,
+
             spell1Url: getSummonerSpellImageUrl(p.summoner1Id),
             spell2Url: getSummonerSpellImageUrl(p.summoner2Id),
+
             mainStyle: getRuneImageUrl(
               p.perks?.styles?.[0]?.selections?.[0]?.perk,
             ),
             subStyle: getRuneImageUrl(p.perks?.styles?.[1]?.style),
+
             items: [0, 1, 2, 3, 4, 5, 6].map((i) => ({
               id: (p as any)[`item${i}`],
               imageUrl: (p as any)[`item${i}`]
@@ -362,7 +419,7 @@ export function MatchHistoryFiltred({
             onClick={fetchMoreMatches}
             disabled={loadingMore}
           >
-            {loadingMore ? "Carregando..." : "Carregar mais partidas"}
+            {loadingMore ? "Loading..." : "Load more games"}
           </button>
         )}
       </div>

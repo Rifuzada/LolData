@@ -273,9 +273,9 @@ export function MatchHistoryItem({
                 </h4>
                 {participants
                   .filter((p) => p.team === 100)
-                  .map((participant) => (
+                  .map((participant, idx) => (
                     <div
-                      key={participant.summonerName}
+                      key={`t100-${idx}`}
                       className="flex items-center gap-2 mb-2"
                     >
                       {/* Perks */}
@@ -348,7 +348,7 @@ export function MatchHistoryItem({
                           }}
                           title={participant.summonerName}
                         >
-                          {participant.summonerName}
+                          {participant.riotIdGameName}
                         </span>
                         <span
                           className="text-sm font-medium cursor-pointer sm:hidden hover:underline"
@@ -357,7 +357,7 @@ export function MatchHistoryItem({
                             window.location.href = `/summoner/${region}/${participant.riotIdGameName}/${participant.riotIdTagline}/all/all`;
                           }}
                         >
-                          /all {participant.summonerName.slice(0, 3)}
+                          {participant.riotIdGameName.slice(0, 3)}
                         </span>
                         <span className="text-xs text-left sm:text-sm text-muted-foreground">
                           {participant.kills}/{participant.deaths}/
@@ -367,9 +367,9 @@ export function MatchHistoryItem({
 
                       {/* Itens */}
                       <div className="flex items-center gap-1 ml-auto">
-                        {participant.items.slice(0, 7).map((item) => (
+                        {participant.items.slice(0, 7).map((item, itemIdx) => (
                           <div
-                            key={item.id}
+                            key={`item-${item.id}-${itemIdx}`}
                             className="relative w-5 h-5 rounded-md bg-background/50"
                           >
                             {item.imageUrl && (
@@ -395,9 +395,9 @@ export function MatchHistoryItem({
                 </h4>
                 {participants
                   .filter((p) => p.team === 200)
-                  .map((participant) => (
+                  .map((participant, idx) => (
                     <div
-                      key={participant.summonerName}
+                      key={`t200-${idx}`}
                       className="flex items-center gap-2 mb-2"
                     >
                       {/* Perks */}
@@ -470,7 +470,7 @@ export function MatchHistoryItem({
                           }}
                           title={participant.summonerName}
                         >
-                          {participant.summonerName}
+                          {participant.riotIdGameName}
                         </span>
                         <span
                           className="text-sm font-medium cursor-pointer sm:hidden hover:underline"
@@ -489,9 +489,9 @@ export function MatchHistoryItem({
 
                       {/* Itens */}
                       <div className="flex items-center gap-1 ml-auto">
-                        {participant.items.slice(0, 7).map((item) => (
+                        {participant.items.slice(0, 7).map((item, itemIdx) => (
                           <div
-                            key={item.id}
+                            key={`item-${item.id}-${itemIdx}`}
                             className="relative w-5 h-5 rounded-md bg-background/50"
                           >
                             {item.imageUrl && (
