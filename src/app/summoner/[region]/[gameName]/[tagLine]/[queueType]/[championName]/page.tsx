@@ -97,49 +97,83 @@ export default async function SummonerPage({
 
     const summoner = await getSummonerByRiotId(region, gameName, tagLine);
 
+    // ============================================================
+    // 🔥 CORREÇÃO: Verifica se o summoner foi encontrado
+    // ============================================================
+    if (!summoner) {
+      console.warn(`⚠️ Summoner "${gameName}#${tagLine}" não encontrado na região ${region}`);
+      return (
+        <div className="flex flex-col min-h-screen">
+          <header role="banner" className="w-full">
+            <nav role="navigation" aria-label="Pesquisa de invocador">
+              <SummonerSearch defaultRegion={region} />
+            </nav>
+          </header>
+          <main className="container flex-grow py-8 mx-auto">
+            <div className="p-6 border rounded-lg border-destructive bg-destructive/10 text-destructive">
+              <h2 className="text-lg font-semibold">Invocador não encontrado</h2>
+              <p>
+                O invocador <strong>"{gameName}#{tagLine}"</strong> não foi encontrado na região <strong>{region.toUpperCase()}</strong>.
+              </p>
+              <p className="mt-2 text-sm">
+                Verifique se o nome e a região estão corretos e tente novamente.
+              </p>
+            </div>
+          </main>
+          <footer role="contentinfo" className="w-full py-4 mt-auto">
+            <div className="container mx-auto">
+              <div className="p-6 text-sm text-center text-muted-foreground">
+                <p>© {new Date().getFullYear()} LolData - Dados fornecidos pela API da Riot Games</p>
+              </div>
+            </div>
+          </footer>
+        </div>
+      );
+    }
+
+    // SÓ CONTINUA SE SUMMONER NÃO FOR NULL
     console.log("✅ [2] Summoner:", summoner?.puuid);
 
-    const [queueTypes, masteries, rankedData] = await Promise.all([
-      getQueueTypes(),
-      getChampionMasteries(region, summoner.puuid),
-      getRankedByPuuid(region, summoner.puuid),
-    ]);
-
-    console.log("📊 [3] Dados paralelos carregados");
-
+    // ============================================================
+    // 🔥 OTIMIZAÇÃO: Prepara a URL para matches antes do paralelismo
+    // ============================================================
     const baseUrl =
       process.env.NEXT_PUBLIC_SITE_URL ||
       (process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`) ||
       "http://localhost:3000";
 
-    let url = `${baseUrl}/api/summoner/matches?region=${region}&puuid=${summoner.puuid}&count=20`;
+    let matchesUrl = `${baseUrl}/api/summoner/matches?region=${region}&puuid=${summoner.puuid}&count=20`;
 
-    // Se o usuário escolheu um queue específico, adiciona queueId
     if (queueId && queueId !== "all") {
-      url += `&queueId=${queueId}`;
+      matchesUrl += `&queueId=${queueId}`;
     }
-
-    // Adiciona filtro por campeão, se houver
     if (championName && championName !== "all") {
-      url += `&championName=${championName}`;
+      matchesUrl += `&championName=${championName}`;
     }
-
-    // Adiciona filtro por gameName, se houver
     if (gameName && gameName !== "all") {
-      url += `&gameName=${gameName}`;
+      matchesUrl += `&gameName=${gameName}`;
     }
-
-    // Adiciona filtro por tagLine, se houver
     if (tagLine && tagLine !== "all") {
-      url += `&tagLine=${tagLine}`;
+      matchesUrl += `&tagLine=${tagLine}`;
     }
 
-    console.log("🌐 [4] Fetch URL:", url);
+    console.log("🌐 [4] URLs prontas, iniciando chamadas paralelas");
 
-    const matchesRes = await fetch(url, { cache: "no-store" });
+    // ============================================================
+    // 🔥 OTIMIZAÇÃO: Tudo em paralelo (queueTypes, masteries, rankedData, matches)
+    // ============================================================
+    const [queueTypes, masteries, rankedData, matchesRes] = await Promise.all([
+      getQueueTypes(),
+      getChampionMasteries(region, summoner.puuid),
+      getRankedByPuuid(region, summoner.puuid),
+      fetch(matchesUrl, { cache: "no-store" }),
+    ]);
 
-    console.log("📡 [5] Status:", matchesRes.status);
+    console.log("📡 [5] Status da requisição de matches:", matchesRes.status);
 
+    // ============================================================
+    // Processamento da resposta de matches (igual ao seu código original)
+    // ============================================================
     const contentType = matchesRes.headers.get("content-type");
     console.log("📦 [6] Content-Type:", contentType);
 
@@ -159,12 +193,11 @@ export default async function SummonerPage({
 
     console.log("🧹 [8] Total matches:", filteredMatches.length);
 
-    // Agora filtre manualmente pelo championName, se necessário
+    // Filtro extra por championName (segurança, caso a API não tenha filtrado)
     if (championName && championName.toLowerCase() !== "all") {
       filteredMatches = filteredMatches.filter((match: any) =>
         match.info?.participants?.some((p: any) => {
           if (!p.puuid || !p.championName) return false;
-          // Normaliza para evitar problemas de case/acentuação
           const champA = String(p.championName)
             .normalize("NFD")
             .replace(/\p{Diacritic}/gu, "")
@@ -178,7 +211,9 @@ export default async function SummonerPage({
       );
     }
 
-    // Processa dados de ranqueadas
+    // ============================================================
+    // Processamento dos dados de ranqueadas (original)
+    // ============================================================
     const soloQData = rankedData.find(
       (queue: any) => queue.queueType === "RANKED_SOLO_5x5",
     );
@@ -186,19 +221,15 @@ export default async function SummonerPage({
       (queue: any) => queue.queueType === "RANKED_FLEX_SR",
     );
 
-    // Formata informações de elo
     const formatElo = (entry: any) => {
       if (!entry) return null;
-
       const tier = entry.tier.charAt(0) + entry.tier.slice(1).toLowerCase();
       const highTiers = ["CHALLENGER", "GRANDMASTER", "MASTER"];
-
       return highTiers.includes(entry.tier) ? tier : `${tier} ${entry.rank}`;
     };
     const eloSoloq = formatElo(soloQData);
     const eloFlex = formatElo(flexData);
 
-    // Garante que os pontos de liga sejam números válidos
     const lpSoloq =
       soloQData && typeof soloQData.leaguePoints === "number"
         ? soloQData.leaguePoints
@@ -210,16 +241,17 @@ export default async function SummonerPage({
     const regionTranslated = getRegionDisplay(region);
 
     const last20Matches = filteredMatches.slice(0, 20);
-
     const lastWins = last20Matches.filter((match: any) => {
       const participant = match?.info?.participants?.find(
         (p: any) => p.puuid === summoner.puuid,
       );
       return participant?.win === true;
     }).length;
-
     const lastLoses = last20Matches.length - lastWins;
 
+    // ============================================================
+    // Render (inalterado)
+    // ============================================================
     return (
       <div className="flex flex-col min-h-screen">
         <header role="banner" className="w-full">
