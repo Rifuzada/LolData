@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { use, useEffect, useState, useCallback, useRef, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Card } from "@/app/components/ui/Card";
-import { getSummonerNameByPuuid } from "@/app/actions/summoner";
 
 interface LeagueEntry {
   puuid: string;
@@ -19,11 +18,28 @@ interface LeagueEntry {
   hotStreak: boolean;
 }
 
+interface CacheMeta {
+  isFromCache: boolean;
+  isStale: boolean;
+  updatedAt: string;
+  ageInMinutes: number;
+  expiresInMinutes: number;
+  ttlDays: number;
+}
+
 interface RankingData {
   entries: LeagueEntry[];
   queue: string;
   name: string;
   tier: string;
+  summonerNames?: Record<
+    string,
+    {
+      gameName: string;
+      tagLine: string;
+      profileIconId: number | null;
+    }
+  >;
   pagination?: {
     currentPage: number;
     totalPages: number;
@@ -37,27 +53,119 @@ interface RankingData {
     grandmaster: { cutoffLP: number };
   };
   regionMode?: string;
+  cache?: CacheMeta;
 }
 
 interface SummonerInfo {
   gameName: string;
   tagLine: string;
-  profileIconId?: number;
+  profileIconId?: number | null;
 }
 
-// Stable constant — keep outside component to avoid stale closure issues
+interface LocalStorageRankingsEntry {
+  data: RankingData;
+  savedAt: number;
+}
+
+interface LocalStorageSummonerEntry {
+  info: SummonerInfo;
+  savedAt: number;
+}
+
+// Must match the server-side TTL (2 days)
+const RANKINGS_CACHE_TTL_MS = 2 * 24 * 60 * 60 * 1000;
+// Summoner names/icons can change — refresh daily
+const SUMMONER_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
 const ITEMS_PER_PAGE = 200;
+
+// ---------------------------------------------------------------------------
+// localStorage helpers
+// ---------------------------------------------------------------------------
+
+function readRankingsCache(key: string): RankingData | null {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const { data, savedAt }: LocalStorageRankingsEntry = JSON.parse(raw);
+    if (Date.now() - savedAt > RANKINGS_CACHE_TTL_MS) {
+      localStorage.removeItem(key);
+      return null;
+    }
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function writeRankingsCache(key: string, data: RankingData) {
+  try {
+    const entry: LocalStorageRankingsEntry = { data, savedAt: Date.now() };
+    localStorage.setItem(key, JSON.stringify(entry));
+  } catch {
+    // ignore quota errors
+  }
+}
+
+function readSummonerCache(region: string): Record<string, SummonerInfo> {
+  try {
+    const raw = localStorage.getItem(`summonerCache_${region}`);
+    if (!raw) return {};
+    const parsed: Record<string, LocalStorageSummonerEntry> = JSON.parse(raw);
+    const now = Date.now();
+    const valid: Record<string, SummonerInfo> = {};
+    for (const [puuid, entry] of Object.entries(parsed)) {
+      const info = entry?.info;
+      const isValid = Boolean(
+        info?.gameName &&
+          info.gameName !== "Unknown" &&
+          info.gameName !== "Loading…" &&
+          info?.tagLine &&
+          info.tagLine !== "???",
+      );
+      if (now - entry.savedAt <= SUMMONER_CACHE_TTL_MS && isValid) {
+        valid[puuid] = info;
+      }
+    }
+    return valid;
+  } catch {
+    return {};
+  }
+}
+
+function writeSummonerCache(
+  region: string,
+  cache: Record<string, SummonerInfo>,
+) {
+  try {
+    const now = Date.now();
+    const withTimestamps: Record<string, LocalStorageSummonerEntry> = {};
+    for (const [puuid, info] of Object.entries(cache)) {
+      withTimestamps[puuid] = { info, savedAt: now };
+    }
+    localStorage.setItem(
+      `summonerCache_${region}`,
+      JSON.stringify(withTimestamps),
+    );
+  } catch {
+    // ignore quota errors
+  }
+}
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
 
 export default function RankingsPage({
   params,
 }: {
-  params: { queueType: string; region: string; page: string };
+  params: Promise<{ queueType: string; region: string; page: string }>;
 }) {
   const router = useRouter();
 
+  const { queueType: queueTypeParam, region, page: pageParam } = use(params);
+
   const [rankings, setRankings] = useState<RankingData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingNames, setIsLoadingNames] = useState(false);
   const [isSortingAll, setIsSortingAll] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [summonerNames, setSummonerNames] = useState<
@@ -65,16 +173,15 @@ export default function RankingsPage({
   >({});
   const [sortByWinRate, setSortByWinRate] = useState(false);
 
-  const currentPage = parseInt(params.page) || 1;
-  const region = params.region;
+  const currentPage = parseInt(pageParam) || 1;
 
   const queueTypeMap: Record<string, string> = {
     soloduo: "RANKED_SOLO_5x5",
     flex: "RANKED_FLEX_SR",
   };
 
-  const queueType = queueTypeMap[params.queueType] || "RANKED_SOLO_5x5";
-  const friendlyQueueType = params.queueType;
+  const queueType = queueTypeMap[queueTypeParam] || "RANKED_SOLO_5x5";
+  const friendlyQueueType = queueTypeParam;
 
   const displayRegionMap: Record<string, string> = {
     BR1: "BR",
@@ -99,105 +206,10 @@ export default function RankingsPage({
     flex: "Flex",
   };
 
-  const summonerNamesCache = useRef<Record<string, SummonerInfo>>({});
-  // Guard: prevents a second concurrent execution of fetchSummonerNames
-  // Guard: prevents concurrent fetchSummonerNames calls that fight over
-  // isLoadingNames and leave the spinner permanently stuck.
-  const isFetchingNamesRef = useRef(false);
-
-  useEffect(() => {
-    const savedCache = localStorage.getItem(`summonerCache_${region}`);
-    if (savedCache) {
-      const parsed = JSON.parse(savedCache);
-      summonerNamesCache.current = parsed;
-      setSummonerNames(parsed);
-    }
+  const updateLocalSummonerCache = useCallback((newData: Record<string, SummonerInfo>) => {
+    const current = readSummonerCache(region);
+    writeSummonerCache(region, { ...current, ...newData });
   }, [region]);
-
-  // Stable ref — never changes identity, so it can never be a useEffect dep
-  // that causes re-fires. Reads region from the regionRef below.
-  const regionRef = useRef(region);
-  useEffect(() => {
-    regionRef.current = region;
-  }, [region]);
-
-  const updateCache = useRef((newData: Record<string, SummonerInfo>) => {
-    const updatedCache = { ...summonerNamesCache.current, ...newData };
-    summonerNamesCache.current = updatedCache;
-    localStorage.setItem(
-      `summonerCache_${regionRef.current}`,
-      JSON.stringify(updatedCache),
-    );
-    setSummonerNames((prev) => ({ ...prev, ...newData }));
-  });
-
-  // Stable ref function — identity never changes, so it is safe to call from
-  // effects without being listed as a dep (which would cause re-fire loops).
-  const fetchSummonerNames = useRef(async (puuids: string[]) => {
-    if (!puuids.length || isFetchingNamesRef.current) return;
-
-    const uncachedPuuids = puuids.filter(
-      (puuid) => !summonerNamesCache.current[puuid],
-    );
-    if (uncachedPuuids.length === 0) return;
-
-    isFetchingNamesRef.current = true;
-    setIsLoadingNames(true);
-    try {
-      for (let i = 0; i < uncachedPuuids.length; i += 20) {
-        const batch = uncachedPuuids.slice(i, i + 20);
-        const batchResults = await Promise.all(
-          batch.map(async (puuid) => {
-            try {
-              const summonerData = await getSummonerNameByPuuid(
-                regionRef.current,
-                puuid,
-              );
-              if (!summonerData?.name || !summonerData?.tagLine) return null;
-              return {
-                puuid,
-                gameName: summonerData.name,
-                tagLine: summonerData.tagLine,
-                profileIconId: summonerData.profileIconId,
-              };
-            } catch (err) {
-              console.error(`Error fetching PUUID ${puuid}:`, err);
-              return null;
-            }
-          }),
-        );
-
-        const newNames = batchResults
-          .filter(
-            (
-              r,
-            ): r is {
-              puuid: string;
-              gameName: string;
-              tagLine: string;
-              profileIconId: number;
-            } => r !== null,
-          )
-          .reduce((acc: Record<string, SummonerInfo>, r) => {
-            acc[r.puuid] = {
-              gameName: r.gameName,
-              tagLine: r.tagLine,
-              profileIconId: r.profileIconId,
-            };
-            return acc;
-          }, {});
-
-        updateCache.current(newNames);
-
-        if (i + 20 < uncachedPuuids.length) {
-          await new Promise((resolve) => setTimeout(resolve, 300));
-        }
-      }
-    } finally {
-      setIsLoadingNames(false);
-      isFetchingNamesRef.current = false;
-    }
-  });
 
   const fetchAllRankings = useCallback(async () => {
     try {
@@ -212,6 +224,7 @@ export default function RankingsPage({
 
       const totalPages = firstData.pagination?.totalPages || 1;
       let allEntries = [...firstData.entries];
+      let allSummonerNames = { ...(firstData.summonerNames ?? {}) };
 
       for (let page = 2; page <= totalPages; page++) {
         const res = await fetch(
@@ -220,21 +233,26 @@ export default function RankingsPage({
         if (!res.ok) throw new Error(`Failed to fetch page ${page}`);
         const data = await res.json();
         allEntries = allEntries.concat(data.entries);
+        allSummonerNames = {
+          ...allSummonerNames,
+          ...(data.summonerNames ?? {}),
+        };
         await new Promise((r) => setTimeout(r, 200));
       }
 
       const fullData: RankingData = {
         ...firstData,
         entries: allEntries,
+        summonerNames: allSummonerNames,
         pagination: {
           ...firstData.pagination,
           totalEntries: allEntries.length,
-          // FIX: full dataset is paginated in-memory, so total pages reflects
-          // the full count divided by page size
           totalPages: Math.ceil(allEntries.length / ITEMS_PER_PAGE),
         },
       };
 
+      setSummonerNames(allSummonerNames);
+      updateLocalSummonerCache(allSummonerNames);
       setRankings(fullData);
     } catch (err) {
       console.error("[fetchAllRankings] Error:", err);
@@ -242,10 +260,8 @@ export default function RankingsPage({
     } finally {
       setIsSortingAll(false);
     }
-  }, [region, queueType]);
+  }, [region, queueType, updateLocalSummonerCache]);
 
-  // FIX: remove `sortByWinRate` from the dependency array so toggling sort
-  // does NOT trigger a re-fetch that overwrites the full dataset.
   const fetchRankings = useCallback(
     async (pageToFetch: number = currentPage) => {
       try {
@@ -254,11 +270,27 @@ export default function RankingsPage({
 
         if (typeof window !== "undefined") {
           const storageKey = `rankings_${region}_${queueType}_page_${pageToFetch}`;
-          const cached = localStorage.getItem(storageKey);
+          const cached = readRankingsCache(storageKey);
           if (cached) {
-            setRankings(JSON.parse(cached));
-            setIsLoading(false);
-            return;
+            const cachedEntries = cached.entries ?? [];
+            const cachedNames = cached.summonerNames ?? {};
+            const namesReady = cachedEntries.every((entry) => {
+              const info = cachedNames[entry.puuid];
+              return Boolean(
+                info?.gameName &&
+                  info.gameName !== "Unknown" &&
+                  info.gameName !== "Loading…" &&
+                  info.tagLine &&
+                  info.tagLine !== "???",
+              );
+            });
+
+            if (namesReady) {
+              setSummonerNames(cached.summonerNames ?? {});
+              setRankings(cached);
+              setIsLoading(false);
+              return;
+            }
           }
         }
 
@@ -266,13 +298,33 @@ export default function RankingsPage({
           `/api/rankings?region=${region}&queueType=${queueType}&page=${pageToFetch}&limit=${ITEMS_PER_PAGE}`,
         );
         if (!response.ok) throw new Error("Failed to fetch rankings");
-        const data = await response.json();
 
+        const data: RankingData & {
+          summonerNames?: Record<string, SummonerInfo>;
+        } = await response.json();
+
+        const namesReady = data.entries.every((entry) => {
+          const info = data.summonerNames?.[entry.puuid];
+          return Boolean(
+            info?.gameName &&
+              info.gameName !== "Unknown" &&
+              info.gameName !== "Loading…" &&
+              info?.tagLine &&
+              info.tagLine !== "???",
+          );
+        });
+
+        if (!namesReady) {
+          throw new Error("Ranking page returned before all 200 names were ready");
+        }
+
+        setSummonerNames(data.summonerNames ?? {});
+        updateLocalSummonerCache(data.summonerNames ?? {});
         setRankings(data);
 
         if (typeof window !== "undefined") {
           const storageKey = `rankings_${region}_${queueType}_page_${pageToFetch}`;
-          localStorage.setItem(storageKey, JSON.stringify(data));
+          writeRankingsCache(storageKey, data);
         }
       } catch (err) {
         console.error("[fetchRankings] Error:", err);
@@ -281,13 +333,9 @@ export default function RankingsPage({
         setIsLoading(false);
       }
     },
-    // FIX: sortByWinRate removed — changing sort mode must not trigger a new fetch
-    [region, queueType, currentPage],
+    [region, queueType, currentPage, updateLocalSummonerCache],
   );
 
-  // FIX: getTier now uses LP-based cutoffs from the API response instead of
-  // position arithmetic derived from an inconsistent page-size constant.
-  // Falls back to global-rank position only when cutoff data is unavailable.
   const getTier = useCallback(
     (entry: LeagueEntry, globalRank: number): string => {
       if (rankings?.cutoffs) {
@@ -297,7 +345,6 @@ export default function RankingsPage({
         return "Master";
       }
 
-      // Fallback: position-based using regionMode from API
       const isThreePages = rankings?.regionMode === "three-pages";
       const challengerLimit = isThreePages ? 300 : 200;
       if (globalRank <= challengerLimit) return "Challenger";
@@ -307,11 +354,9 @@ export default function RankingsPage({
     [rankings],
   );
 
-  // Stable sorted list — only recomputes when rankings data or sort mode changes.
-  // Must NOT spread inside render body; keep it here so the reference is stable.
   const allSortedEntries = useMemo(() => {
     if (!rankings) return [];
-    if (!sortByWinRate) return rankings.entries; // original reference — no copy
+    if (!sortByWinRate) return rankings.entries;
     return [...rankings.entries].sort((a, b) => {
       const wrA = a.wins / (a.wins + a.losses);
       const wrB = b.wins / (b.wins + b.losses);
@@ -323,51 +368,45 @@ export default function RankingsPage({
   const totalEntries =
     rankings?.pagination?.totalEntries ?? rankings?.entries.length ?? 0;
 
-  // Stable paginated slice — only recomputes when the sorted list or page changes.
   const paginatedEntries = useMemo(() => {
-    if (!sortByWinRate) {
-      // Server already returned exactly the right page — use the reference as-is.
-      return allSortedEntries;
-    }
+    if (!sortByWinRate) return allSortedEntries;
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
     return allSortedEntries.slice(start, start + ITEMS_PER_PAGE);
   }, [allSortedEntries, sortByWinRate, currentPage]);
 
-  // Initial load and page navigation
+  const pageNamesReady = useMemo(() => {
+    if (paginatedEntries.length === 0) return false;
+    return paginatedEntries.every((entry) => {
+      const info = summonerNames[entry.puuid];
+      return Boolean(
+        info?.gameName &&
+          info.gameName !== "Unknown" &&
+          info.gameName !== "Loading…" &&
+          info?.tagLine &&
+          info.tagLine !== "???",
+      );
+    });
+  }, [paginatedEntries, summonerNames]);
+
   useEffect(() => {
     if (sortByWinRate) return;
-
+    setRankings(null);
+    setSummonerNames({});
     fetchRankings(currentPage);
-  }, [region, queueType, currentPage]);
+  }, [region, queueType, currentPage, sortByWinRate, fetchRankings]);
 
-  // Load summoner names for the current visible entries.
-  // fetchSummonerNames.current and updateCache.current are stable refs —
-  // listing them as deps would be wrong (refs don't change identity) and
-  // omitting them is safe because they always point to the latest function.
-  useEffect(() => {
-    if (isLoading || paginatedEntries.length === 0) return;
-
-    const puuids = paginatedEntries.map((e) => e.puuid);
-
-    fetchSummonerNames.current(puuids);
-  }, [currentPage, isLoading]);
   const handleWinRateSort = async () => {
     const newValue = !sortByWinRate;
-
     try {
       if (newValue) {
         const needsFullLoad =
           rankings && (rankings.pagination?.totalPages ?? 1) > 1;
-
-        if (needsFullLoad) {
-          await fetchAllRankings();
-        }
+        if (needsFullLoad) await fetchAllRankings();
       } else {
         setSortByWinRate(false);
         await fetchRankings(currentPage);
         return;
       }
-
       setSortByWinRate(newValue);
     } catch (err) {
       console.error(err);
@@ -375,21 +414,17 @@ export default function RankingsPage({
     }
   };
 
-  const getTierIconUrl = (tier: string) => {
-    return `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${tier.toLowerCase()}.svg`;
-  };
+  const getTierIconUrl = (tier: string) =>
+    `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${tier.toLowerCase()}.svg`;
 
-  const navigateToPage = (page: number) => {
+  const navigateToPage = (page: number) =>
     router.push(`/rankings/${friendlyQueueType}/${region}/${page}`);
-  };
 
-  const changeQueueType = (newQueueType: string) => {
+  const changeQueueType = (newQueueType: string) =>
     router.push(`/rankings/${newQueueType}/${region}/1`);
-  };
 
-  const changeRegion = (newRegion: string) => {
+  const changeRegion = (newRegion: string) =>
     router.push(`/rankings/${friendlyQueueType}/${newRegion}/1`);
-  };
 
   const generatePageNumbers = (currentPage: number, totalPages: number) => {
     const pages: (number | string)[] = [];
@@ -400,13 +435,11 @@ export default function RankingsPage({
     } else {
       pages.push(1);
       if (currentPage > 4) pages.push("...");
-
       const start = Math.max(2, currentPage - 2);
       const end = Math.min(totalPages - 1, currentPage + 2);
       for (let i = start; i <= end; i++) {
         if (!pages.includes(i)) pages.push(i);
       }
-
       if (currentPage < totalPages - 3) pages.push("...");
       if (!pages.includes(totalPages)) pages.push(totalPages);
     }
@@ -433,6 +466,19 @@ export default function RankingsPage({
         grandmaster: rankings.cutoffs.grandmaster?.cutoffLP ?? null,
       }
     : { challenger: null, grandmaster: null };
+
+  const lastUpdatedLabel = useMemo(() => {
+    const updatedAt = rankings?.cache?.updatedAt;
+    if (!updatedAt) return null;
+    const date = new Date(updatedAt);
+    const ageMin = rankings?.cache?.ageInMinutes ?? 0;
+    if (ageMin < 60)
+      return `Updated ${ageMin} minute${ageMin !== 1 ? "s" : ""} ago`;
+    const ageHours = Math.floor(ageMin / 60);
+    if (ageHours < 24)
+      return `Updated ${ageHours} hour${ageHours !== 1 ? "s" : ""} ago`;
+    return `Updated on ${date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`;
+  }, [rankings?.cache]);
 
   return (
     <div className="container p-4 mx-auto">
@@ -476,13 +522,12 @@ export default function RankingsPage({
                   <span>Cutoff:</span>
                   {cutoffs.challenger && (
                     <div className="flex items-center gap-1.5">
-                      <Image
+                      <img
                         src={getTierIconUrl("Challenger")}
                         alt="Challenger"
                         width={24}
                         height={24}
                         className="inline-block"
-                        unoptimized
                       />
                       <span className="font-semibold text-yellow-400">
                         {cutoffs.challenger} LP
@@ -491,13 +536,12 @@ export default function RankingsPage({
                   )}
                   {cutoffs.grandmaster && (
                     <div className="flex items-center gap-1.5">
-                      <Image
+                      <img
                         src={getTierIconUrl("Grandmaster")}
                         alt="Grandmaster"
                         width={24}
                         height={24}
                         className="inline-block"
-                        unoptimized
                       />
                       <span className="font-semibold text-red-400">
                         {cutoffs.grandmaster} LP
@@ -518,13 +562,12 @@ export default function RankingsPage({
               <div className="flex items-center gap-2 text-xs font-normal">
                 {cutoffs.challenger && (
                   <div className="flex items-center gap-1">
-                    <Image
+                    <img
                       src={getTierIconUrl("Challenger")}
                       alt="Challenger"
                       width={16}
                       height={16}
                       className="inline-block"
-                      unoptimized
                     />
                     <span className="font-medium text-yellow-400">
                       {cutoffs.challenger} LP
@@ -533,13 +576,12 @@ export default function RankingsPage({
                 )}
                 {cutoffs.grandmaster && (
                   <div className="flex items-center gap-1">
-                    <Image
+                    <img
                       src={getTierIconUrl("Grandmaster")}
                       alt="Grandmaster"
                       width={16}
                       height={16}
                       className="inline-block"
-                      unoptimized
                     />
                     <span className="font-medium text-red-400">
                       {cutoffs.grandmaster} LP
@@ -597,31 +639,27 @@ export default function RankingsPage({
       </header>
 
       <main role="main">
-        {(isLoading || isLoadingNames || isSortingAll) && (
+        {(isLoading || isSortingAll || (!pageNamesReady && rankings && paginatedEntries.length > 0)) && (
           <div className="py-8 text-center" role="status" aria-live="polite">
             <div
               className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent motion-reduce:animate-[spin_1.5s_linear_infinite]"
               aria-hidden="true"
             />
             <p className="mt-2 text-sm text-muted-foreground">
-              {isSortingAll
-                ? "Loading all players for sorting…"
-                : isLoadingNames
-                  ? "Loading summoner data…"
-                  : "Loading rankings…"}
+              {isSortingAll ? "Loading all players for sorting…" : "Loading rankings and summoner names…"}
             </p>
           </div>
         )}
 
-        {!isLoading && !isLoadingNames && !isSortingAll && error && (
+        {!isLoading && !isSortingAll && error && (
           <div className="py-8 text-center" role="alert">
             <Card className="p-4 mb-4 text-red-500">{error}</Card>
           </div>
         )}
 
         {!isLoading &&
-          !isLoadingNames &&
           !isSortingAll &&
+          pageNamesReady &&
           rankings &&
           paginatedEntries.length > 0 && (
             <div className="grid gap-4">
@@ -677,20 +715,11 @@ export default function RankingsPage({
                         100
                       ).toFixed(1);
                       const summonerInfo = summonerNames[entry.puuid];
-                      const displayName =
-                        summonerInfo?.gameName && summonerInfo?.tagLine
-                          ? `${summonerInfo.gameName} #${summonerInfo.tagLine}`
-                          : "Loading…";
+                      const displayName = `${summonerInfo.gameName} #${summonerInfo.tagLine}`;
 
-                      // FIX: globalRank always reflects LP rank (1-based position
-                      // in the full sorted list), regardless of the active sort mode.
-                      // When sortByWinRate is true we're paginating in-memory over
-                      // the full dataset, so the offset math is still correct.
                       const globalRank =
                         (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
 
-                      // FIX: getTier uses LP-based cutoffs from the API, not a
-                      // position derived from the win-rate rank.
                       const tier = getTier(entry, globalRank);
 
                       return (
@@ -703,7 +732,7 @@ export default function RankingsPage({
                           </td>
                           <td className="w-1/3 p-2 sm:w-auto">
                             <div className="flex items-center min-w-0 gap-2">
-                              {summonerInfo?.profileIconId && (
+                              {summonerInfo?.profileIconId != null && summonerInfo.profileIconId > 0 && (
                                 <Image
                                   src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/${summonerInfo.profileIconId}.jpg`}
                                   alt="Profile Icon"
@@ -711,6 +740,8 @@ export default function RankingsPage({
                                   height={24}
                                   className="flex-shrink-0 object-cover border rounded-full border-zinc-700 sm:w-8 sm:h-8"
                                   unoptimized
+                                  priority={index < 5}
+                                  loading={index < 5 ? "eager" : "lazy"}
                                 />
                               )}
                               <Link
@@ -725,7 +756,7 @@ export default function RankingsPage({
                                   {displayName}
                                 </span>
                                 <span className="block inline truncate sm:hidden">
-                                  {summonerInfo?.gameName || "Loading…"}
+                                  {summonerInfo.gameName}
                                 </span>
                               </Link>
                             </div>
@@ -734,13 +765,13 @@ export default function RankingsPage({
                             className={`p-2 text-center ${getTierColor(tier)}`}
                           >
                             <div className="flex items-center justify-center gap-2">
-                              <Image
+                              <img
                                 src={getTierIconUrl(tier)}
                                 alt={`${tier} tier`}
                                 width={20}
                                 height={20}
                                 className="inline-block"
-                                unoptimized
+                                loading={index < 5 ? "eager" : "lazy"}
                               />
                               <span className="hidden md:inline">{tier}</span>
                             </div>
@@ -832,6 +863,21 @@ export default function RankingsPage({
         role="contentinfo"
         className="mt-8 text-sm text-center text-muted-foreground"
       >
+        {lastUpdatedLabel && (
+          <p className="mb-1">
+            <span
+              className={
+                rankings?.cache?.isStale ? "text-yellow-500" : "text-green-600"
+              }
+            >
+              ●
+            </span>{" "}
+            {lastUpdatedLabel}
+            {rankings?.cache?.isStale && (
+              <span className="ml-1 text-yellow-500">(stale)</span>
+            )}
+          </p>
+        )}
         <p>
           © {new Date().getFullYear()} LolData – High Elo Rankings. Data
           provided by Riot Games API.
