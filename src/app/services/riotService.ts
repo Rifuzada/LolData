@@ -1,4 +1,4 @@
-// src/app/actions/summoner.ts
+// src/app/services/riotService.ts
 import axios from "axios";
 
 const API_KEY = process.env.RIOT_API_KEY;
@@ -56,40 +56,24 @@ interface Match {
   };
 }
 
-// ================================================================
-// 🔥 CORREÇÃO: agora usa a BASE_URL (regional) para summoner
-// ================================================================
-export async function getSummonerByRiotId(
-  region: string,
-  gameName: string,
-  tagLine: string
-): Promise<Summoner> {
-  // 1. Busca a conta (já está correto)
+export async function getSummonerByRiotId(region: string, gameName: string, tagLine: string): Promise<Summoner> {
+  // 1. Busca a conta
   const accountResponse = await axios.get<RiotAccount>(
     `${BASE_URL}/riot/account/v1/accounts/by-riot-id/${gameName}/${tagLine}`,
-    {
-      headers: { "X-Riot-Token": API_KEY },
-    }
+    { headers: { "X-Riot-Token": API_KEY } }
   );
 
   const { puuid } = accountResponse.data;
 
-  // 2. Busca o summoner usando a MESMA BASE_URL (regional)
-  //    ❌ Antes: `https://${region}.api.riotgames.com/...`
-  //    ✅ Agora: `${BASE_URL}/lol/summoner/v4/summoners/by-puuid/${puuid}`
+  // 2. Busca o summoner usando a BASE_URL (regional)
   const summonerResponse = await axios.get<Summoner>(
     `${BASE_URL}/lol/summoner/v4/summoners/by-puuid/${puuid}`,
-    {
-      headers: { "X-Riot-Token": API_KEY },
-    }
+    { headers: { "X-Riot-Token": API_KEY } }
   );
 
   return summonerResponse.data;
 }
 
-// ================================================================
-// Queue types (sem alterações)
-// ================================================================
 export async function getQueueTypes(): Promise<QueueType[]> {
   const response = await axios.get<QueueType[]>(
     "https://static.developer.riotgames.com/docs/lol/queues.json"
@@ -97,16 +81,7 @@ export async function getQueueTypes(): Promise<QueueType[]> {
   return response.data;
 }
 
-// ================================================================
-// Match history (já estava correto, mas vou otimizar levemente)
-// ================================================================
-export async function getMatchHistory(
-  region: string,
-  puuid: string,
-  start = 0,
-  count = 20
-): Promise<Match[]> {
-  // Busca os IDs das partidas
+export async function getMatchHistory(region: string, puuid: string, start = 0, count = 20): Promise<Match[]> {
   const matchIdsResponse = await axios.get<string[]>(
     `${BASE_URL}/lol/match/v5/matches/by-puuid/${puuid}/ids`,
     {
@@ -116,21 +91,17 @@ export async function getMatchHistory(
   );
 
   const matchIds = matchIdsResponse.data;
-
   if (matchIds.length === 0) return [];
 
-  // 🔥 OTIMIZAÇÃO: Busca os detalhes em paralelo com Promise.allSettled
-  // para não quebrar se uma partida falhar
   const matchPromises = matchIds.map((matchId) =>
     axios
       .get<Match>(`${BASE_URL}/lol/match/v5/matches/${matchId}`, {
         headers: { "X-Riot-Token": API_KEY },
       })
       .then((response) => response.data)
-      .catch(() => null) // se falhar, retorna null
+      .catch(() => undefined)
   );
 
   const results = await Promise.all(matchPromises);
-  // Filtra os nulos (partidas que falharam) e retorna apenas as válidas
-  return results.filter((match): match is Match => match !== null);
+  return results.filter((match): match is Match => match !== undefined);
 }
