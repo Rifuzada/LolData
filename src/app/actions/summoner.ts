@@ -50,18 +50,19 @@ async function safeAxios<T = any>(config: any, retries = 3): Promise<T> {
 // 🔥 CORREÇÃO: Usa BASE_URL (continental) para summoner por PUUID
 // ================================================================
 export async function getSummonerNameByPuuid(
-  region: string, // região não é mais usada para o summoner, mas mantida para compatibilidade
+  region: string,
   puuid: string,
 ): Promise<Summoner | null> {
   if (!puuid) return null;
+
   try {
-    // Ambas as chamadas usam a BASE_URL (continental)
     const [summonerResponse, accountResponse] = await Promise.allSettled([
       safeAxios<RiotAccount>({
         method: "get",
-        url: `${BASE_URL}/lol/summoner/v4/summoners/by-puuid/${puuid}`,
+        url: `https://${region}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`,
         headers: { "X-Riot-Token": API_KEY },
       }),
+
       safeAxios<RiotAccount>({
         method: "get",
         url: `${BASE_URL}/riot/account/v1/accounts/by-puuid/${puuid}`,
@@ -70,22 +71,48 @@ export async function getSummonerNameByPuuid(
     ]);
 
     const summoner =
-      summonerResponse.status === "fulfilled" ? summonerResponse.value : null;
-    const account =
-      accountResponse.status === "fulfilled" ? accountResponse.value : null;
+      summonerResponse.status === "fulfilled"
+        ? summonerResponse.value
+        : null;
 
-    if (!account) return null;
+    const account =
+      accountResponse.status === "fulfilled"
+        ? accountResponse.value
+        : null;
+
+    if (!account && !summoner) {
+      console.error("[RIOT] Nenhum dado encontrado para:", puuid);
+      return null;
+    }
 
     return {
       puuid,
-      name: account.gameName || summoner?.name || "unknown",
-      tagLine: account.tagLine || "unknown",
-      profileIconId: summoner?.profileIconId ?? 0,
-      revisionDate: summoner?.revisionDate ?? Date.now(),
-      summonerLevel: summoner?.summonerLevel ?? 0,
+
+      name:
+        account?.gameName ||
+        summoner?.name ||
+        "unknown",
+
+      tagLine:
+        account?.tagLine ||
+        "unknown",
+
+      profileIconId:
+        summoner?.profileIconId ?? 0,
+
+      revisionDate:
+        summoner?.revisionDate ?? Date.now(),
+
+      summonerLevel:
+        summoner?.summonerLevel ?? 0,
     };
-  } catch (error) {
-    console.error("Error fetching summoner data:", error);
+  } catch (error: any) {
+    console.error(
+      "[RIOT] Erro getSummonerNameByPuuid:",
+      error.response?.status,
+      error.response?.data || error.message || error,
+    );
+
     return null;
   }
 }
@@ -118,6 +145,8 @@ export async function getSummonerByRiotId(
       url: `https://${region}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`,
       headers: { "X-Riot-Token": API_KEY },
     });
+
+    console.log(profileData.profileIconId)
 
     return {
       puuid,

@@ -32,7 +32,14 @@ interface RankingData {
   queue: string;
   name: string;
   tier: string;
-  summonerNames?: Record<string, { gameName: string; tagLine: string }>;
+  summonerNames?: Record<
+    string,
+    {
+      gameName: string;
+      tagLine: string;
+      profileIconId: number | null;
+    }
+  >;
   pagination?: {
     currentPage: number;
     totalPages: number;
@@ -52,7 +59,7 @@ interface RankingData {
 interface SummonerInfo {
   gameName: string;
   tagLine: string;
-  profileIconId?: number;
+  profileIconId?: number | null;
 }
 
 interface LocalStorageRankingsEntry {
@@ -108,8 +115,16 @@ function readSummonerCache(region: string): Record<string, SummonerInfo> {
     const now = Date.now();
     const valid: Record<string, SummonerInfo> = {};
     for (const [puuid, entry] of Object.entries(parsed)) {
-      if (now - entry.savedAt <= SUMMONER_CACHE_TTL_MS) {
-        valid[puuid] = entry.info;
+      const info = entry?.info;
+      const isValid = Boolean(
+        info?.gameName &&
+          info.gameName !== "Unknown" &&
+          info.gameName !== "Loading…" &&
+          info?.tagLine &&
+          info.tagLine !== "???",
+      );
+      if (now - entry.savedAt <= SUMMONER_CACHE_TTL_MS && isValid) {
+        valid[puuid] = info;
       }
     }
     return valid;
@@ -151,7 +166,6 @@ export default function RankingsPage({
 
   const [rankings, setRankings] = useState<RankingData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingNames, setIsLoadingNames] = useState(false);
   const [isSortingAll, setIsSortingAll] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [summonerNames, setSummonerNames] = useState<
@@ -192,85 +206,10 @@ export default function RankingsPage({
     flex: "Flex",
   };
 
-  const summonerNamesCache = useRef<Record<string, SummonerInfo>>({});
-  // Per-PUUID in-flight lock — prevents duplicate requests without blocking
-  // fetches for different pages from running concurrently.
-  const fetchingPuuidsRef = useRef<Set<string>>(new Set());
-
-  // Seed in-memory summoner cache from localStorage (TTL-aware) on region change
-  useEffect(() => {
-    const valid = readSummonerCache(region);
-    summonerNamesCache.current = valid;
-    setSummonerNames(valid);
+  const updateLocalSummonerCache = useCallback((newData: Record<string, SummonerInfo>) => {
+    const current = readSummonerCache(region);
+    writeSummonerCache(region, { ...current, ...newData });
   }, [region]);
-
-  const regionRef = useRef(region);
-  useEffect(() => {
-    regionRef.current = region;
-  }, [region]);
-
-  const updateCache = useRef((newData: Record<string, SummonerInfo>) => {
-    const updatedCache = { ...summonerNamesCache.current, ...newData };
-    summonerNamesCache.current = updatedCache;
-    writeSummonerCache(regionRef.current, updatedCache);
-    setSummonerNames((prev) => ({ ...prev, ...newData }));
-  });
-
-  const fetchSummonerNames = useRef(async (puuids: string[]) => {
-    // Filter out already cached or currently in-flight PUUIDs
-    const uncachedPuuids = puuids.filter(
-      (puuid) =>
-        !summonerNamesCache.current[puuid] &&
-        !fetchingPuuidsRef.current.has(puuid),
-    );
-
-    if (uncachedPuuids.length === 0) return;
-
-    // Mark as in-flight
-    uncachedPuuids.forEach((p) => fetchingPuuidsRef.current.add(p));
-    setIsLoadingNames(true);
-
-    try {
-      for (let i = 0; i < uncachedPuuids.length; i += 50) {
-        const batch = uncachedPuuids.slice(i, i + 50);
-        const params = new URLSearchParams({
-          region: regionRef.current,
-          puuids: batch.join(","),
-        });
-
-        try {
-          const res = await fetch(`/api/summoner?${params}`);
-          if (!res.ok) continue;
-
-          const map: Record<
-            string,
-            { gameName: string; tagLine: string; profileIconId: number | null }
-          > = await res.json();
-
-          const newNames: Record<string, SummonerInfo> = {};
-          for (const [puuid, info] of Object.entries(map)) {
-            newNames[puuid] = {
-              gameName: info.gameName,
-              tagLine: info.tagLine,
-              profileIconId: info.profileIconId ?? undefined,
-            };
-          }
-
-          updateCache.current(newNames);
-        } catch (err) {
-          console.error(
-            `[fetchSummonerNames] batch ${i / 50 + 1} failed:`,
-            err,
-          );
-        } finally {
-          // Release each PUUID from the in-flight set regardless of success/failure
-          batch.forEach((p) => fetchingPuuidsRef.current.delete(p));
-        }
-      }
-    } finally {
-      setIsLoadingNames(false);
-    }
-  });
 
   const fetchAllRankings = useCallback(async () => {
     try {
@@ -285,6 +224,7 @@ export default function RankingsPage({
 
       const totalPages = firstData.pagination?.totalPages || 1;
       let allEntries = [...firstData.entries];
+      let allSummonerNames = { ...(firstData.summonerNames ?? {}) };
 
       for (let page = 2; page <= totalPages; page++) {
         const res = await fetch(
@@ -293,12 +233,17 @@ export default function RankingsPage({
         if (!res.ok) throw new Error(`Failed to fetch page ${page}`);
         const data = await res.json();
         allEntries = allEntries.concat(data.entries);
+        allSummonerNames = {
+          ...allSummonerNames,
+          ...(data.summonerNames ?? {}),
+        };
         await new Promise((r) => setTimeout(r, 200));
       }
 
       const fullData: RankingData = {
         ...firstData,
         entries: allEntries,
+        summonerNames: allSummonerNames,
         pagination: {
           ...firstData.pagination,
           totalEntries: allEntries.length,
@@ -306,6 +251,8 @@ export default function RankingsPage({
         },
       };
 
+      setSummonerNames(allSummonerNames);
+      updateLocalSummonerCache(allSummonerNames);
       setRankings(fullData);
     } catch (err) {
       console.error("[fetchAllRankings] Error:", err);
@@ -313,7 +260,7 @@ export default function RankingsPage({
     } finally {
       setIsSortingAll(false);
     }
-  }, [region, queueType]);
+  }, [region, queueType, updateLocalSummonerCache]);
 
   const fetchRankings = useCallback(
     async (pageToFetch: number = currentPage) => {
@@ -325,9 +272,25 @@ export default function RankingsPage({
           const storageKey = `rankings_${region}_${queueType}_page_${pageToFetch}`;
           const cached = readRankingsCache(storageKey);
           if (cached) {
-            setRankings(cached);
-            setIsLoading(false);
-            return;
+            const cachedEntries = cached.entries ?? [];
+            const cachedNames = cached.summonerNames ?? {};
+            const namesReady = cachedEntries.every((entry) => {
+              const info = cachedNames[entry.puuid];
+              return Boolean(
+                info?.gameName &&
+                  info.gameName !== "Unknown" &&
+                  info.gameName !== "Loading…" &&
+                  info.tagLine &&
+                  info.tagLine !== "???",
+              );
+            });
+
+            if (namesReady) {
+              setSummonerNames(cached.summonerNames ?? {});
+              setRankings(cached);
+              setIsLoading(false);
+              return;
+            }
           }
         }
 
@@ -340,11 +303,24 @@ export default function RankingsPage({
           summonerNames?: Record<string, SummonerInfo>;
         } = await response.json();
 
-        setRankings(data);
+        const namesReady = data.entries.every((entry) => {
+          const info = data.summonerNames?.[entry.puuid];
+          return Boolean(
+            info?.gameName &&
+              info.gameName !== "Unknown" &&
+              info.gameName !== "Loading…" &&
+              info?.tagLine &&
+              info.tagLine !== "???",
+          );
+        });
 
-        if (data.summonerNames && Object.keys(data.summonerNames).length > 0) {
-          updateCache.current(data.summonerNames);
+        if (!namesReady) {
+          throw new Error("Ranking page returned before all 200 names were ready");
         }
+
+        setSummonerNames(data.summonerNames ?? {});
+        updateLocalSummonerCache(data.summonerNames ?? {});
+        setRankings(data);
 
         if (typeof window !== "undefined") {
           const storageKey = `rankings_${region}_${queueType}_page_${pageToFetch}`;
@@ -357,7 +333,7 @@ export default function RankingsPage({
         setIsLoading(false);
       }
     },
-    [region, queueType, currentPage],
+    [region, queueType, currentPage, updateLocalSummonerCache],
   );
 
   const getTier = useCallback(
@@ -398,16 +374,26 @@ export default function RankingsPage({
     return allSortedEntries.slice(start, start + ITEMS_PER_PAGE);
   }, [allSortedEntries, sortByWinRate, currentPage]);
 
-  useEffect(() => {
-    if (sortByWinRate) return;
-    fetchRankings(currentPage);
-  }, [region, queueType, currentPage]);
+  const pageNamesReady = useMemo(() => {
+    if (paginatedEntries.length === 0) return false;
+    return paginatedEntries.every((entry) => {
+      const info = summonerNames[entry.puuid];
+      return Boolean(
+        info?.gameName &&
+          info.gameName !== "Unknown" &&
+          info.gameName !== "Loading…" &&
+          info?.tagLine &&
+          info.tagLine !== "???",
+      );
+    });
+  }, [paginatedEntries, summonerNames]);
 
   useEffect(() => {
-    if (isLoading || paginatedEntries.length === 0) return;
-    const puuids = paginatedEntries.map((e) => e.puuid);
-    fetchSummonerNames.current(puuids);
-  }, [currentPage, isLoading]);
+    if (sortByWinRate) return;
+    setRankings(null);
+    setSummonerNames({});
+    fetchRankings(currentPage);
+  }, [region, queueType, currentPage, sortByWinRate, fetchRankings]);
 
   const handleWinRateSort = async () => {
     const newValue = !sortByWinRate;
@@ -653,31 +639,27 @@ export default function RankingsPage({
       </header>
 
       <main role="main">
-        {(isLoading || isLoadingNames || isSortingAll) && (
+        {(isLoading || isSortingAll || (!pageNamesReady && rankings && paginatedEntries.length > 0)) && (
           <div className="py-8 text-center" role="status" aria-live="polite">
             <div
               className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent motion-reduce:animate-[spin_1.5s_linear_infinite]"
               aria-hidden="true"
             />
             <p className="mt-2 text-sm text-muted-foreground">
-              {isSortingAll
-                ? "Loading all players for sorting…"
-                : isLoadingNames
-                  ? "Loading summoner data…"
-                  : "Loading rankings…"}
+              {isSortingAll ? "Loading all players for sorting…" : "Loading rankings and summoner names…"}
             </p>
           </div>
         )}
 
-        {!isLoading && !isLoadingNames && !isSortingAll && error && (
+        {!isLoading && !isSortingAll && error && (
           <div className="py-8 text-center" role="alert">
             <Card className="p-4 mb-4 text-red-500">{error}</Card>
           </div>
         )}
 
         {!isLoading &&
-          !isLoadingNames &&
           !isSortingAll &&
+          pageNamesReady &&
           rankings &&
           paginatedEntries.length > 0 && (
             <div className="grid gap-4">
@@ -733,10 +715,7 @@ export default function RankingsPage({
                         100
                       ).toFixed(1);
                       const summonerInfo = summonerNames[entry.puuid];
-                      const displayName =
-                        summonerInfo?.gameName && summonerInfo?.tagLine
-                          ? `${summonerInfo.gameName} #${summonerInfo.tagLine}`
-                          : "Loading…";
+                      const displayName = `${summonerInfo.gameName} #${summonerInfo.tagLine}`;
 
                       const globalRank =
                         (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
@@ -777,7 +756,7 @@ export default function RankingsPage({
                                   {displayName}
                                 </span>
                                 <span className="block inline truncate sm:hidden">
-                                  {summonerInfo?.gameName || "Loading…"}
+                                  {summonerInfo.gameName}
                                 </span>
                               </Link>
                             </div>

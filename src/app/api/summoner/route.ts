@@ -51,11 +51,17 @@ export async function GET(request: NextRequest) {
     const STALE_THRESHOLD_MS = 24 * 60 * 60 * 1000; // 1 dia
 
     for (const row of data || []) {
-      result[row.puuid] = {
-        gameName: row.game_name,
-        tagLine: row.tag_line,
-        profileIconId: row.profile_icon_id,
-      };
+      if (
+        row.game_name &&
+        row.game_name !== "Unknown" &&
+        row.game_name !== "Loading…"
+      ) {
+        result[row.puuid] = {
+          gameName: row.game_name,
+          tagLine: row.tag_line || "???",
+          profileIconId: row.profile_icon_id,
+        };
+      }
       // Verifica se o registro está desatualizado
       if (row.updated_at) {
         const age = now - new Date(row.updated_at).getTime();
@@ -68,41 +74,37 @@ export async function GET(request: NextRequest) {
     // 3. Identifica os que faltam no cache
     const missing = puuids.filter((p) => !result[p]);
 
-    // 4. Dispara atualização em background para os que faltam ou estão desatualizados
+    // 4. Busca os nomes faltantes antes de responder.
     const toUpdate = [...missing, ...stalePuuids];
-    if (toUpdate.length > 0) {
-      // Atualiza em background (fire-and-forget) usando a função existente getSummonerNameByPuuid
-      (async () => {
-        for (const puuid of toUpdate) {
-          try {
-            const summonerData = await getSummonerNameByPuuid(region, puuid);
-            if (summonerData) {
-              // Salva no cache
-              await supabaseAdmin.from("summoner_names_cache").upsert({
-                puuid: summonerData.puuid,
-                region,
-                game_name: summonerData.name,
-                tag_line: summonerData.tagLine,
-                profile_icon_id: summonerData.profileIconId,
-                updated_at: new Date().toISOString(),
-              }, { onConflict: "puuid" });
-            }
-          } catch (e) {
-            console.error(`[summoner API] Failed to update ${puuid}:`, e);
-          }
+    for (const puuid of toUpdate) {
+      try {
+        const summonerData = await getSummonerNameByPuuid(region, puuid);
+        if (summonerData) {
+          result[puuid] = {
+            gameName: summonerData.name,
+            tagLine: summonerData.tagLine,
+            profileIconId: summonerData.profileIconId,
+          };
+          await supabaseAdmin.from("summoner_names_cache").upsert({
+            puuid: summonerData.puuid,
+            region,
+            game_name: summonerData.name,
+            tag_line: summonerData.tagLine,
+            profile_icon_id: summonerData.profileIconId,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: "puuid" });
         }
-      })().catch(err => console.error("[summoner API] background update error:", err));
+      } catch (e) {
+        console.error(`[summoner API] Failed to update ${puuid}:`, e);
+      }
     }
 
-    // 5. Preenche placeholders para os que ainda não estão no cache (para não mostrar "Loading…" indefinidamente)
-    for (const puuid of puuids) {
-      if (!result[puuid]) {
-        result[puuid] = {
-          gameName: "Loading…",
-          tagLine: "???",
-          profileIconId: null,
-        };
-      }
+    const unresolved = puuids.filter((puuid) => !result[puuid]?.gameName || !result[puuid]?.tagLine);
+    if (unresolved.length > 0) {
+      return NextResponse.json(
+        { error: `Could not resolve ${unresolved.length} summoner names`, unresolved },
+        { status: 503 },
+      );
     }
 
     return NextResponse.json(result);
