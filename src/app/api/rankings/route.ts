@@ -117,8 +117,8 @@ interface SummonerNameEntry {
   gameName: string;
   tagLine: string;
   profileIconId: number | null;
+  region: string; // ← adicione esta linha
 }
-
 /**
  * 🔥 VERSÃO OTIMIZADA: busca os nomes em paralelo com limite de concorrência
  * e usa Promise.allSettled para não quebrar se uma falhar.
@@ -143,6 +143,7 @@ async function fetchOneSummonerName(
     gameName: account.gameName ?? summoner?.name ?? "Unknown",
     tagLine: account.tagLine ?? "???",
     profileIconId: summoner?.profileIconId ?? null,
+    region, // ← adicione esta linha
   };
 }
 
