@@ -753,7 +753,7 @@ export default function RankingsPage({
                           </td>
                           <td className="w-1/3 p-2 sm:w-auto">
                             <div className="flex items-center min-w-0 gap-2">
-                              {summonerInfo?.profileIconId && (
+                              {summonerInfo?.profileIconId != null && summonerInfo.profileIconId > 0 && (
                                 <Image
                                   src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/${summonerInfo.profileIconId}.jpg`}
                                   alt="Profile Icon"
