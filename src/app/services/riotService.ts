@@ -56,8 +56,15 @@ interface Match {
   };
 }
 
-export async function getSummonerByRiotId(region: string, gameName: string, tagLine: string): Promise<Summoner> {
-  // 1. Busca a conta
+// ================================================================
+// Busca summoner por Riot ID (usa região específica para summoner)
+// ================================================================
+export async function getSummonerByRiotId(
+  region: string,
+  gameName: string,
+  tagLine: string
+): Promise<Summoner> {
+  // 1. Busca a conta (continental)
   const accountResponse = await axios.get<RiotAccount>(
     `${BASE_URL}/riot/account/v1/accounts/by-riot-id/${gameName}/${tagLine}`,
     { headers: { "X-Riot-Token": API_KEY } }
@@ -65,15 +72,18 @@ export async function getSummonerByRiotId(region: string, gameName: string, tagL
 
   const { puuid } = accountResponse.data;
 
-  // 2. Busca o summoner usando a BASE_URL (regional)
+  // 2. Busca o summoner na região específica (correto)
   const summonerResponse = await axios.get<Summoner>(
-    `${BASE_URL}/lol/summoner/v4/summoners/by-puuid/${puuid}`,
+    `https://${region}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`,
     { headers: { "X-Riot-Token": API_KEY } }
   );
 
   return summonerResponse.data;
 }
 
+// ================================================================
+// Queue types
+// ================================================================
 export async function getQueueTypes(): Promise<QueueType[]> {
   const response = await axios.get<QueueType[]>(
     "https://static.developer.riotgames.com/docs/lol/queues.json"
@@ -81,7 +91,15 @@ export async function getQueueTypes(): Promise<QueueType[]> {
   return response.data;
 }
 
-export async function getMatchHistory(region: string, puuid: string, start = 0, count = 20): Promise<Match[]> {
+// ================================================================
+// Match history (com tratamento de falhas e tipagem segura)
+// ================================================================
+export async function getMatchHistory(
+  region: string,
+  puuid: string,
+  start = 0,
+  count = 20
+): Promise<Match[]> {
   const matchIdsResponse = await axios.get<string[]>(
     `${BASE_URL}/lol/match/v5/matches/by-puuid/${puuid}/ids`,
     {
@@ -93,6 +111,7 @@ export async function getMatchHistory(region: string, puuid: string, start = 0, 
   const matchIds = matchIdsResponse.data;
   if (matchIds.length === 0) return [];
 
+  // Usa Promise.allSettled internamente (através de .catch) para não quebrar
   const matchPromises = matchIds.map((matchId) =>
     axios
       .get<Match>(`${BASE_URL}/lol/match/v5/matches/${matchId}`, {
@@ -103,5 +122,6 @@ export async function getMatchHistory(region: string, puuid: string, start = 0, 
   );
 
   const results = await Promise.all(matchPromises);
-  return results.filter((match): match is Match => match !== undefined);
+  // Remove undefined e força o tipo (já que sabemos que só restam Match)
+  return results.filter((match) => match !== undefined) as Match[];
 }
