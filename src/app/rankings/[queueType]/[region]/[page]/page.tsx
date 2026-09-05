@@ -468,7 +468,7 @@ export default function RankingsPage({
             <div className="flex flex-col gap-2">
               <span>
                 High Elo Rankings –{" "}
-                {displayRegionMap[region.toUpperCase()] || region.toUpperCase()}{" "}
+                {region ? (displayRegionMap[region.toUpperCase()] || region.toUpperCase()) : "Região não especificada"}{" "}
                 – {queueDisplayNames[friendlyQueueType] || friendlyQueueType}
               </span>
               {(cutoffs.challenger || cutoffs.grandmaster) && (
