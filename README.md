@@ -2,10 +2,10 @@
 
 - historico de partidas ✔ (feito na versao old e refeito na dev)
 - rankings ✔ (Challenger, GrandMaster, Master)
-- Otimizar tempo de resposta → ou usando cache ou banco de dados.
-- Arrumar filtro de champ(nem ideia de onde começar).
-- Maior parte dos erros é causado por demora de carregar(que o vercel bloqueia apos 40 segundos) → (eu acho que) tambem podem ser arrumados com cache ou banco de dados.
-- Adicionar sobre tft(futuro um pouco distante).
+- Otimizar tempo de resposta ✔ (Feito usando [supabase](https://supabase.com/))
+- Arrumar filtro de champ ✔ (Arrumado, o problema era que o front n tava entregando o nome do campeao pro backend filtrar)
+- Adicionar perfil do tft(futuro um pouco distante).
+- Adicionar um card de winrate tipo do OP.GG com informacoes recentes(ultimos jogos carregados provavelmente).
 
 ---
 

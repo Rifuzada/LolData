@@ -25,11 +25,11 @@ const matchesSchema = z.object({
 });
 
 const matchCache = new Map<string, { data: any; expires: number }>();
-const L1_TTL = 2 * 60 * 1000;
+const L1_TTL = 5 * 60 * 1000;
 const L2_TTL_MINUTES = 30;
 const MAX_RIOT_OFFSET = 200;
 
-const DETAIL_BATCH_SIZE = 10;
+const DETAIL_BATCH_SIZE = 20;
 
 type RiotFetchOptions = RequestInit & {
   next?: { revalidate?: number | false; tags?: string[] };
