@@ -6,7 +6,7 @@ import { getSummonerNameByPuuid } from "@/app/actions/summoner";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const RIOT_API_KEY = process.env.RIOT_API_KEY;
+const RIOT_API_KEY = process.env.RIOT_TFT_API_KEY || process.env.RIOT_API_KEY;
 
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutos
 const SUPABASE_TIMEOUT_MS = 5_000;
@@ -38,7 +38,7 @@ async function fetchTftLeague(
   tier: "challenger" | "grandmaster" | "master",
 ) {
   if (!RIOT_API_KEY) {
-    throw new Error("RIOT_API_KEY not configured on the server");
+    throw new Error("RIOT_TFT_API_KEY not configured on the server");
   }
 
   const controller = new AbortController();
@@ -577,7 +577,7 @@ export async function GET(req: NextRequest) {
 
     if (!RIOT_API_KEY) {
       return NextResponse.json(
-        { error: "RIOT_API_KEY not configured on server" },
+        { error: "RIOT_TFT_API_KEY not configured on server" },
         { status: 500 },
       );
     }
