@@ -8,6 +8,16 @@ const EUROPE_URL = "https://europe.api.riotgames.com";
 const ASIA_URL = "https://asia.api.riotgames.com";
 const SEA_URL = "https://sea.api.riotgames.com";
 
+// A API account-v1 é roteada pelo cluster continental (AMERICAS/EUROPE/ASIA/SEA),
+// não pela região local. Usar sempre "americas" quebra EUW/KR/JP/OCE/etc.
+function getAccountClusterBaseUrl(region: string): string {
+  const r = region.toLowerCase();
+  if (["euw1", "eun1", "ru", "tr1", "me1"].includes(r)) return EUROPE_URL;
+  if (["kr", "jp1"].includes(r)) return ASIA_URL;
+  if (["oc1", "sg2", "tw2", "vn2"].includes(r)) return SEA_URL;
+  return BASE_URL;
+}
+
 interface RiotAccount {
   puuid: string;
   gameName?: string;
@@ -65,7 +75,7 @@ export async function getSummonerNameByPuuid(
 
       safeAxios<RiotAccount>({
         method: "get",
-        url: `${BASE_URL}/riot/account/v1/accounts/by-puuid/${puuid}`,
+        url: `${getAccountClusterBaseUrl(region)}/riot/account/v1/accounts/by-puuid/${puuid}`,
         headers: { "X-Riot-Token": API_KEY },
       }),
     ]);
@@ -117,6 +127,19 @@ export async function getSummonerNameByPuuid(
   }
 }
 
+// Normaliza segmento de Riot ID que pode chegar já percent-encoded
+// (Next/Turbopack entrega o param cru) ou já decodificado.
+function normalizeRiotSegment(value: string): string {
+  if (/%[0-9A-Fa-f]{2}/.test(value)) {
+    try {
+      return decodeURIComponent(value);
+    } catch {
+      return value;
+    }
+  }
+  return value;
+}
+
 // ================================================================
 // 🔥 CORREÇÃO: getSummonerByRiotId também usa BASE_URL para o summoner
 // ================================================================
@@ -125,10 +148,13 @@ export async function getSummonerByRiotId(
   gameName: string,
   tagLine: string,
 ) {
-  // 1. Busca a conta (continental)
+  const safeGameName = normalizeRiotSegment(gameName);
+  const safeTagLine = normalizeRiotSegment(tagLine);
+
+  // 1. Busca a conta no cluster continental correto (account-v1 é roteado por cluster)
   const accountData = await safeAxios<RiotAccount>({
     method: "get",
-    url: `${BASE_URL}/riot/account/v1/accounts/by-riot-id/${gameName}/${tagLine}`,
+    url: `${getAccountClusterBaseUrl(region)}/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(safeGameName)}/${encodeURIComponent(safeTagLine)}`,
     headers: { "X-Riot-Token": API_KEY },
   });
 

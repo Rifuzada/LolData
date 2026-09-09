@@ -16,35 +16,6 @@ const SUMMONER_CONCURRENCY = 10;
 const SUMMONER_BATCH_DELAY_MS = 300;
 
 // ---------------------------------------------------------------------------
-// Regional routing
-// ---------------------------------------------------------------------------
-
-const REGIONAL_ROUTING: Record<string, string> = {
-  euw1: "europe",
-  eun1: "europe",
-  ru: "europe",
-  tr1: "europe",
-  me1: "europe",
-  kr: "asia",
-  jp1: "asia",
-  oc1: "sea",
-  sg2: "sea",
-  tw2: "sea",
-  vn2: "sea",
-  br1: "americas",
-  na1: "americas",
-  la1: "americas",
-  la2: "americas",
-};
-
-function regionalBaseUrl(region: string) {
-  const cluster =
-    REGIONAL_ROUTING[region.toLowerCase()] ?? "americas";
-
-  return `https://${cluster}.api.riotgames.com`;
-}
-
-// ---------------------------------------------------------------------------
 // Utility
 // ---------------------------------------------------------------------------
 
@@ -82,10 +53,10 @@ async function fetchLeague(
 
   const url =
     `https://${region}.api.riotgames.com/lol/league/v4/` +
-    `${tier}leagues/by-queue/${queueType}` +
-    `?api_key=${RIOT_API_KEY}`;
+    `${tier}leagues/by-queue/${queueType}`;
 
   const res = await fetch(url, {
+    headers: { "X-Riot-Token": RIOT_API_KEY },
     signal: controller.signal,
   }).finally(() => clearTimeout(timeout));
 
@@ -120,38 +91,6 @@ async function fetchLeague(
   return res.json();
 }
 
-async function riotFetch(url: string): Promise<any> {
-  const controller = new AbortController();
-
-  const timeout = setTimeout(
-    () => controller.abort(),
-    8_000,
-  );
-
-  try {
-    const res = await fetch(url, {
-      headers: {
-        "X-Riot-Token": RIOT_API_KEY!,
-      },
-      signal: controller.signal,
-    });
-
-    if (!res.ok) {
-      console.error(
-        `[rankings] Riot ${res.status} ${res.statusText}: ${url}`,
-      );
-
-      return null;
-    }
-
-    return res.json();
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
 // ---------------------------------------------------------------------------
 // Summoner name fetching + cache
 // ---------------------------------------------------------------------------
@@ -182,7 +121,6 @@ async function fetchOneSummonerName(
         name: data?.name,
         tagLine: data?.tagLine,
         profileIconId: data?.profileIconId,
-        raw: data,
       },
     );
 
@@ -216,6 +154,43 @@ async function fetchOneSummonerName(
 // Summoner names cache
 // ---------------------------------------------------------------------------
 
+// PostgREST/.in() com muitos puuids excede o limite de tamanho de URL
+// (TypeError: fetch failed). Pagina a consulta em blocos seguros.
+const PUUID_CHUNK_SIZE = 50;
+
+async function selectSummonerNamesByPuuids(
+  supabase: any,
+  puuids: string[],
+): Promise<any[]> {
+  const rows: any[] = [];
+
+  for (
+    let i = 0;
+    i < puuids.length;
+    i += PUUID_CHUNK_SIZE
+  ) {
+    const chunk = puuids.slice(
+      i,
+      i + PUUID_CHUNK_SIZE,
+    );
+
+    if (chunk.length === 0) continue;
+
+    const { data, error } = await supabase
+      .from("summoner_names_cache")
+      .select(
+        "puuid, game_name, tag_line, profile_icon_id",
+      )
+      .in("puuid", chunk);
+
+    if (error) throw error;
+
+    rows.push(...(data ?? []));
+  }
+
+  return rows;
+}
+
 async function fetchAndCacheSummonerNamesSeparate(
   supabase: any,
   region: string,
@@ -234,20 +209,18 @@ async function fetchAndCacheSummonerNamesSeparate(
     return {};
   }
 
-  const {
-    data: existing,
-    error: existingError,
-  } = await supabase
-    .from("summoner_names_cache")
-    .select(
-      "puuid, game_name, tag_line, profile_icon_id",
-    )
-    .in("puuid", puuids);
+  let existing: any[] = [];
 
-  if (existingError) {
+  try {
+    existing =
+      (await selectSummonerNamesByPuuids(
+        supabase,
+        puuids,
+      )) ?? [];
+  } catch (error) {
     console.error(
       "[summoner_cache] read error:",
-      existingError,
+      error,
     );
   }
 
@@ -789,17 +762,22 @@ async function getSummonerNamesFromTable(
     return {};
   }
 
-  const {
-    data,
-    error,
-  } = await supabase
-    .from("summoner_names_cache")
-    .select(
-      "puuid, game_name, tag_line, profile_icon_id",
-    )
-    .in("puuid", puuids);
+  let data: any[] = [];
 
-  if (error || !data) {
+  const error = await (async () => {
+    try {
+      data =
+        (await selectSummonerNamesByPuuids(
+          supabase,
+          puuids,
+        )) ?? [];
+      return null;
+    } catch (err) {
+      return err as Error;
+    }
+  })();
+
+  if (error) {
     console.error(
       "[rankings] SUPABASE summoner_names_cache ERROR:",
       error,
@@ -854,8 +832,10 @@ async function getAllRankings(
   page: number,
   limit: number,
 ) {
+  // Normaliza a região no cacheKey para evitar entradas duplicadas
+  // ("br1-..." vs "BR1-...") de acordo com o case usado na URL.
   const cacheKey =
-    `${region}-${queueType}`;
+    `${region.toUpperCase()}-${queueType}`;
 
   const now = Date.now();
 

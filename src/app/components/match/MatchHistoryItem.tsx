@@ -73,7 +73,6 @@ export function MatchHistoryItem({
   visionScore,
   totalDamageDealt,
   totalDamageTaken,
-  summonerName,
   participants,
 }: MatchHistoryItemProps) {
   const params = useParams();

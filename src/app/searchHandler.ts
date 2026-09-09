@@ -64,8 +64,11 @@ export function useSearchHandler(): SearchHandlerHook {
       }
 
       const [gameName, tagLine] = parts.map(cleanText);
-      const encodedGameName = decodeURIComponent(gameName.trim());
-      const encodedTagLine = decodeURIComponent(tagLine.trim());
+
+      // Codifica os segmentos para a URL (nomes com espaços/acentos/trema/emoji).
+      // Antes usava decodeURIComponent aqui, o que quebrava URLs com texto cru.
+      const encodedGameName = encodeURIComponent(gameName.trim());
+      const encodedTagLine = encodeURIComponent(tagLine.trim());
 
       // Converter a região para lowercase
       const sanitizedRegion = region.toLowerCase();

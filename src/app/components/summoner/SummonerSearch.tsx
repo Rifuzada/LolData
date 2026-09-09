@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useState } from "react";
 
 interface SummonerSearchProps {
@@ -28,10 +29,11 @@ export function SummonerSearch({ defaultRegion = "br1" }: SummonerSearchProps) {
   return (
     <div className="flex items-center justify-between gap-4 mb-6">
       <div className="flex gap-2">
-        <a
-          href="/"
-          className="inline-flex items-center gap-2 px-3 py-2 text-sm transition-colors border rounded-md bg-background border-input hover:bg-accent/50"
-        >
+<Link
+        href="/"
+        className="inline-flex items-center gap-2 px-3 py-2 text-sm transition-colors border rounded-md bg-background border-input hover:bg-accent/50"
+        aria-label="Back to home"
+      >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="16"
@@ -46,7 +48,7 @@ export function SummonerSearch({ defaultRegion = "br1" }: SummonerSearchProps) {
             <path d="m15 18-6-6 6-6" />
           </svg>
           Back
-        </a>
+        </Link>
         <a
           href={`/rankings/soloDuo/${region.toLowerCase()}/1`}
           className="inline-flex px-3 py-2 text-sm transition-colors border rounded-md bg-background border-input hover:bg-accent/50"

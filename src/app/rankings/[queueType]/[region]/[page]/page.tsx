@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { use, useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -488,7 +488,7 @@ export default function RankingsPage({
           role="navigation"
           aria-label="Principal"
         >
-          <a
+          <Link
             href="/"
             className="inline-flex items-center gap-2 px-3 py-2 text-sm transition-colors border rounded-md bg-background border-input hover:bg-accent/50"
             aria-label="Back to home"
@@ -508,7 +508,7 @@ export default function RankingsPage({
               <path d="m15 18-6-6 6-6" />
             </svg>
             Back
-          </a>
+          </Link>
 
           <h1 className="hidden text-2xl font-bold md:block">
             <div className="flex flex-col gap-2">

@@ -28,6 +28,20 @@ interface SummonerPageProps {
   };
 }
 
+// Decodifica um segmento de path. O Next 16 (Turbopack) entrega o param já
+// percent-encoded (ex.: "%CE%B5..." como texto literal); em outras versões
+// entrega decodificado. Aqui normalizamos uma vez para ambos os casos.
+function decodeParamOnce(value: string): string {
+  if (/%[0-9A-Fa-f]{2}/.test(value)) {
+    try {
+      return decodeURIComponent(value);
+    } catch {
+      return value;
+    }
+  }
+  return value;
+}
+
 // Função para traduzir region para sigla "bonita"
 function getRegionDisplay(region: string) {
   return region
@@ -69,10 +83,12 @@ export default async function SummonerPage({
 }) {
   console.log("🔥 [PAGE] Entrou na SummonerPage");
 
-  const { region, gameName, tagLine, queueType, championName } = await params;
-
-  const decodedGameName = decodeURIComponent(gameName);
-  const decodedTagLine = decodeURIComponent(tagLine);
+  const raw = await params;
+  const region = raw.region;
+  const gameName = decodeParamOnce(raw.gameName);
+  const tagLine = decodeParamOnce(raw.tagLine);
+  const queueType = raw.queueType;
+  const championName = decodeParamOnce(raw.championName);
 
   console.log("📥 Params:", {
     region,
@@ -113,7 +129,7 @@ export default async function SummonerPage({
             <div className="p-6 border rounded-lg border-destructive bg-destructive/10 text-destructive">
               <h2 className="text-lg font-semibold">Invocador não encontrado</h2>
               <p>
-                O invocador <strong>"{gameName}#{tagLine}"</strong> não foi encontrado na região <strong>{region.toUpperCase()}</strong>.
+                O invocador <strong>&quot;{gameName}#{tagLine}&quot;</strong> não foi encontrado na região <strong>{region.toUpperCase()}</strong>.
               </p>
               <p className="mt-2 text-sm">
                 Verifique se o nome e a região estão corretos e tente novamente.
@@ -148,13 +164,15 @@ export default async function SummonerPage({
       matchesUrl += `&queueId=${queueId}`;
     }
     if (championName && championName !== "all") {
-      matchesUrl += `&championName=${championName}`;
+      // Envia championId (numérico) e championName para compatibilidade com
+      // filtros antigos por slug no cache da API de matches.
+      matchesUrl += `&championName=${encodeURIComponent(championName)}&championId=${encodeURIComponent(championName)}`;
     }
     if (gameName && gameName !== "all") {
-      matchesUrl += `&gameName=${gameName}`;
+      matchesUrl += `&gameName=${encodeURIComponent(gameName)}`;
     }
     if (tagLine && tagLine !== "all") {
-      matchesUrl += `&tagLine=${tagLine}`;
+      matchesUrl += `&tagLine=${encodeURIComponent(tagLine)}`;
     }
 
     console.log("🌐 [4] URLs prontas, iniciando chamadas paralelas");
@@ -187,28 +205,26 @@ export default async function SummonerPage({
 
     const matchesJson = await matchesRes.json();
 
-    console.log("🎮 [7] Matches recebidos:", matchesJson);
-
     let filteredMatches = matchesJson.data || [];
 
     console.log("🧹 [8] Total matches:", filteredMatches.length);
 
     // Filtro extra por championName (segurança, caso a API não tenha filtrado)
     if (championName && championName.toLowerCase() !== "all") {
-      filteredMatches = filteredMatches.filter((match: any) =>
-        match.info?.participants?.some((p: any) => {
-          if (!p.puuid || !p.championName) return false;
-          const champA = String(p.championName)
-            .normalize("NFD")
-            .replace(/\p{Diacritic}/gu, "")
-            .toLowerCase();
-          const champB = championName
-            .normalize("NFD")
-            .replace(/\p{Diacritic}/gu, "")
-            .toLowerCase();
-          return p.puuid === summoner.puuid && champA === champB;
-        }),
-      );
+      const championFilterId = Number(championName);
+      filteredMatches = filteredMatches.filter((match: any) => {
+        if (!match.info?.participants) return false;
+        return match.info.participants.some((p: any) => {
+          if (p.puuid !== summoner.puuid) return false;
+          if (!Number.isNaN(championFilterId)) {
+            return String(p.championId) === String(championFilterId);
+          }
+          return (
+            String(p.championName || "").toLowerCase() ===
+            championName.toLowerCase()
+          );
+        });
+      });
     }
 
     // ============================================================
@@ -269,8 +285,8 @@ export default async function SummonerPage({
             <section aria-label="Perfil do Invocador">
               <SummonerProfile
                 name={summoner.name ?? ""}
-                gameName={decodedGameName}
-                tagLine={decodedTagLine}
+                gameName={gameName}
+                tagLine={tagLine}
                 level={summoner.summonerLevel}
                 profileIconId={summoner.profileIconId}
                 region={regionTranslated}
@@ -300,7 +316,7 @@ export default async function SummonerPage({
               <MatchStatsText
                 initialWins={lastWins}
                 initialLosses={lastLoses}
-                gameName={decodedGameName}
+                gameName={gameName}
                 queueType={queueType}
                 championName={championName}
               />
@@ -324,7 +340,7 @@ export default async function SummonerPage({
                 queueTypes={queueTypes as any}
                 region={region}
                 queueId={queueId}
-                gameName={decodedGameName}
+                gameName={gameName}
                 queueType={queueType}
                 championName={championName}
               />

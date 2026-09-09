@@ -192,6 +192,19 @@ const queues = [
   { id: "1700", name: "Arena" },
 ];
 
+// Converte o parâmetro da URL de volta para id de campeão.
+// Suporta o novo formato numérico ("103") e os antigos slugs ("kaisa").
+function getChampionIdFromParam(param: string | undefined): string {
+  if (!param || param.toLowerCase() === "all") return "all";
+  if (champions.some((c) => c.id === param)) return param;
+  const champ = champions.find(
+    (c) =>
+      c.name.replace(/\s+/g, "").replace(/['.]/g, "").toLowerCase() ===
+      param.toLowerCase(),
+  );
+  return champ ? champ.id : "all";
+}
+
 export function MatchFilter() {
   const params = useParams();
 
@@ -213,53 +226,43 @@ export function MatchFilter() {
           .replace("arena", "1700");
 
   const [queueId, setQueueId] = useState<string>(queueIdFromUrl);
-  const [championId, setChampionId] = useState<string>(() => {
-    if (!championName || championName.toLowerCase() === "all") return "all";
-    const champ = champions.find(
-      (c) =>
-        c.name.replace(/\s+/g, "").replace(/['.]/g, "").toLowerCase() ===
-        championName.toLowerCase(),
-    );
-    return champ ? champ.id : "all";
-  });
+  const [championId, setChampionId] = useState<string>(() =>
+    getChampionIdFromParam(championName),
+  );
   const [championMenuOpen, setChampionMenuOpen] = useState(false);
   const [search, setSearch] = useState("");
   const championMenuRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  // Ajusta o estado quando os parâmetros da URL mudam (sem useEffect).
+  const [prevUrlState, setPrevUrlState] = useState({
+    queueIdFromUrl,
+    championName,
+  });
+  if (
+    prevUrlState.queueIdFromUrl !== queueIdFromUrl ||
+    prevUrlState.championName !== championName
+  ) {
+    setPrevUrlState({ queueIdFromUrl, championName });
     setQueueId(queueIdFromUrl);
-    if (!championName || championName.toLowerCase() === "all") {
-      setChampionId("all");
-    } else {
-      const champ = champions.find(
-        (c) =>
-          c.name.replace(/\s+/g, "").replace(/['.]/g, "").toLowerCase() ===
-          championName.toLowerCase(),
-      );
-      setChampionId(champ ? champ.id : "all");
-    }
-  }, [queueIdFromUrl, championName]);
+    setChampionId(getChampionIdFromParam(championName));
+  }
 
-  useEffect(() => {
-    if (!championMenuOpen) setSearch("");
-  }, [championMenuOpen]);
+  // Limpa a busca assim que o menu fecha.
+  if (!championMenuOpen && search !== "") {
+    setSearch("");
+  }
 
   function getFilterUrl(
     newQueueId: string | null,
     newChampionId: string | null,
   ) {
     const queue = newQueueId !== null ? newQueueId : queueId;
-    let champ = newChampionId !== null ? newChampionId : championId;
+    const champ = newChampionId !== null ? newChampionId : championId;
 
-    if (!champ || champ === "") champ = "all";
-
+    // Usa o championId numérico na URL (estável, sem ambiguidade de nome)
     let championParam = "/all";
-    if (champ !== "all") {
-      const champObj = champions.find((c) => c.id === champ);
-      const champName = champObj
-        ? champObj.name.replace(/\s+/g, "").replace(/['.]/g, "").toLowerCase()
-        : champ;
-      championParam = `/${champName}`;
+    if (champ && champ !== "all") {
+      championParam = `/${champ}`;
     }
 
     let queueParam = "all";

@@ -1,18 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { z } from "zod";
-import {
-  AMERICAS_API_URL,
-  EUROPE_API_URL,
-  ASIA_API_URL,
-  SEA_API_URL,
-} from "@/app/utils/helpers";
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
+
+const AMERICAS_API_URL = "https://americas.api.riotgames.com";
+const EUROPE_API_URL = "https://europe.api.riotgames.com";
+const ASIA_API_URL = "https://asia.api.riotgames.com";
+const SEA_API_URL = "https://sea.api.riotgames.com";
 
 const matchesSchema = z.object({
   region: z.string().min(1),
@@ -24,7 +23,10 @@ const matchesSchema = z.object({
   championName: z.string().optional(),
 });
 
-const matchCache = new Map<string, { data: any; expires: number }>();
+const matchCache = new Map<
+  string,
+  { data: any; expires: number; hasMore: boolean }
+>();
 const L1_TTL = 5 * 60 * 1000;
 const L2_TTL_MINUTES = 30;
 const MAX_RIOT_OFFSET = 200;
@@ -69,6 +71,22 @@ function getRegionalUrl(region: string): string {
   if (["oc1", "tw2", "vn2", "sg2"].some((k) => r.includes(k)))
     return SEA_API_URL;
   return AMERICAS_API_URL;
+}
+
+// Filtra por championId (numérico) OU por nome, para suportar
+// tanto os antigos slugs ("kaisa") quanto o novo formato por id ("103").
+function participantMatchesChampion(
+  participant: any,
+  championName: string,
+  championId: string,
+): boolean {
+  if (championName) {
+    if (participant.championName?.toLowerCase() === championName.toLowerCase())
+      return true;
+    if (String(participant.championId) === championName) return true;
+  }
+  if (championId && String(participant.championId) === championId) return true;
+  return false;
 }
 
 async function getFromSupabase(cacheKey: string): Promise<any | null> {
@@ -185,7 +203,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         data: l1.data,
         cache: "L1_HIT",
-        hasMore: true,
+        hasMore: l1.hasMore,
       });
     }
 
@@ -213,7 +231,12 @@ export async function GET(request: NextRequest) {
           const participant = match.info?.participants?.find(
             (p: any) => p.puuid === puuid,
           );
-          return participant?.championName?.toLowerCase() === championKey;
+          if (!participant) return false;
+          return participantMatchesChampion(
+            participant,
+            championName,
+            championId,
+          );
         });
 
         const merged = [...existingMatches, ...champFromBase].filter(
@@ -235,7 +258,13 @@ export async function GET(request: NextRequest) {
     // ================= FULL CACHE HIT =================
     if (existingMatches.length >= start + count) {
       const paginated = existingMatches.slice(start, start + count);
-      matchCache.set(l1Key, { data: paginated, expires: now + L1_TTL });
+      matchCache.set(l1Key, {
+        data: paginated,
+        expires: now + L1_TTL,
+        hasMore:
+          existingMatches.length > start + count ||
+          riotOffset < MAX_RIOT_OFFSET,
+      });
       return NextResponse.json({
         data: paginated,
         cache: "FULL_CACHE",
@@ -270,7 +299,7 @@ export async function GET(request: NextRequest) {
     const PAGE_SIZE = isFilteringByChampion ? 50 : count;
     const MAX_PAGES = isFilteringByChampion ? 5 : 1;
 
-    let collectedMatches: any[] = [];
+    const collectedMatches: any[] = [];
     let currentStart = riotOffset;
     let hitOffsetLimit = false;
 
@@ -374,7 +403,11 @@ export async function GET(request: NextRequest) {
           );
           if (!participant) return false;
           if (!isFilteringByChampion) return true;
-          return participant.championName?.toLowerCase() === championKey;
+          return participantMatchesChampion(
+            participant,
+            championName,
+            championId,
+          );
         });
 
         collectedMatches.push(...filtered);
@@ -411,7 +444,11 @@ export async function GET(request: NextRequest) {
       tagLine,
     ).catch(() => {});
 
-    matchCache.set(l1Key, { data: finalMatches, expires: now + L1_TTL });
+    matchCache.set(l1Key, {
+      data: finalMatches,
+      expires: now + L1_TTL,
+      hasMore,
+    });
 
     return NextResponse.json({
       data: finalMatches,

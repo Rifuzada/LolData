@@ -2,8 +2,8 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useSearchHandler } from './searchHandler';
-import { useSummonerContext } from './context/SummonerContext';
 
 /**
  * Home page component
@@ -14,9 +14,6 @@ const Home: React.FC = () => {
   const [riotid, setRiotid] = useState<string>('');
   const [region, setRegion] = useState<string>('');
 
-  // Context to manage global state
-  const { clearData } = useSummonerContext();
-
   // Custom hook for search
   const { handleSearch, isLoading, error } = useSearchHandler();
 
@@ -24,9 +21,6 @@ const Home: React.FC = () => {
    * Performs the search when called
    */
   const search = () => {
-    // Clear previous data
-    clearData();
-
     // Start new search
     handleSearch(riotid, region);
   };
@@ -99,14 +93,12 @@ const Home: React.FC = () => {
             <option className='cursor-pointer' value="SG2">🇸🇬 - Singapore</option>
           </optgroup>
         </select>
-        <button>
-          <a
-            href="/rankings/soloDuo/BR1/1"
-            className="w-full p-3 m-auto transition bg-gray-700 border-2 border-gray-300 rounded input hover:bg-gray-600 focus:outline-none focus:border-blue-500"
-          >
-            View Rankings
-          </a>
-        </button>
+        <Link
+          href="/rankings/soloDuo/BR1/1"
+          className="w-full p-3 m-auto transition bg-gray-700 border-2 border-gray-300 rounded input hover:bg-gray-600 focus:outline-none focus:border-blue-500"
+        >
+          View Rankings
+        </Link>
         <button
           className="w-full p-3 font-medium text-white transition bg-blue-600 rounded input hover:bg-blue-700 disabled:bg-blue-400"
           id="search_button"

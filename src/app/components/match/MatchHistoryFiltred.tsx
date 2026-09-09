@@ -2,7 +2,6 @@
 
 import { MatchHistoryItem } from "./MatchHistoryItem";
 import { useEffect, useState, useCallback, useRef } from "react";
-import apiService from "@/app/services/apiService";
 
 interface Participant {
   puuid: string;
@@ -133,7 +132,11 @@ export function MatchHistoryFiltred({
   useEffect(() => {
     const loadStaticData = async () => {
       try {
-        const version = await apiService.getLatestVersion();
+        const versionsRes = await fetch(
+          "https://ddragon.leagueoflegends.com/api/versions.json",
+        );
+        const versions: string[] = await versionsRes.json();
+        const version = versions[0];
         setLeagueVersion(version);
 
         const [runesRes, spellsRes] = await Promise.all([
@@ -217,7 +220,7 @@ export function MatchHistoryFiltred({
       if (queueId && queueId !== "all")
         params.append("queueId", String(queueId));
       if (championName && championName !== "all")
-        params.append("championName", championName);
+        params.append("championId", championName);
 
       const res = await fetch(`/api/summoner/matches?${params.toString()}`, {
         signal: abortControllerRef.current.signal,
