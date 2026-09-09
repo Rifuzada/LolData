@@ -13,6 +13,7 @@ const Home: React.FC = () => {
   // Local state for form
   const [riotid, setRiotid] = useState<string>('');
   const [region, setRegion] = useState<string>('');
+  const [mode, setMode] = useState<'lol' | 'tft'>('lol');
 
   // Custom hook for search
   const { handleSearch, isLoading, error } = useSearchHandler();
@@ -22,7 +23,7 @@ const Home: React.FC = () => {
    */
   const search = () => {
     // Start new search
-    handleSearch(riotid, region);
+    handleSearch(riotid, region, mode);
   };
 
   /**
@@ -44,7 +45,8 @@ const Home: React.FC = () => {
         <div id="title" className="mb-8 text-center">
           <h1 className="mb-2 font-mono text-4xl">LoLData</h1>
           <p className="mb-2 text-lg text-gray-600">
-            Search for League of Legends player information
+            Search for League of Legends or Teamfight Tactics player
+            information
           </p>
           {error && (
             <p className="font-medium text-red-500" role="alert" aria-live="assertive">{error}</p>
@@ -52,6 +54,26 @@ const Home: React.FC = () => {
         </div>
 
         <div id="input-container" className="flex flex-col w-full max-w-lg gap-4" role="search" aria-label="Pesquisa de invocador">
+          <div className="grid grid-cols-2 gap-2 p-1 border border-gray-300 rounded-lg">
+            <button
+              type="button"
+              onClick={() => setMode('lol')}
+              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                mode === 'lol' ? 'bg-blue-600 text-white' : 'hover:bg-gray-100'
+              }`}
+            >
+              League of Legends
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('tft')}
+              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                mode === 'tft' ? 'bg-blue-600 text-white' : 'hover:bg-gray-100'
+              }`}
+            >
+              Teamfight Tactics
+            </button>
+          </div>
         <input
           className="w-full p-3 transition border-2 border-gray-300 rounded input focus:outline-none focus:border-blue-500"
           type="text"
@@ -97,7 +119,13 @@ const Home: React.FC = () => {
           href="/rankings/soloDuo/BR1/1"
           className="w-full p-3 m-auto transition bg-gray-700 border-2 border-gray-300 rounded input hover:bg-gray-600 focus:outline-none focus:border-blue-500"
         >
-          View Rankings
+          View LoL Rankings
+        </Link>
+        <Link
+          href="/tft/rankings/BR1/1"
+          className="w-full p-3 m-auto transition bg-gray-800 border-2 border-gray-300 rounded input hover:bg-gray-700 focus:outline-none focus:border-blue-500"
+        >
+          View TFT Rankings
         </Link>
         <button
           className="w-full p-3 font-medium text-white transition bg-blue-600 rounded input hover:bg-blue-700 disabled:bg-blue-400"

@@ -11,9 +11,14 @@ interface SearchHandlerHook {
    * Função para lidar com a pesquisa de invocador
    * @param riotid - ID do Riot (no formato "nome#tag")
    * @param region - Região do servidor
+   * @param mode - "lol" (padrão) ou "tft"
    * @returns Promise void
    */
-  handleSearch: (riotid: string, region: string) => Promise<void>;
+  handleSearch: (
+    riotid: string,
+    region: string,
+    mode?: "lol" | "tft",
+  ) => Promise<void>;
 
   /**
    * Estado indicando se está carregando
@@ -41,7 +46,11 @@ export function useSearchHandler(): SearchHandlerHook {
    * @param riotid - ID do Riot (no formato "nome#tag")
    * @param region - Região do servidor
    */
-  async function handleSearch(riotid: string, region: string): Promise<void> {
+  async function handleSearch(
+    riotid: string,
+    region: string,
+    mode: "lol" | "tft" = "lol",
+  ): Promise<void> {
     try {
       setIsLoading(true);
       setError(null);
@@ -76,10 +85,16 @@ export function useSearchHandler(): SearchHandlerHook {
         setError("Por favor, seleciona uma região.");
         return;
       }
-      // Navega para a rota dinâmica
-      router.push(
-        `/summoner/${sanitizedRegion}/${encodedGameName}/${encodedTagLine}/all/all`,
-      );
+      // Navega para a rota dinâmica (TFT ou LoL)
+      if (mode === "tft") {
+        router.push(
+          `/tft/${sanitizedRegion}/${encodedGameName}/${encodedTagLine}`,
+        );
+      } else {
+        router.push(
+          `/summoner/${sanitizedRegion}/${encodedGameName}/${encodedTagLine}/all/all`,
+        );
+      }
     } catch (error) {
       console.error("Erro ao processar a pesquisa:", error);
       setError("Ocorreu um erro ao processar sua pesquisa. Tente novamente.");
