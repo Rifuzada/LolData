@@ -2,7 +2,7 @@
 
 import axios from "axios";
 
-const API_KEY = process.env.RIOT_API_KEY;
+const API_KEY = process.env.RIOT_TFT_API_KEY || process.env.RIOT_API_KEY;
 const AMERICAS_URL = "https://americas.api.riotgames.com";
 const EUROPE_URL = "https://europe.api.riotgames.com";
 const ASIA_URL = "https://asia.api.riotgames.com";
